@@ -5,8 +5,30 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Mise en App - Rainero Culinaria 4.0</title>
     
+    <!-- PWA Meta Tags -->
+    <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Mise en App">
+    <meta name="application-name" content="Mise en App">
     <meta name="theme-color" content="#00BCD4">
+    <meta name="msapplication-TileColor" content="#00BCD4">
+    <meta name="description" content="Sistema de control de stock - Rainero Culinaria 4.0">
+    
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="manifest.json">
+    
+    <!-- Icons -->
+    <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+    <link rel="icon" type="image/png" sizes="512x512" href="icon-512.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="icon-180.png">
+    <link rel="apple-touch-icon" sizes="152x152" href="icon-152.png">
+    <link rel="apple-touch-icon" sizes="144x144" href="icon-144.png">
+    <link rel="apple-touch-icon" sizes="120x120" href="icon-120.png">
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="favicon.png">
+    <link rel="shortcut icon" href="favicon.png">
     
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -19,7 +41,8 @@
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
         html, body, #root { height: 100%; font-family: 'Nunito', sans-serif; }
-        body { background: linear-gradient(180deg, #e3f6f9 0%, #f0f7fa 100%); min-height: 100vh; }
+        body { background: linear-gradient(180deg, #e3f6f9 0%, #f0f7fa 100%); min-height: 100vh; min-height: -webkit-fill-available; }
+        html { height: -webkit-fill-available; }
         
         @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-12px); } }
         @keyframes fadeUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
@@ -44,21 +67,48 @@
         .btn-green { background: linear-gradient(135deg, #4caf50 0%, #66bb6a 100%); }
         .btn-orange { background: linear-gradient(135deg, #ff9800 0%, #ffb74d 100%); }
 
-        .input-field { background: #f5f5f5; border: 2px solid #e0e0e0; border-radius: 16px; padding: 14px 16px; font-size: 14px; transition: all 0.3s; }
+        .input-field { background: #f5f5f5; border: 2px solid #e0e0e0; border-radius: 16px; padding: 14px 16px; font-size: 14px; transition: all 0.3s; width: 100%; }
         .input-field:focus { outline: none; border-color: #00bcd4; background: white; box-shadow: 0 0 0 4px rgba(0,188,212,0.15); }
-        .input-compact { padding: 10px 12px; font-size: 13px; border-radius: 12px; }
-        @media (max-width: 380px) {
-            .input-compact { padding: 8px 10px; font-size: 12px; }
-        }
-
+        
         .badge-cyan { background: #e0f7fa; color: #00838f; }
         .badge-purple { background: #f3e5f5; color: #7b1fa2; }
         .badge-green { background: #e8f5e9; color: #2e7d32; }
         .badge-orange { background: #fff3e0; color: #e65100; }
         .badge-red { background: #ffebee; color: #c62828; }
 
-        .back-btn { display: flex; align-items: center; gap: 8px; padding: 10px 16px; background: white; border: 2px solid #e0e0e0; border-radius: 14px; font-weight: 700; color: #666; }
+        .back-btn { display: flex; align-items: center; gap: 8px; padding: 10px 16px; background: white; border: 2px solid #e0e0e0; border-radius: 14px; font-weight: 700; color: #666; cursor: pointer; }
         .loader { width: 40px; height: 40px; border: 4px solid #e0f7fa; border-top-color: #00bcd4; border-radius: 50%; }
+
+        /* Responsive */
+        .container-app { max-width: 100%; margin: 0 auto; }
+        
+        /* Tablet */
+        @media (min-width: 768px) {
+            .container-app { max-width: 600px; }
+            .card { border-radius: 28px; }
+            .input-field { padding: 16px 20px; font-size: 16px; }
+        }
+        
+        /* Desktop */
+        @media (min-width: 1024px) {
+            .container-app { max-width: 480px; }
+            body { display: flex; justify-content: center; align-items: flex-start; padding-top: 20px; }
+            #root { width: 100%; max-width: 480px; min-height: calc(100vh - 40px); background: white; border-radius: 32px; box-shadow: 0 20px 60px rgba(0,0,0,0.1); overflow: hidden; }
+        }
+
+        /* Mobile adjustments */
+        @media (max-width: 380px) {
+            .input-field { padding: 12px 14px; font-size: 13px; }
+            .card { border-radius: 20px; padding: 16px; }
+        }
+
+        /* Safe area for iPhone notch */
+        @supports (padding: max(0px)) {
+            .nav-safe { padding-bottom: max(1.5rem, env(safe-area-inset-bottom)); }
+        }
+
+        /* Prevent pull-to-refresh on mobile */
+        body { overscroll-behavior-y: contain; }
     </style>
 </head>
 <body>
@@ -142,7 +192,7 @@
             const textColors = { cyan: 'text-cyan-600', purple: 'text-purple-600', green: 'text-green-600', orange: 'text-orange-600' };
             
             return (
-                <nav className="fixed bottom-0 inset-x-0 bg-white border-t-2 border-cyan-100 px-4 py-2 pb-6 flex justify-around z-50 shadow-lg">
+                <nav className="fixed bottom-0 inset-x-0 bg-white border-t-2 border-cyan-100 px-4 py-2 nav-safe flex justify-around z-50 shadow-lg lg:max-w-[480px] lg:mx-auto lg:rounded-b-[32px]">
                     {items.map(({ id, icon: Ic, label, c }) => (
                         <button key={id} onClick={() => go(id)} className="flex flex-col items-center gap-1 min-w-[60px]">
                             <div className={`p-2.5 rounded-2xl transition-all ${current === id ? `${colors[c]} text-white shadow-lg` : 'text-gray-400'}`}>
@@ -197,6 +247,8 @@
             const [crs, setCrs] = useState([]);
             const [his, setHis] = useState([]);
             const [form, setForm] = useState({ name: '', surname: '', email: '', sig: null });
+            const [loginEmail, setLoginEmail] = useState('');
+            const [loginMode, setLoginMode] = useState('check');
             const [cart, setCart] = useState([]);
             const [meta, setMeta] = useState({ career: '', date: new Date().toISOString().split('T')[0], time: '08:00' });
             const [search, setSearch] = useState('');
@@ -236,18 +288,7 @@
                                 };
                             } catch (e) {
                                 console.error('Error processing order', o.id, e);
-                                return { 
-                                    id: o.id,
-                                    status: o.status || 'Solicitado',
-                                    date: o.order_date || o.date || '',
-                                    time: o.order_time || o.time || '',
-                                    career: o.career || '',
-                                    items: [], 
-                                    teacher: o.teacher_name || 'Sin nombre', 
-                                    obs: o.observations || '', 
-                                    res: o.resolution || '', 
-                                    sig: o.signature || null
-                                };
+                                return { id: o.id, status: o.status || 'Solicitado', date: '', time: '', career: '', items: [], teacher: o.teacher_name || 'Sin nombre', obs: '', res: '', sig: null };
                             }
                         }));
                         setOrd(ordersWithItems);
@@ -271,29 +312,63 @@
 
             const refresh = async () => { setSyncing(true); await loadData(); setSyncing(false); };
 
-            // AUTH
+            // AUTH - Verificar email
+            const checkEmail = async () => {
+                const email = loginEmail.trim().toLowerCase();
+                if (!email) return alert('Ingresa tu correo');
+                const fullEmail = email.includes('@') ? email : email + '@mvl.edu.ar';
+                if (!fullEmail.endsWith('@mvl.edu.ar')) return alert('Usa tu correo @mvl.edu.ar');
+                
+                setSyncing(true);
+                try {
+                    const { data: existing } = await supabase.from('users').select('*').eq('email', fullEmail).single();
+                    if (existing) {
+                        const u = { ...existing, fullName: existing.full_name, sig: existing.signature };
+                        setUser(u);
+                        localStorage.setItem('mise_user', JSON.stringify(u));
+                        setView('dashboard');
+                    } else {
+                        setForm({ ...form, email: fullEmail });
+                        setLoginMode('register');
+                    }
+                } catch (e) {
+                    const fullEmail2 = loginEmail.includes('@') ? loginEmail : loginEmail + '@mvl.edu.ar';
+                    setForm({ ...form, email: fullEmail2 });
+                    setLoginMode('register');
+                }
+                setSyncing(false);
+            };
+
+            // AUTH - Registro
             const register = async () => {
-                if (!form.name || !form.surname || !form.email) return alert('Completa todos los campos');
-                if (!form.email.endsWith('@mvl.edu.ar')) return alert('Usa tu correo @mvl.edu.ar');
+                if (!form.name || !form.surname) return alert('Completa nombre y apellido');
                 if (!form.sig) return alert('La firma es obligatoria');
                 
                 setSyncing(true);
                 try {
-                    const { data: existing } = await supabase.from('users').select('*').eq('email', form.email).single();
-                    if (existing) {
-                        const u = { ...existing, fullName: existing.full_name, sig: existing.signature };
-                        setUser(u); localStorage.setItem('mise_user', JSON.stringify(u)); setView('dashboard');
-                    } else {
-                        const { data, error } = await supabase.from('users').insert([{ email: form.email, name: form.name, surname: form.surname, full_name: `${form.name} ${form.surname}`, role: selectedRole, signature: form.sig }]).select().single();
-                        if (error) throw error;
-                        const u = { ...data, fullName: data.full_name, sig: data.signature };
-                        setUser(u); localStorage.setItem('mise_user', JSON.stringify(u)); setView('dashboard');
-                    }
+                    const { data, error } = await supabase.from('users').insert([{ 
+                        email: form.email, name: form.name, surname: form.surname, 
+                        full_name: `${form.name} ${form.surname}`, role: selectedRole, signature: form.sig 
+                    }]).select().single();
+                    
+                    if (error) throw error;
+                    const u = { ...data, fullName: data.full_name, sig: data.signature };
+                    setUser(u);
+                    localStorage.setItem('mise_user', JSON.stringify(u));
+                    setView('dashboard');
                 } catch (e) { alert('Error: ' + e.message); }
                 setSyncing(false);
             };
 
-            const logout = () => { if (confirm('¿Cerrar sesión?')) { localStorage.removeItem('mise_user'); setUser(null); setSelectedRole(null); setForm({ name: '', surname: '', email: '', sig: null }); setView('splash'); }};
+            const logout = () => { 
+                if (confirm('¿Cerrar sesión?')) { 
+                    localStorage.removeItem('mise_user'); 
+                    setUser(null); setSelectedRole(null); 
+                    setForm({ name: '', surname: '', email: '', sig: null }); 
+                    setLoginEmail(''); setLoginMode('check');
+                    setView('splash'); 
+                }
+            };
 
             // CART
             const addCart = (item, qty = 1) => {
@@ -321,59 +396,27 @@
                 
                 setSyncing(true);
                 try {
-                    // 1. Crear el pedido
                     const { data: order, error: orderError } = await supabase.from('orders').insert([{ 
-                        teacher_id: user.id, 
-                        teacher_name: user.fullName, 
-                        teacher_email: user.email, 
-                        career: meta.career, 
-                        order_date: meta.date, 
-                        order_time: meta.time, 
-                        signature: user.sig, 
-                        status: 'Solicitado' 
+                        teacher_id: user.id, teacher_name: user.fullName, teacher_email: user.email, 
+                        career: meta.career, order_date: meta.date, order_time: meta.time, 
+                        signature: user.sig, status: 'Solicitado' 
                     }]).select().single();
                     
-                    if (orderError) {
-                        console.error('Error creating order:', orderError);
-                        throw orderError;
-                    }
+                    if (orderError) throw orderError;
                     
-                    console.log('Order created:', order.id);
-                    
-                    // 2. Insertar items del pedido
-                    const itemsToInsert = cart.map(i => ({ 
-                        order_id: order.id, 
-                        inventory_id: i.id, 
-                        item_name: i.name, 
-                        quantity: i.q 
-                    }));
-                    
+                    const itemsToInsert = cart.map(i => ({ order_id: order.id, inventory_id: i.id, item_name: i.name, quantity: i.q }));
                     const { error: itemsError } = await supabase.from('order_items').insert(itemsToInsert);
+                    if (itemsError) throw itemsError;
                     
-                    if (itemsError) {
-                        console.error('Error inserting items:', itemsError);
-                        throw itemsError;
-                    }
-                    
-                    console.log('Items inserted:', itemsToInsert.length);
-                    
-                    // 3. Actualizar stock (descontar)
                     for (const item of cart) {
                         const invItem = inv.find(i => i.id === item.id);
-                        if (invItem) {
-                            const newQty = Math.max(0, invItem.qty - item.q);
-                            await supabase.from('inventory').update({ qty: newQty }).eq('id', item.id);
-                        }
+                        if (invItem) await supabase.from('inventory').update({ qty: Math.max(0, invItem.qty - item.q) }).eq('id', item.id);
                     }
                     
-                    setCart([]); 
-                    await loadData(); 
-                    alert('✅ ¡Pedido enviado correctamente!'); 
+                    setCart([]); await loadData(); 
+                    alert('✅ ¡Pedido enviado!'); 
                     setView('handover');
-                } catch (e) { 
-                    console.error('Order error:', e);
-                    alert('Error al enviar pedido: ' + (e.message || 'Intenta de nuevo')); 
-                }
+                } catch (e) { alert('Error: ' + (e.message || 'Intenta de nuevo')); }
                 setSyncing(false);
             };
 
@@ -383,63 +426,39 @@
                     const order = ord.find(o => o.id === orderId);
                     if (!order) throw new Error('Pedido no encontrado');
                     
-                    // Ajustar cantidades si el admin modificó los items
                     for (const old of order.items) {
                         const newItem = items.find(i => i.id === old.id);
                         if (newItem && newItem.q < old.q) {
-                            // Devolver al stock la diferencia
                             const invItem = inv.find(i => i.id === old.id);
-                            if (invItem) {
-                                const returnQty = old.q - newItem.q;
-                                await supabase.from('inventory').update({ qty: invItem.qty + returnQty }).eq('id', old.id);
-                            }
+                            if (invItem) await supabase.from('inventory').update({ qty: invItem.qty + (old.q - newItem.q) }).eq('id', old.id);
                         }
-                        if (newItem) {
-                            await supabase.from('order_items').update({ quantity: newItem.q }).eq('order_id', orderId).eq('inventory_id', old.id);
-                        }
+                        if (newItem) await supabase.from('order_items').update({ quantity: newItem.q }).eq('order_id', orderId).eq('inventory_id', old.id);
                     }
                     
                     await supabase.from('orders').update({ status: 'En Curso' }).eq('id', orderId);
                     await loadData();
-                } catch (e) { 
-                    console.error('Confirm delivery error:', e);
-                    alert('Error: ' + (e.message || 'Intenta de nuevo')); 
-                }
+                } catch (e) { alert('Error: ' + (e.message || 'Intenta de nuevo')); }
                 setSyncing(false);
             };
 
             const returnMat = async (orderId, obs) => { 
                 setSyncing(true); 
-                try {
-                    await supabase.from('orders').update({ status: 'Devolución Pendiente', observations: obs || null }).eq('id', orderId); 
-                    await loadData(); 
-                } catch (e) {
-                    console.error('Return error:', e);
-                    alert('Error: ' + (e.message || 'Intenta de nuevo'));
-                }
+                await supabase.from('orders').update({ status: 'Devolución Pendiente', observations: obs || null }).eq('id', orderId); 
+                await loadData(); 
                 setSyncing(false); 
             };
 
             const finRet = async (orderId) => {
                 setSyncing(true);
-                try {
-                    const order = ord.find(o => o.id === orderId);
-                    if (!order) throw new Error('Pedido no encontrado');
-                    
-                    // Devolver items al inventario
+                const order = ord.find(o => o.id === orderId);
+                if (order) {
                     for (const item of order.items) {
                         const invItem = inv.find(i => i.id === item.id);
-                        if (invItem) {
-                            await supabase.from('inventory').update({ qty: invItem.qty + item.q }).eq('id', item.id);
-                        }
+                        if (invItem) await supabase.from('inventory').update({ qty: invItem.qty + item.q }).eq('id', item.id);
                     }
-                    
-                    await supabase.from('orders').update({ status: 'Finalizado' }).eq('id', orderId);
-                    await loadData(); 
-                } catch (e) {
-                    console.error('Finalize return error:', e);
-                    alert('Error: ' + (e.message || 'Intenta de nuevo'));
                 }
+                await supabase.from('orders').update({ status: 'Finalizado' }).eq('id', orderId);
+                await loadData(); 
                 setSyncing(false);
             };
 
@@ -479,8 +498,6 @@
 
             const updateItemName = async (id, newName) => { if (!newName.trim()) return; setSyncing(true); await supabase.from('inventory').update({ name: newName.trim() }).eq('id', id); await loadData(); setSyncing(false); };
             const deleteItem = async (id) => { if (!confirm('¿Eliminar material?')) return; setSyncing(true); await supabase.from('inventory').delete().eq('id', id); await loadData(); setSyncing(false); };
-
-            // COURSES
             const addCourse = async (name) => { if (!name.trim()) return; setSyncing(true); await supabase.from('courses').insert([{ name: name.trim() }]); await loadData(); setSyncing(false); };
             const deleteCourse = async (name) => { if (!confirm(`¿Eliminar "${name}"?`)) return; setSyncing(true); await supabase.from('courses').delete().eq('name', name); await loadData(); setSyncing(false); };
 
@@ -490,71 +507,88 @@
 
             // SPLASH
             if (view === 'splash') return (
-                <div className="min-h-screen flex flex-col items-center justify-center p-6 animate-fade">
+                <div className="min-h-screen flex flex-col items-center justify-center p-6 animate-fade container-app">
                     <Logo size="xl"/>
-                    <button onClick={() => setView('role_select')} className="mt-8 px-12 py-4 btn-gradient text-white rounded-2xl font-bold text-lg shadow-xl animate-glow flex items-center gap-3">Ingresar <I.ArrowRight size={24}/></button>
+                    <button onClick={() => setView('login')} className="mt-8 px-12 py-4 btn-gradient text-white rounded-2xl font-bold text-lg shadow-xl animate-glow flex items-center gap-3">Ingresar <I.ArrowRight size={24}/></button>
                     <p className="text-center text-xs text-gray-400 mt-8">Secretaría de Educación y Empleo<br/><span className="font-bold text-gray-500">Municipalidad de Vicente López</span></p>
                 </div>
             );
 
-            // ROLE SELECT
-            if (view === 'role_select') return (
-                <div className="min-h-screen p-6 animate-fade">
+            // LOGIN
+            if (view === 'login' && loginMode === 'check') return (
+                <div className="min-h-screen p-6 animate-fade container-app">
                     <BackBtn onClick={() => setView('splash')}/>
-                    <div className="text-center my-8"><Logo size="md"/><h2 className="text-2xl font-extrabold text-gray-800 mt-4">¿Cómo ingresás?</h2></div>
-                    <div className="space-y-4 max-w-sm mx-auto">
-                        <button onClick={() => { setSelectedRole('Docente'); setView('register'); }} className="w-full card p-6 card-cyan text-left">
-                            <div className="flex items-center gap-4">
-                                <div className="w-16 h-16 bg-cyan-500 rounded-2xl flex items-center justify-center shadow-lg"><span className="text-3xl">👨‍🏫</span></div>
-                                <div className="flex-1"><h3 className="text-xl font-bold text-gray-800">Docente</h3><p className="text-sm text-gray-500">Solicitar materiales</p></div>
-                                <div className="w-10 h-10 rounded-full btn-cyan flex items-center justify-center"><I.ArrowRight size={20} className="text-white"/></div>
+                    <div className="max-w-sm mx-auto mt-8">
+                        <div className="text-center mb-8"><Logo size="md"/><h2 className="text-2xl font-extrabold text-gray-800 mt-4">¡Bienvenido!</h2><p className="text-gray-500 mt-2">Ingresá con tu correo institucional</p></div>
+                        <div className="card p-6 card-cyan">
+                            <div className="space-y-4">
+                                <div>
+                                    <label className="text-xs font-bold text-gray-500 mb-1 block">📧 Correo institucional</label>
+                                    <div className="flex items-center input-field p-0 overflow-hidden">
+                                        <I.Mail size={18} className="ml-4 text-cyan-400"/>
+                                        <input type="text" placeholder="usuario" value={loginEmail.replace('@mvl.edu.ar', '')} onChange={e => setLoginEmail(e.target.value.replace(/@/g, ''))} onKeyPress={e => e.key === 'Enter' && checkEmail()} className="flex-1 px-3 py-3.5 bg-transparent text-sm font-semibold"/>
+                                        <span className="pr-4 text-sm font-bold text-cyan-600">@mvl.edu.ar</span>
+                                    </div>
+                                </div>
+                                <button onClick={checkEmail} disabled={syncing} className="w-full py-4 btn-gradient text-white rounded-2xl font-bold flex items-center justify-center gap-2 shadow-xl disabled:opacity-50">{syncing ? <><div className="loader w-5 h-5 border-2 animate-spin"></div> Verificando...</> : <>Continuar <I.ArrowRight size={20}/></>}</button>
                             </div>
-                        </button>
-                        <button onClick={() => { setSelectedRole('Administrativo'); setView('register'); }} className="w-full card p-6 card-purple text-left">
-                            <div className="flex items-center gap-4">
-                                <div className="w-16 h-16 bg-purple-500 rounded-2xl flex items-center justify-center shadow-lg"><span className="text-3xl">📋</span></div>
-                                <div className="flex-1"><h3 className="text-xl font-bold text-gray-800">Administración</h3><p className="text-sm text-gray-500">Gestionar stock</p></div>
-                                <div className="w-10 h-10 rounded-full btn-gradient flex items-center justify-center"><I.ArrowRight size={20} className="text-white"/></div>
-                            </div>
-                        </button>
+                        </div>
                     </div>
                 </div>
             );
 
             // REGISTER
-            if (view === 'register') return (
-                <div className="min-h-screen p-6 animate-fade">
-                    <BackBtn onClick={() => setView('role_select')}/>
+            if (view === 'login' && loginMode === 'register') return (
+                <div className="min-h-screen p-6 animate-fade container-app">
+                    <BackBtn onClick={() => setLoginMode('check')}/>
                     <div className="max-w-sm mx-auto mt-4">
                         <div className="text-center mb-6">
-                            <div className={`inline-block px-4 py-2 rounded-full font-bold text-sm ${selectedRole === 'Docente' ? 'badge-cyan' : 'badge-purple'}`}>{selectedRole === 'Docente' ? '👨‍🏫 DOCENTE' : '📋 ADMINISTRACIÓN'}</div>
-                            <h2 className="text-2xl font-extrabold text-gray-800 mt-3">Registro</h2>
+                            <h2 className="text-2xl font-extrabold text-gray-800">Registro</h2>
+                            <p className="text-gray-500 text-sm mt-1">Primera vez? Completá tus datos</p>
+                            <div className="mt-3 px-4 py-2 bg-cyan-50 rounded-xl inline-block"><span className="text-sm font-bold text-cyan-600">{form.email}</span></div>
                         </div>
-                        <div className={`card p-6 ${selectedRole === 'Docente' ? 'card-cyan' : 'card-purple'}`}>
+                        
+                        {!selectedRole ? (
                             <div className="space-y-4">
-                                <div className="grid grid-cols-2 gap-3">
-                                    <div><label className="text-xs font-bold text-gray-500 mb-1 block">Nombre</label><input type="text" placeholder="Juan" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} className="w-full input-field font-semibold"/></div>
-                                    <div><label className="text-xs font-bold text-gray-500 mb-1 block">Apellido</label><input type="text" placeholder="Pérez" value={form.surname} onChange={e => setForm({ ...form, surname: e.target.value })} className="w-full input-field font-semibold"/></div>
-                                </div>
-                                <div>
-                                    <label className="text-xs font-bold text-gray-500 mb-1 block">Correo institucional</label>
-                                    <div className="flex items-center input-field p-0 overflow-hidden">
-                                        <I.Mail size={18} className="ml-4 text-cyan-400"/>
-                                        <input type="text" placeholder="usuario" value={form.email.replace('@mvl.edu.ar', '')} onChange={e => setForm({ ...form, email: e.target.value.replace(/@/g, '') + '@mvl.edu.ar' })} className="flex-1 px-3 py-3.5 bg-transparent text-sm font-semibold"/>
-                                        <span className="pr-4 text-sm font-bold text-cyan-600">@mvl.edu.ar</span>
+                                <p className="text-center text-gray-600 font-semibold">¿Cómo ingresás?</p>
+                                <button onClick={() => setSelectedRole('Docente')} className="w-full card p-5 card-cyan text-left">
+                                    <div className="flex items-center gap-4">
+                                        <div className="w-14 h-14 bg-cyan-500 rounded-2xl flex items-center justify-center shadow-lg"><span className="text-2xl">👨‍🏫</span></div>
+                                        <div className="flex-1"><h3 className="text-lg font-bold text-gray-800">Docente</h3><p className="text-xs text-gray-500">Solicitar materiales</p></div>
+                                        <I.ArrowRight size={20} className="text-cyan-400"/>
                                     </div>
-                                </div>
-                                <div className="bg-gradient-to-br from-purple-50 via-cyan-50 to-green-50 p-4 rounded-2xl border-2 border-purple-100"><SignPad onSave={sig => setForm({ ...form, sig })} initial={form.sig}/></div>
-                                <button onClick={register} disabled={syncing} className="w-full py-4 btn-gradient text-white rounded-2xl font-bold flex items-center justify-center gap-2 shadow-xl disabled:opacity-50">{syncing ? <><div className="loader w-5 h-5 border-2 animate-spin"></div> Registrando...</> : <>Registrarse <I.ArrowRight size={20}/></>}</button>
+                                </button>
+                                <button onClick={() => setSelectedRole('Administrativo')} className="w-full card p-5 card-purple text-left">
+                                    <div className="flex items-center gap-4">
+                                        <div className="w-14 h-14 bg-purple-500 rounded-2xl flex items-center justify-center shadow-lg"><span className="text-2xl">📋</span></div>
+                                        <div className="flex-1"><h3 className="text-lg font-bold text-gray-800">Administración</h3><p className="text-xs text-gray-500">Gestionar stock</p></div>
+                                        <I.ArrowRight size={20} className="text-purple-400"/>
+                                    </div>
+                                </button>
                             </div>
-                        </div>
+                        ) : (
+                            <div className={`card p-6 ${selectedRole === 'Docente' ? 'card-cyan' : 'card-purple'}`}>
+                                <div className="flex items-center justify-between mb-4">
+                                    <span className={`px-3 py-1.5 rounded-full text-xs font-bold ${selectedRole === 'Docente' ? 'badge-cyan' : 'badge-purple'}`}>{selectedRole === 'Docente' ? '👨‍🏫 DOCENTE' : '📋 ADMIN'}</span>
+                                    <button onClick={() => setSelectedRole(null)} className="text-xs text-gray-400">Cambiar</button>
+                                </div>
+                                <div className="space-y-4">
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <div><label className="text-xs font-bold text-gray-500 mb-1 block">Nombre</label><input type="text" placeholder="Juan" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} className="w-full input-field font-semibold"/></div>
+                                        <div><label className="text-xs font-bold text-gray-500 mb-1 block">Apellido</label><input type="text" placeholder="Pérez" value={form.surname} onChange={e => setForm({ ...form, surname: e.target.value })} className="w-full input-field font-semibold"/></div>
+                                    </div>
+                                    <div className="bg-gradient-to-br from-purple-50 via-cyan-50 to-green-50 p-4 rounded-2xl border-2 border-purple-100"><SignPad onSave={sig => setForm({ ...form, sig })} initial={form.sig}/></div>
+                                    <button onClick={register} disabled={syncing} className="w-full py-4 btn-gradient text-white rounded-2xl font-bold flex items-center justify-center gap-2 shadow-xl disabled:opacity-50">{syncing ? <><div className="loader w-5 h-5 border-2 animate-spin"></div> Registrando...</> : <>Registrarse <I.ArrowRight size={20}/></>}</button>
+                                </div>
+                            </div>
+                        )}
                     </div>
                 </div>
             );
 
             // DASHBOARD
             if (view === 'dashboard') return (
-                <div className="min-h-screen pb-28">
+                <div className="min-h-screen pb-28 container-app">
                     <div className="p-5 pt-6">
                         <div className="flex justify-between items-start"><Logo size="md"/><button onClick={refresh} disabled={syncing} className="p-3 bg-white rounded-xl shadow border-2 border-gray-100"><I.Refresh size={20} className={`text-cyan-500 ${syncing ? 'animate-spin' : ''}`}/></button></div>
                         <div className={`mt-5 card p-4 text-center ${user?.role === 'Administrativo' ? 'card-purple' : 'card-cyan'}`}>
@@ -592,33 +626,35 @@
                     const [reason, setReason] = useState('');
                     const [note, setNote] = useState('');
                     const [editName, setEditName] = useState(item.name);
-                    const [isEditing, setIsEditing] = useState(false);
                     const st = catStyle(item.cat);
-
-                    const submit = async () => { if (await stockMove(item.id, type, amt, reason, note)) { setAmt(''); setReason(''); setNote(''); setOpen(false); }};
-                    const saveName = () => { updateItemName(item.id, editName); setIsEditing(false); };
+                    
+                    const submit = async () => { if (!reason) return alert('Selecciona motivo'); const ok = await stockMove(item.id, type, amt, reason, note); if (ok) { setAmt(''); setReason(''); setNote(''); setOpen(false); } };
 
                     return (
                         <div className={`card p-4 border-2 ${st.border}`}>
                             <div className="flex items-center gap-3">
-                                <div className={`w-11 h-11 rounded-xl flex items-center justify-center ${st.bg} ${st.tx}`}><I.Package size={20}/></div>
+                                <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${st.bg} ${st.tx}`}><I.Package size={22}/></div>
                                 <div className="flex-1 min-w-0">
-                                    {isEditing && user?.role === 'Administrativo' ? <input type="text" value={editName} onChange={e => setEditName(e.target.value)} onBlur={saveName} onKeyDown={e => e.key === 'Enter' && saveName()} className="w-full px-2 py-1 border-2 border-purple-300 rounded-lg font-bold text-gray-800 text-sm" autoFocus/>
-                                    : <p className="font-bold text-gray-800 text-sm truncate cursor-pointer" onClick={() => user?.role === 'Administrativo' && setIsEditing(true)}>{item.name}</p>}
-                                    <p className="text-[10px] text-gray-400 font-semibold uppercase">{item.cat}</p>
+                                    <p className="font-bold text-gray-800 truncate">{item.name}</p>
+                                    <div className="flex items-center gap-2 mt-1">
+                                        <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${st.bg} ${st.tx}`}>{item.cat}</span>
+                                        <span className={`text-sm font-black ${item.qty > 5 ? 'text-green-600' : item.qty > 0 ? 'text-orange-500' : 'text-red-500'}`}>Stock: {item.qty}</span>
+                                    </div>
                                 </div>
-                                <div className="text-right"><span className={`text-2xl font-black ${st.tx}`}>{item.qty}</span><p className="text-[10px] text-gray-400 font-bold">unid.</p></div>
-                                {user?.role === 'Administrativo' && <button onClick={() => setOpen(!open)} className={`p-2.5 rounded-xl ${open ? 'bg-purple-500 text-white' : 'bg-gray-100 text-gray-400'}`}><I.Edit size={18}/></button>}
+                                {user?.role === 'Administrativo' && <button onClick={() => setOpen(!open)} className={`p-2 rounded-xl ${open ? 'bg-purple-500 text-white' : 'bg-purple-100 text-purple-500'}`}><I.Edit size={18}/></button>}
                             </div>
                             {open && user?.role === 'Administrativo' && (
-                                <div className="mt-4 pt-4 border-t-2 border-dashed border-gray-200 space-y-3 animate-fade">
-                                    <div className="flex bg-gray-100 p-1.5 rounded-xl">
-                                        <button onClick={() => setType('in')} className={`flex-1 py-2.5 rounded-lg text-sm font-bold flex items-center justify-center gap-1 ${type === 'in' ? 'bg-green-500 text-white shadow-lg' : 'text-gray-500'}`}><I.TrendingUp size={16}/> Ingreso</button>
-                                        <button onClick={() => setType('out')} className={`flex-1 py-2.5 rounded-lg text-sm font-bold flex items-center justify-center gap-1 ${type === 'out' ? 'bg-red-500 text-white shadow-lg' : 'text-gray-500'}`}><I.TrendingDown size={16}/> Egreso</button>
+                                <div className="mt-4 pt-4 border-t-2 border-dashed border-gray-200 space-y-3">
+                                    <div className="flex gap-2"><input type="text" value={editName} onChange={e => setEditName(e.target.value)} className="flex-1 input-field text-sm font-semibold"/><button onClick={() => updateItemName(item.id, editName)} className="px-4 btn-cyan text-white rounded-xl text-sm font-bold">Renombrar</button></div>
+                                    <div className="flex gap-2">
+                                        <button onClick={() => setType('in')} className={`flex-1 py-2.5 rounded-xl font-bold text-sm ${type === 'in' ? 'bg-green-500 text-white' : 'bg-gray-100 text-gray-500'}`}>+ Ingreso</button>
+                                        <button onClick={() => setType('out')} className={`flex-1 py-2.5 rounded-xl font-bold text-sm ${type === 'out' ? 'bg-red-500 text-white' : 'bg-gray-100 text-gray-500'}`}>- Egreso</button>
                                     </div>
-                                    <input type="number" placeholder="Cantidad" value={amt} onChange={e => setAmt(e.target.value)} className={`w-full px-4 py-3 rounded-xl text-sm font-bold border-2 ${type === 'in' ? 'bg-green-50 border-green-300 text-green-700' : 'bg-red-50 border-red-300 text-red-600'}`}/>
-                                    <select value={reason} onChange={e => setReason(e.target.value)} className="w-full px-4 py-3 bg-gray-50 rounded-xl text-sm font-semibold border-2 border-gray-200"><option value="">Motivo...</option>{MOTIVOS[type].map(m => <option key={m}>{m}</option>)}</select>
-                                    <input type="text" placeholder="Observación" value={note} onChange={e => setNote(e.target.value)} className="w-full px-4 py-3 bg-gray-50 rounded-xl text-sm border-2 border-gray-200"/>
+                                    <div className="flex gap-2">
+                                        <input type="number" placeholder="Cant." value={amt} onChange={e => setAmt(e.target.value)} className="w-20 input-field text-center font-bold"/>
+                                        <select value={reason} onChange={e => setReason(e.target.value)} className="flex-1 input-field font-semibold"><option value="">Motivo...</option>{MOTIVOS[type].map(m => <option key={m}>{m}</option>)}</select>
+                                    </div>
+                                    <input type="text" placeholder="Nota (opcional)" value={note} onChange={e => setNote(e.target.value)} className="w-full input-field text-sm font-semibold"/>
                                     <div className="flex gap-2">
                                         <button onClick={submit} disabled={syncing} className={`flex-1 py-3 rounded-xl text-sm font-bold text-white ${type === 'in' ? 'bg-green-500' : 'bg-red-500'} disabled:opacity-50`}>{syncing ? 'Guardando...' : (type === 'in' ? '+ Ingreso' : '- Egreso')}</button>
                                         <button onClick={() => deleteItem(item.id)} className="px-4 py-3 bg-red-100 text-red-500 rounded-xl"><I.Trash size={18}/></button>
@@ -630,13 +666,9 @@
                 };
 
                 return (
-                    <div className="min-h-screen pb-28">
+                    <div className="min-h-screen pb-28 container-app">
                         <div className="sticky top-0 z-40 bg-white/95 backdrop-blur-sm border-b-2 border-purple-100 p-4">
-                            <div className="flex items-center gap-3 mb-3">
-                                <BackBtn onClick={() => setView('dashboard')}/>
-                                <div className="flex-1"><h1 className="text-xl font-extrabold text-gray-800">📦 Stock</h1><p className="text-xs text-gray-500 font-semibold">{filtInv.length} materiales</p></div>
-                                <button onClick={refresh} disabled={syncing} className="p-2 bg-cyan-100 rounded-xl"><I.Refresh size={18} className={`text-cyan-600 ${syncing ? 'animate-spin' : ''}`}/></button>
-                            </div>
+                            <div className="flex items-center gap-3 mb-3"><BackBtn onClick={() => setView('dashboard')}/><div className="flex-1"><h1 className="text-xl font-extrabold text-gray-800">📦 Stock</h1><p className="text-xs text-gray-500 font-semibold">{filtInv.length} materiales</p></div><button onClick={refresh} disabled={syncing} className="p-2 bg-cyan-100 rounded-xl"><I.Refresh size={18} className={`text-cyan-600 ${syncing ? 'animate-spin' : ''}`}/></button></div>
                             <div className="relative"><I.Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-cyan-400"/><input type="text" placeholder="Buscar..." value={search} onChange={e => setSearch(e.target.value)} className="w-full pl-11 pr-4 py-3 bg-cyan-50 rounded-2xl text-sm font-semibold border-2 border-cyan-200"/></div>
                         </div>
                         <div className="p-4 space-y-3">
@@ -645,10 +677,7 @@
                                     <h3 className="font-bold text-gray-800 mb-3 flex items-center gap-2"><I.Plus size={18}/> Agregar material</h3>
                                     <div className="space-y-2">
                                         <input type="text" placeholder="Nombre" value={newItem.name} onChange={e => setNewItem({ ...newItem, name: e.target.value })} className="w-full input-field font-semibold"/>
-                                        <div className="flex gap-2">
-                                            <input type="number" placeholder="Cant." value={newItem.qty} onChange={e => setNewItem({ ...newItem, qty: e.target.value })} className="w-24 input-field font-semibold"/>
-                                            <select value={newItem.cat} onChange={e => setNewItem({ ...newItem, cat: e.target.value })} className="flex-1 input-field font-semibold">{CATEGORIAS.map(c => <option key={c}>{c}</option>)}</select>
-                                        </div>
+                                        <div className="flex gap-2"><input type="number" placeholder="Cant." value={newItem.qty} onChange={e => setNewItem({ ...newItem, qty: e.target.value })} className="w-24 input-field font-semibold"/><select value={newItem.cat} onChange={e => setNewItem({ ...newItem, cat: e.target.value })} className="flex-1 input-field font-semibold">{CATEGORIAS.map(c => <option key={c}>{c}</option>)}</select></div>
                                         <button onClick={addNewItem} disabled={syncing} className="w-full py-3 btn-green text-white rounded-xl font-bold disabled:opacity-50">{syncing ? 'Agregando...' : '+ Agregar'}</button>
                                     </div>
                                 </div>
@@ -662,34 +691,31 @@
 
             // ORDER
             if (view === 'order' && user?.role === 'Docente') return (
-                <div className="min-h-screen pb-32">
+                <div className="min-h-screen pb-32 container-app">
                     <div className="sticky top-0 z-40 bg-white/95 backdrop-blur-sm border-b-2 border-green-100 p-4"><div className="flex items-center gap-3"><BackBtn onClick={() => setView('dashboard')}/><h1 className="text-xl font-extrabold text-gray-800">📝 Nuevo pedido</h1></div></div>
                     <div className="p-4 space-y-4">
                         <div className="card p-4 card-green space-y-3">
                             <div className="flex items-center justify-between"><label className="text-sm text-gray-600 font-bold">🎓 Curso</label><button onClick={() => setView('courses')} className="text-green-500"><I.Settings size={18}/></button></div>
                             <select value={meta.career} onChange={e => setMeta({ ...meta, career: e.target.value })} className="w-full input-field font-semibold"><option value="">Seleccionar...</option>{crs.map(c => <option key={c}>{c}</option>)}</select>
                             <div className="grid grid-cols-2 gap-2">
-                                <div><label className="text-xs text-gray-500 font-bold">📅 Fecha</label><input type="date" value={meta.date} onChange={e => setMeta({ ...meta, date: e.target.value })} className="w-full input-field input-compact mt-1 font-semibold"/></div>
-                                <div><label className="text-xs text-gray-500 font-bold">🕐 Hora</label><input type="time" value={meta.time} onChange={e => setMeta({ ...meta, time: e.target.value })} className="w-full input-field input-compact mt-1 font-semibold"/></div>
+                                <div><label className="text-xs text-gray-500 font-bold">📅 Fecha</label><input type="date" value={meta.date} onChange={e => setMeta({ ...meta, date: e.target.value })} className="w-full input-field mt-1 font-semibold text-sm"/></div>
+                                <div><label className="text-xs text-gray-500 font-bold">🕐 Hora</label><input type="time" value={meta.time} onChange={e => setMeta({ ...meta, time: e.target.value })} className="w-full input-field mt-1 font-semibold text-sm"/></div>
                             </div>
                         </div>
                         <div>
                             <h3 className="text-sm text-gray-600 font-bold mb-2">🛒 Mi pedido <span className="badge-cyan px-3 py-1 rounded-full">{cart.reduce((s, i) => s + i.q, 0)} items</span></h3>
                             {cart.length === 0 ? <div className="card p-8 text-center border-3 border-dashed border-gray-200 bg-gray-50"><I.ShoppingBag size={40} className="mx-auto text-gray-300 mb-2"/><p className="text-gray-400 font-semibold">Carrito vacío</p></div>
-                            : <div className="space-y-2">{cart.map(i => {
-                                const maxQty = inv.find(x => x.id === i.id)?.qty || 0;
-                                return (
-                                    <div key={i.id} className="card p-3 flex items-center justify-between border-2 border-cyan-200">
-                                        <span className="text-sm font-bold text-gray-700 flex-1">{i.name}</span>
-                                        <div className="flex items-center gap-2">
-                                            <button onClick={() => setCartQty(i.id, i.q - 1)} className="w-8 h-8 rounded-lg bg-gray-100 text-gray-600 flex items-center justify-center font-bold">-</button>
-                                            <input type="number" value={i.q} onChange={e => setCartQty(i.id, parseInt(e.target.value) || 0)} min="0" max={maxQty + i.q} className="w-14 text-center py-1 px-2 border-2 border-cyan-300 rounded-lg font-black text-cyan-600"/>
-                                            <button onClick={() => setCartQty(i.id, i.q + 1)} className="w-8 h-8 rounded-lg bg-cyan-500 text-white flex items-center justify-center font-bold">+</button>
-                                            <button onClick={() => remCart(i.id)} className="p-2 bg-red-100 text-red-500 rounded-lg ml-1"><I.Trash size={16}/></button>
-                                        </div>
+                            : <div className="space-y-2">{cart.map(i => (
+                                <div key={i.id} className="card p-3 flex items-center justify-between border-2 border-cyan-200">
+                                    <span className="text-sm font-bold text-gray-700 flex-1 truncate mr-2">{i.name}</span>
+                                    <div className="flex items-center gap-1">
+                                        <button onClick={() => setCartQty(i.id, i.q - 1)} className="w-8 h-8 rounded-lg bg-gray-100 text-gray-600 flex items-center justify-center font-bold">-</button>
+                                        <span className="w-8 text-center font-black text-cyan-600">{i.q}</span>
+                                        <button onClick={() => setCartQty(i.id, i.q + 1)} className="w-8 h-8 rounded-lg bg-cyan-500 text-white flex items-center justify-center font-bold">+</button>
+                                        <button onClick={() => remCart(i.id)} className="p-2 bg-red-100 text-red-500 rounded-lg ml-1"><I.Trash size={16}/></button>
                                     </div>
-                                );
-                            })}</div>}
+                                </div>
+                            ))}</div>}
                         </div>
                         <div>
                             <h3 className="text-sm text-gray-600 font-bold mb-2">📋 Disponible</h3>
@@ -697,11 +723,10 @@
                                 {inv.filter(i => i.qty > 0).map(i => {
                                     const st = catStyle(i.cat);
                                     return (
-                                        <div key={i.id} className={`card p-3 flex items-center gap-3 border-2 ${st.border}`}>
-                                            <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${st.bg} ${st.tx}`}><I.Package size={18}/></div>
-                                            <div className="flex-1"><p className="text-sm font-bold text-gray-700">{i.name}</p><p className="text-xs text-green-600 font-bold">Stock: {i.qty}</p></div>
-                                            <input type="number" min="1" max={i.qty} defaultValue="1" className="w-14 text-center py-2 border-2 border-gray-200 rounded-lg font-bold text-gray-700" id={`qty-${i.id}`}/>
-                                            <button onClick={() => { const input = document.getElementById(`qty-${i.id}`); const val = parseInt(input?.value) || 1; addCart(i, val); if(input) input.value = "1"; }} className="px-3 py-2 rounded-xl bg-cyan-500 text-white font-bold text-sm shadow-lg">+ Agregar</button>
+                                        <div key={i.id} className={`card p-3 flex items-center gap-2 border-2 ${st.border}`}>
+                                            <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${st.bg} ${st.tx} flex-shrink-0`}><I.Package size={18}/></div>
+                                            <div className="flex-1 min-w-0"><p className="text-sm font-bold text-gray-700 truncate">{i.name}</p><p className="text-xs text-green-600 font-bold">Stock: {i.qty}</p></div>
+                                            <button onClick={() => addCart(i, 1)} className="px-3 py-2 rounded-xl bg-cyan-500 text-white font-bold text-xs shadow-lg flex-shrink-0">+ Agregar</button>
                                         </div>
                                     );
                                 })}
@@ -715,7 +740,7 @@
 
             // COURSES
             if (view === 'courses') return (
-                <div className="min-h-screen pb-28">
+                <div className="min-h-screen pb-28 container-app">
                     <div className="sticky top-0 z-40 bg-white/95 backdrop-blur-sm border-b-2 border-purple-100 p-4"><div className="flex items-center gap-3"><BackBtn onClick={() => setView('order')}/><h1 className="text-xl font-extrabold text-gray-800">🎓 Cursos</h1></div></div>
                     <div className="p-4">
                         <div className="flex gap-2 mb-4"><input type="text" placeholder="Nuevo curso..." value={newCrs} onChange={e => setNewCrs(e.target.value)} className="flex-1 input-field font-semibold"/><button onClick={() => { addCourse(newCrs); setNewCrs(''); }} disabled={syncing} className="px-5 btn-gradient text-white rounded-2xl"><I.Plus size={22}/></button></div>
@@ -737,14 +762,12 @@
                         <div className={`card p-5 relative overflow-hidden border-2 ${stBorder[o.status]}`}>
                             <div className={`absolute left-0 top-0 bottom-0 w-2 ${stCol[o.status]}`}/>
                             <div className="flex justify-between items-start mb-3"><div><p className="text-xs text-gray-400 font-semibold">👨‍🏫 Docente</p><p className="font-bold text-gray-800 text-lg">{o.teacher}</p></div><span className={`px-3 py-1.5 rounded-full text-[10px] font-bold text-white ${stCol[o.status]}`}>{o.status.toUpperCase()}</span></div>
-                            <div className="flex flex-wrap gap-2 text-xs text-gray-500 font-semibold mb-3"><span className="truncate">🎓 {o.career}</span><span className="whitespace-nowrap">📅 {o.date}</span><span className="whitespace-nowrap">🕐 {o.time}</span></div>
+                            <div className="flex flex-wrap gap-2 text-xs text-gray-500 font-semibold mb-3"><span className="truncate">🎓 {o.career}</span><span>📅 {o.date}</span><span>🕐 {o.time}</span></div>
                             <div className="bg-gray-50 rounded-2xl p-4 mb-3 border-2 border-gray-200">
-                                <p className="text-xs text-gray-400 font-bold mb-2">📦 MATERIAL ({items.length} items)</p>
-                                {items.length === 0 ? (
-                                    <p className="text-sm text-gray-400 italic">Sin items registrados</p>
-                                ) : items.map(i => (
+                                <p className="text-xs text-gray-400 font-bold mb-2">📦 MATERIAL ({items.length})</p>
+                                {items.length === 0 ? <p className="text-sm text-gray-400 italic">Sin items</p> : items.map(i => (
                                     <div key={i.id} className="flex justify-between items-center py-2 border-b border-gray-100 last:border-0">
-                                        <span className="text-sm text-gray-700 font-semibold">{i.name}</span>
+                                        <span className="text-sm text-gray-700 font-semibold truncate flex-1 mr-2">{i.name}</span>
                                         {user?.role === 'Administrativo' && o.status === 'Solicitado' ? (
                                             <div className="flex items-center gap-1 bg-white rounded-xl px-2 py-1 border-2 border-gray-200">
                                                 <button onClick={() => setItems(items.map(x => x.id === i.id ? { ...x, q: Math.max(0, x.q - 1) } : x))} className="w-7 h-7 flex items-center justify-center text-red-500"><I.Minus size={14}/></button>
@@ -769,8 +792,8 @@
                 const filteredOrders = user?.role === 'Docente' ? ord.filter(o => o.teacher === user.fullName) : ord;
 
                 return (
-                    <div className="min-h-screen pb-28">
-                        <div className="sticky top-0 z-40 bg-white/95 backdrop-blur-sm border-b-2 border-cyan-100 p-4"><div className="flex items-center gap-3"><BackBtn onClick={() => setView('dashboard')}/><h1 className="text-xl font-extrabold text-gray-800 flex-1">📖 Cuaderno Digital</h1><button onClick={refresh} disabled={syncing} className="p-2 bg-cyan-100 rounded-xl"><I.Refresh size={18} className={`text-cyan-600 ${syncing ? 'animate-spin' : ''}`}/></button></div></div>
+                    <div className="min-h-screen pb-28 container-app">
+                        <div className="sticky top-0 z-40 bg-white/95 backdrop-blur-sm border-b-2 border-cyan-100 p-4"><div className="flex items-center gap-3"><BackBtn onClick={() => setView('dashboard')}/><h1 className="text-xl font-extrabold text-gray-800 flex-1">📖 Cuaderno</h1><button onClick={refresh} disabled={syncing} className="p-2 bg-cyan-100 rounded-xl"><I.Refresh size={18} className={`text-cyan-600 ${syncing ? 'animate-spin' : ''}`}/></button></div></div>
                         <div className="p-4 space-y-4">{filteredOrders.length === 0 ? <div className="text-center py-16"><I.Book size={48} className="mx-auto text-gray-200 mb-3"/><p className="text-gray-400 font-bold">Sin novedades</p></div> : filteredOrders.map(o => <OrdCard key={o.id} o={o}/>)}</div>
                         <Nav current="handover" go={setView} role={user?.role}/>
                     </div>
@@ -779,14 +802,14 @@
 
             // HISTORY
             if (view === 'history') return (
-                <div className="min-h-screen pb-28">
+                <div className="min-h-screen pb-28 container-app">
                     <div className="sticky top-0 z-40 bg-white/95 backdrop-blur-sm border-b-2 border-purple-100 p-4"><div className="flex items-center gap-3"><BackBtn onClick={() => setView('dashboard')}/><div className="flex-1"><h1 className="text-xl font-extrabold text-gray-800">📊 Historial</h1><p className="text-xs text-gray-500">{his.length} mov.</p></div><button onClick={refresh} disabled={syncing} className="p-2 bg-purple-100 rounded-xl"><I.Refresh size={18} className={`text-purple-600 ${syncing ? 'animate-spin' : ''}`}/></button></div></div>
                     <div className="p-4 space-y-3">{his.length === 0 ? <div className="text-center py-16"><I.History size={48} className="mx-auto text-gray-200 mb-3"/><p className="text-gray-400 font-bold">Sin movimientos</p></div> : his.map(h => (
                         <div key={h.id} className={`card p-4 border-2 ${h.type === 'in' ? 'border-green-300' : 'border-red-300'}`}>
                             <div className="flex items-start gap-3">
                                 <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${h.type === 'in' ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-500'}`}>{h.type === 'in' ? <I.TrendingUp size={20}/> : <I.TrendingDown size={20}/>}</div>
-                                <div className="flex-1">
-                                    <p className="font-bold text-gray-800">{h.name}</p>
+                                <div className="flex-1 min-w-0">
+                                    <p className="font-bold text-gray-800 truncate">{h.name}</p>
                                     <p className="text-xs text-gray-400">{new Date(h.at).toLocaleString('es-AR')}</p>
                                     <div className="flex gap-2 mt-2 flex-wrap"><span className={`px-3 py-1 rounded-full text-xs font-bold ${h.type === 'in' ? 'badge-green' : 'badge-red'}`}>{h.type === 'in' ? '+' : '-'}{h.amt}</span><span className="badge-purple px-3 py-1 rounded-full text-xs font-bold">{h.reason}</span></div>
                                     {h.note && <p className="text-xs text-gray-500 mt-2 italic">"{h.note}"</p>}
@@ -802,7 +825,7 @@
             if (view === 'incidents') {
                 const incs = ord.filter(o => o.obs);
                 return (
-                    <div className="min-h-screen pb-28">
+                    <div className="min-h-screen pb-28 container-app">
                         <div className="sticky top-0 z-40 bg-white/95 backdrop-blur-sm border-b-2 border-orange-100 p-4"><div className="flex items-center gap-3"><BackBtn onClick={() => setView('dashboard')}/><h1 className="text-xl font-extrabold text-gray-800">🔧 Bitácora</h1></div></div>
                         <div className="p-4 space-y-4">{incs.length === 0 ? <div className="text-center py-16"><I.CheckCircle size={56} className="mx-auto text-green-400 mb-3"/><p className="text-gray-800 font-bold text-lg">¡Todo en orden!</p></div> : incs.map(o => {
                             const [res, setRes] = useState('');
@@ -825,18 +848,18 @@
 
             // PROFILE
             if (view === 'profile') return (
-                <div className="min-h-screen pb-28">
+                <div className="min-h-screen pb-28 container-app">
                     <div className="sticky top-0 z-40 bg-white/95 backdrop-blur-sm border-b-2 border-orange-100 p-4"><div className="flex items-center gap-3"><BackBtn onClick={() => setView('dashboard')}/><h1 className="text-xl font-extrabold text-gray-800">👤 Mi perfil</h1></div></div>
                     <div className="p-4 space-y-4">
                         <div className={`card p-6 text-center ${user?.role === 'Administrativo' ? 'card-purple' : 'card-cyan'}`}>
                             <div className="w-24 h-24 mx-auto mb-4 rounded-full bg-gradient-to-br from-cyan-400 via-purple-500 to-pink-500 flex items-center justify-center text-white text-3xl font-black shadow-xl">{user?.name?.[0]}{user?.surname?.[0]}</div>
                             <h2 className="text-2xl font-extrabold text-gray-800">{user?.fullName}</h2>
-                            <span className={`inline-block mt-2 px-5 py-2 rounded-full font-bold ${user?.role === 'Administrativo' ? 'badge-purple text-sm' : 'badge-cyan text-sm'}`}>{user?.role === 'Administrativo' ? '👑 ADMINISTRACIÓN' : '👨‍🏫 DOCENTE'}</span>
-                            <div className="mt-5 bg-gradient-to-br from-cyan-50 to-purple-50 rounded-2xl p-4 text-left border-2 border-purple-100"><p className="text-xs text-gray-400 font-bold uppercase">📧 Correo</p><p className="text-base font-bold text-gray-700 mt-1">{user?.email}</p></div>
+                            <span className={`inline-block mt-2 px-5 py-2 rounded-full font-bold ${user?.role === 'Administrativo' ? 'badge-purple text-sm' : 'badge-cyan text-sm'}`}>{user?.role === 'Administrativo' ? '👑 ADMIN' : '👨‍🏫 DOCENTE'}</span>
+                            <div className="mt-5 bg-gradient-to-br from-cyan-50 to-purple-50 rounded-2xl p-4 text-left border-2 border-purple-100"><p className="text-xs text-gray-400 font-bold">📧 Correo</p><p className="text-base font-bold text-gray-700 mt-1">{user?.email}</p></div>
                         </div>
                         {user?.sig && <div className="card p-5 card-green"><h3 className="text-base font-bold text-gray-800 mb-3">✍️ Mi firma</h3><div className="bg-gradient-to-br from-green-50 to-cyan-50 rounded-2xl p-5 border-2 border-green-200"><img src={user.sig} alt="Firma" className="h-14 mx-auto"/></div></div>}
                         <button onClick={logout} className="w-full py-4 bg-red-100 text-red-600 rounded-2xl font-bold flex items-center justify-center gap-2 border-2 border-red-200"><I.LogOut size={20}/> Cerrar sesión</button>
-                        <p className="text-center text-xs text-gray-400 pt-4">Mise en App v5.0<br/><span className="font-bold text-gray-500">Rainero Culinaria 4.0</span><br/><span className="text-green-500">● Conectado a Supabase</span></p>
+                        <p className="text-center text-xs text-gray-400 pt-4">Mise en App v6.0<br/><span className="font-bold text-gray-500">Rainero Culinaria 4.0</span><br/><span className="text-green-500">● Conectado</span></p>
                     </div>
                     <Nav current="profile" go={setView} role={user?.role}/>
                 </div>
@@ -846,6 +869,25 @@
         };
 
         ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+    </script>
+    
+    <!-- Service Worker Registration -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js')
+                    .then(reg => console.log('SW registrado:', reg.scope))
+                    .catch(err => console.log('SW error:', err));
+            });
+        }
+        
+        // Install prompt
+        let deferredPrompt;
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            console.log('PWA install disponible');
+        });
     </script>
 </body>
 </html>
