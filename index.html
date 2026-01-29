@@ -223,16 +223,31 @@
                                 const { data: items, error } = await supabase.from('order_items').select('*').eq('order_id', o.id);
                                 if (error) console.error('Error loading items for order', o.id, error);
                                 return { 
-                                    ...o, 
-                                    items: items?.map(i => ({ id: i.item_id, name: i.item_name, q: i.qty })) || [], 
-                                    teacher: o.teacher_name, 
+                                    id: o.id,
+                                    status: o.status || 'Solicitado',
+                                    date: o.order_date || o.date || '',
+                                    time: o.order_time || o.time || '',
+                                    career: o.career || '',
+                                    items: items?.map(i => ({ id: i.inventory_id || i.item_id, name: i.item_name, q: i.quantity || i.qty })) || [], 
+                                    teacher: o.teacher_name || 'Sin nombre', 
                                     obs: o.observations || '', 
                                     res: o.resolution || '', 
-                                    sig: o.signature 
+                                    sig: o.signature || null
                                 };
                             } catch (e) {
                                 console.error('Error processing order', o.id, e);
-                                return { ...o, items: [], teacher: o.teacher_name, obs: o.observations || '', res: o.resolution || '', sig: o.signature };
+                                return { 
+                                    id: o.id,
+                                    status: o.status || 'Solicitado',
+                                    date: o.order_date || o.date || '',
+                                    time: o.order_time || o.time || '',
+                                    career: o.career || '',
+                                    items: [], 
+                                    teacher: o.teacher_name || 'Sin nombre', 
+                                    obs: o.observations || '', 
+                                    res: o.resolution || '', 
+                                    sig: o.signature || null
+                                };
                             }
                         }));
                         setOrd(ordersWithItems);
@@ -312,8 +327,8 @@
                         teacher_name: user.fullName, 
                         teacher_email: user.email, 
                         career: meta.career, 
-                        date: meta.date, 
-                        time: meta.time, 
+                        order_date: meta.date, 
+                        order_time: meta.time, 
                         signature: user.sig, 
                         status: 'Solicitado' 
                     }]).select().single();
@@ -328,9 +343,9 @@
                     // 2. Insertar items del pedido
                     const itemsToInsert = cart.map(i => ({ 
                         order_id: order.id, 
-                        item_id: i.id, 
+                        inventory_id: i.id, 
                         item_name: i.name, 
-                        qty: i.q 
+                        quantity: i.q 
                     }));
                     
                     const { error: itemsError } = await supabase.from('order_items').insert(itemsToInsert);
@@ -380,7 +395,7 @@
                             }
                         }
                         if (newItem) {
-                            await supabase.from('order_items').update({ qty: newItem.q }).eq('order_id', orderId).eq('item_id', old.id);
+                            await supabase.from('order_items').update({ quantity: newItem.q }).eq('order_id', orderId).eq('inventory_id', old.id);
                         }
                     }
                     
@@ -442,7 +457,7 @@
                 setSyncing(true);
                 try {
                     await supabase.from('inventory').update({ qty: nq }).eq('id', itemId);
-                    await supabase.from('stock_history').insert([{ item_id: itemId, item_name: item.name, type, amount: a, reason, note, before_qty: item.qty, after_qty: nq, user_name: user.fullName }]);
+                    await supabase.from('stock_history').insert([{ inventory_id: itemId, item_name: item.name, type, amount: a, reason, note, before_qty: item.qty, after_qty: nq, user_name: user.fullName }]);
                     await loadData(); return true;
                 } catch (e) { alert('Error: ' + e.message); }
                 setSyncing(false);
@@ -456,7 +471,7 @@
                 try {
                     const { data, error } = await supabase.from('inventory').insert([{ name: newItem.name.trim(), qty, cat: newItem.cat }]).select().single();
                     if (error) throw error;
-                    if (qty > 0) await supabase.from('stock_history').insert([{ item_id: data.id, item_name: data.name, type: 'in', amount: qty, reason: 'Inventario inicial', note: 'Nuevo material', before_qty: 0, after_qty: qty, user_name: user.fullName }]);
+                    if (qty > 0) await supabase.from('stock_history').insert([{ inventory_id: data.id, item_name: data.name, type: 'in', amount: qty, reason: 'Inventario inicial', note: 'Nuevo material', before_qty: 0, after_qty: qty, user_name: user.fullName }]);
                     setNewItem({ name: '', qty: '', cat: 'Utensilios' }); await loadData(); alert('✅ Material agregado');
                 } catch (e) { alert('Error: ' + e.message); }
                 setSyncing(false);
@@ -743,7 +758,7 @@
                             {o.status === 'En Curso' && user?.role === 'Docente' && <textarea placeholder="⚠️ Observaciones..." value={obs} onChange={e => setObs(e.target.value)} className="w-full px-4 py-3 bg-orange-50 rounded-2xl text-sm border-2 border-orange-200 mb-3 font-semibold" rows={2}/>}
                             {o.obs && <div className="bg-orange-50 rounded-2xl p-4 mb-3 border-2 border-orange-200"><p className="text-xs font-bold text-orange-600"><I.AlertTriangle size={14} className="inline mr-1"/> OBSERVACIONES</p><p className="text-sm text-gray-700 italic mt-1">"{o.obs}"</p></div>}
                             {o.res && <div className="bg-green-50 rounded-2xl p-4 mb-3 border-2 border-green-200"><p className="text-xs font-bold text-green-600"><I.CheckCircle size={14} className="inline mr-1"/> RESOLUCIÓN</p><p className="text-sm text-gray-700 mt-1">{o.res}</p></div>}
-                            <div className="flex justify-between items-center pt-3 border-t-2 border-dashed border-gray-200"><span className="text-[10px] text-gray-400 font-bold">ID: #{o.id?.slice(0,8)}</span>{o.sig && <img src={o.sig} className="h-6 opacity-50" alt=""/>}</div>
+                            <div className="flex justify-between items-center pt-3 border-t-2 border-dashed border-gray-200"><span className="text-[10px] text-gray-400 font-bold">ID: #{String(o.id || '').slice(0,8)}</span>{o.sig && <img src={o.sig} className="h-6 opacity-50" alt=""/>}</div>
                             {user?.role === 'Administrativo' && o.status === 'Solicitado' && <button onClick={() => confirmDel(o.id, items)} disabled={syncing} className="w-full mt-4 py-3 btn-cyan text-white rounded-2xl font-bold disabled:opacity-50">{syncing ? 'Procesando...' : '✓ Confirmar entrega'}</button>}
                             {user?.role === 'Docente' && o.status === 'En Curso' && <button onClick={() => returnMat(o.id, obs)} disabled={syncing} className="w-full mt-4 py-3 btn-orange text-white rounded-2xl font-bold disabled:opacity-50">{syncing ? 'Procesando...' : '↩ Devolver material'}</button>}
                             {user?.role === 'Administrativo' && o.status === 'Devolución Pendiente' && <button onClick={() => finRet(o.id)} disabled={syncing} className="w-full mt-4 py-3 btn-green text-white rounded-2xl font-bold disabled:opacity-50">{syncing ? 'Procesando...' : '✓ Confirmar reingreso'}</button>}
