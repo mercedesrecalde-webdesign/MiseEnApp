@@ -46,6 +46,10 @@
 
         .input-field { background: #f5f5f5; border: 2px solid #e0e0e0; border-radius: 16px; padding: 14px 16px; font-size: 14px; transition: all 0.3s; }
         .input-field:focus { outline: none; border-color: #00bcd4; background: white; box-shadow: 0 0 0 4px rgba(0,188,212,0.15); }
+        .input-compact { padding: 10px 12px; font-size: 13px; border-radius: 12px; }
+        @media (max-width: 380px) {
+            .input-compact { padding: 8px 10px; font-size: 12px; }
+        }
 
         .badge-cyan { background: #e0f7fa; color: #00838f; }
         .badge-purple { background: #f3e5f5; color: #7b1fa2; }
@@ -215,8 +219,21 @@
                     
                     if (ordData) {
                         const ordersWithItems = await Promise.all(ordData.map(async (o) => {
-                            const { data: items } = await supabase.from('order_items').select('*').eq('order_id', o.id);
-                            return { ...o, items: items?.map(i => ({ id: i.item_id, name: i.item_name, q: i.qty })) || [], teacher: o.teacher_name, obs: o.observations || '', res: o.resolution || '', sig: o.signature };
+                            try {
+                                const { data: items, error } = await supabase.from('order_items').select('*').eq('order_id', o.id);
+                                if (error) console.error('Error loading items for order', o.id, error);
+                                return { 
+                                    ...o, 
+                                    items: items?.map(i => ({ id: i.item_id, name: i.item_name, q: i.qty })) || [], 
+                                    teacher: o.teacher_name, 
+                                    obs: o.observations || '', 
+                                    res: o.resolution || '', 
+                                    sig: o.signature 
+                                };
+                            } catch (e) {
+                                console.error('Error processing order', o.id, e);
+                                return { ...o, items: [], teacher: o.teacher_name, obs: o.observations || '', res: o.resolution || '', sig: o.signature };
+                            }
                         }));
                         setOrd(ordersWithItems);
                     }
@@ -289,18 +306,59 @@
                 
                 setSyncing(true);
                 try {
-                    const { data: order, error } = await supabase.from('orders').insert([{ teacher_id: user.id, teacher_name: user.fullName, teacher_email: user.email, career: meta.career, date: meta.date, time: meta.time, signature: user.sig, status: 'Solicitado' }]).select().single();
-                    if (error) throw error;
+                    // 1. Crear el pedido
+                    const { data: order, error: orderError } = await supabase.from('orders').insert([{ 
+                        teacher_id: user.id, 
+                        teacher_name: user.fullName, 
+                        teacher_email: user.email, 
+                        career: meta.career, 
+                        date: meta.date, 
+                        time: meta.time, 
+                        signature: user.sig, 
+                        status: 'Solicitado' 
+                    }]).select().single();
                     
-                    await supabase.from('order_items').insert(cart.map(i => ({ order_id: order.id, item_id: i.id, item_name: i.name, qty: i.q })));
-                    
-                    for (const item of cart) {
-                        const invItem = inv.find(i => i.id === item.id);
-                        if (invItem) await supabase.from('inventory').update({ qty: invItem.qty - item.q }).eq('id', item.id);
+                    if (orderError) {
+                        console.error('Error creating order:', orderError);
+                        throw orderError;
                     }
                     
-                    setCart([]); await loadData(); alert('✅ ¡Pedido enviado!'); setView('dashboard');
-                } catch (e) { alert('Error: ' + e.message); }
+                    console.log('Order created:', order.id);
+                    
+                    // 2. Insertar items del pedido
+                    const itemsToInsert = cart.map(i => ({ 
+                        order_id: order.id, 
+                        item_id: i.id, 
+                        item_name: i.name, 
+                        qty: i.q 
+                    }));
+                    
+                    const { error: itemsError } = await supabase.from('order_items').insert(itemsToInsert);
+                    
+                    if (itemsError) {
+                        console.error('Error inserting items:', itemsError);
+                        throw itemsError;
+                    }
+                    
+                    console.log('Items inserted:', itemsToInsert.length);
+                    
+                    // 3. Actualizar stock (descontar)
+                    for (const item of cart) {
+                        const invItem = inv.find(i => i.id === item.id);
+                        if (invItem) {
+                            const newQty = Math.max(0, invItem.qty - item.q);
+                            await supabase.from('inventory').update({ qty: newQty }).eq('id', item.id);
+                        }
+                    }
+                    
+                    setCart([]); 
+                    await loadData(); 
+                    alert('✅ ¡Pedido enviado correctamente!'); 
+                    setView('handover');
+                } catch (e) { 
+                    console.error('Order error:', e);
+                    alert('Error al enviar pedido: ' + (e.message || 'Intenta de nuevo')); 
+                }
                 setSyncing(false);
             };
 
@@ -308,31 +366,66 @@
                 setSyncing(true);
                 try {
                     const order = ord.find(o => o.id === orderId);
+                    if (!order) throw new Error('Pedido no encontrado');
+                    
+                    // Ajustar cantidades si el admin modificó los items
                     for (const old of order.items) {
                         const newItem = items.find(i => i.id === old.id);
                         if (newItem && newItem.q < old.q) {
+                            // Devolver al stock la diferencia
                             const invItem = inv.find(i => i.id === old.id);
-                            if (invItem) await supabase.from('inventory').update({ qty: invItem.qty + (old.q - newItem.q) }).eq('id', old.id);
+                            if (invItem) {
+                                const returnQty = old.q - newItem.q;
+                                await supabase.from('inventory').update({ qty: invItem.qty + returnQty }).eq('id', old.id);
+                            }
                         }
-                        if (newItem) await supabase.from('order_items').update({ qty: newItem.q }).eq('order_id', orderId).eq('item_id', old.id);
+                        if (newItem) {
+                            await supabase.from('order_items').update({ qty: newItem.q }).eq('order_id', orderId).eq('item_id', old.id);
+                        }
                     }
+                    
                     await supabase.from('orders').update({ status: 'En Curso' }).eq('id', orderId);
                     await loadData();
-                } catch (e) { alert('Error: ' + e.message); }
+                } catch (e) { 
+                    console.error('Confirm delivery error:', e);
+                    alert('Error: ' + (e.message || 'Intenta de nuevo')); 
+                }
                 setSyncing(false);
             };
 
-            const returnMat = async (orderId, obs) => { setSyncing(true); await supabase.from('orders').update({ status: 'Devolución Pendiente', observations: obs }).eq('id', orderId); await loadData(); setSyncing(false); };
+            const returnMat = async (orderId, obs) => { 
+                setSyncing(true); 
+                try {
+                    await supabase.from('orders').update({ status: 'Devolución Pendiente', observations: obs || null }).eq('id', orderId); 
+                    await loadData(); 
+                } catch (e) {
+                    console.error('Return error:', e);
+                    alert('Error: ' + (e.message || 'Intenta de nuevo'));
+                }
+                setSyncing(false); 
+            };
 
             const finRet = async (orderId) => {
                 setSyncing(true);
-                const order = ord.find(o => o.id === orderId);
-                for (const item of order.items) {
-                    const invItem = inv.find(i => i.id === item.id);
-                    if (invItem) await supabase.from('inventory').update({ qty: invItem.qty + item.q }).eq('id', item.id);
+                try {
+                    const order = ord.find(o => o.id === orderId);
+                    if (!order) throw new Error('Pedido no encontrado');
+                    
+                    // Devolver items al inventario
+                    for (const item of order.items) {
+                        const invItem = inv.find(i => i.id === item.id);
+                        if (invItem) {
+                            await supabase.from('inventory').update({ qty: invItem.qty + item.q }).eq('id', item.id);
+                        }
+                    }
+                    
+                    await supabase.from('orders').update({ status: 'Finalizado' }).eq('id', orderId);
+                    await loadData(); 
+                } catch (e) {
+                    console.error('Finalize return error:', e);
+                    alert('Error: ' + (e.message || 'Intenta de nuevo'));
                 }
-                await supabase.from('orders').update({ status: 'Finalizado' }).eq('id', orderId);
-                await loadData(); setSyncing(false);
+                setSyncing(false);
             };
 
             const resolve = async (orderId, res) => { setSyncing(true); await supabase.from('orders').update({ resolution: res }).eq('id', orderId); await loadData(); setSyncing(false); };
@@ -560,9 +653,9 @@
                         <div className="card p-4 card-green space-y-3">
                             <div className="flex items-center justify-between"><label className="text-sm text-gray-600 font-bold">🎓 Curso</label><button onClick={() => setView('courses')} className="text-green-500"><I.Settings size={18}/></button></div>
                             <select value={meta.career} onChange={e => setMeta({ ...meta, career: e.target.value })} className="w-full input-field font-semibold"><option value="">Seleccionar...</option>{crs.map(c => <option key={c}>{c}</option>)}</select>
-                            <div className="grid grid-cols-2 gap-3">
-                                <div><label className="text-xs text-gray-500 font-bold">📅 Fecha</label><input type="date" value={meta.date} onChange={e => setMeta({ ...meta, date: e.target.value })} className="w-full input-field mt-1 font-semibold"/></div>
-                                <div><label className="text-xs text-gray-500 font-bold">🕐 Hora</label><input type="time" value={meta.time} onChange={e => setMeta({ ...meta, time: e.target.value })} className="w-full input-field mt-1 font-semibold"/></div>
+                            <div className="grid grid-cols-2 gap-2">
+                                <div><label className="text-xs text-gray-500 font-bold">📅 Fecha</label><input type="date" value={meta.date} onChange={e => setMeta({ ...meta, date: e.target.value })} className="w-full input-field input-compact mt-1 font-semibold"/></div>
+                                <div><label className="text-xs text-gray-500 font-bold">🕐 Hora</label><input type="time" value={meta.time} onChange={e => setMeta({ ...meta, time: e.target.value })} className="w-full input-field input-compact mt-1 font-semibold"/></div>
                             </div>
                         </div>
                         <div>
@@ -620,21 +713,21 @@
             // HANDOVER
             if (view === 'handover') {
                 const OrdCard = ({ o }) => {
-                    const [items, setItems] = useState(o.items);
+                    const [items, setItems] = useState(o.items || []);
                     const [obs, setObs] = useState('');
                     const stCol = { 'Solicitado': 'bg-yellow-400', 'En Curso': 'bg-cyan-500', 'Devolución Pendiente': 'bg-orange-500', 'Finalizado': 'bg-green-500' };
                     const stBorder = { 'Solicitado': 'border-yellow-300', 'En Curso': 'border-cyan-300', 'Devolución Pendiente': 'border-orange-300', 'Finalizado': 'border-green-300' };
-
-                    if (user?.role === 'Docente' && o.teacher !== user.fullName) return null;
 
                     return (
                         <div className={`card p-5 relative overflow-hidden border-2 ${stBorder[o.status]}`}>
                             <div className={`absolute left-0 top-0 bottom-0 w-2 ${stCol[o.status]}`}/>
                             <div className="flex justify-between items-start mb-3"><div><p className="text-xs text-gray-400 font-semibold">👨‍🏫 Docente</p><p className="font-bold text-gray-800 text-lg">{o.teacher}</p></div><span className={`px-3 py-1.5 rounded-full text-[10px] font-bold text-white ${stCol[o.status]}`}>{o.status.toUpperCase()}</span></div>
-                            <div className="flex gap-4 text-xs text-gray-500 font-semibold mb-3"><span>🎓 {o.career}</span><span>📅 {o.date} · {o.time}</span></div>
+                            <div className="flex flex-wrap gap-2 text-xs text-gray-500 font-semibold mb-3"><span className="truncate">🎓 {o.career}</span><span className="whitespace-nowrap">📅 {o.date}</span><span className="whitespace-nowrap">🕐 {o.time}</span></div>
                             <div className="bg-gray-50 rounded-2xl p-4 mb-3 border-2 border-gray-200">
-                                <p className="text-xs text-gray-400 font-bold mb-2">📦 MATERIAL</p>
-                                {items.map(i => (
+                                <p className="text-xs text-gray-400 font-bold mb-2">📦 MATERIAL ({items.length} items)</p>
+                                {items.length === 0 ? (
+                                    <p className="text-sm text-gray-400 italic">Sin items registrados</p>
+                                ) : items.map(i => (
                                     <div key={i.id} className="flex justify-between items-center py-2 border-b border-gray-100 last:border-0">
                                         <span className="text-sm text-gray-700 font-semibold">{i.name}</span>
                                         {user?.role === 'Administrativo' && o.status === 'Solicitado' ? (
