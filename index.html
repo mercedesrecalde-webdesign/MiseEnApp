@@ -41,8 +41,7 @@
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
         html, body, #root { height: 100%; font-family: 'Nunito', sans-serif; }
-        body { background: linear-gradient(180deg, #e3f6f9 0%, #f0f7fa 100%); min-height: 100vh; min-height: -webkit-fill-available; }
-        html { height: -webkit-fill-available; }
+        body { background: linear-gradient(180deg, #e3f6f9 0%, #f0f7fa 100%); min-height: 100vh; overscroll-behavior-y: contain; }
         
         @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-12px); } }
         @keyframes fadeUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
@@ -79,36 +78,16 @@
         .back-btn { display: flex; align-items: center; gap: 8px; padding: 10px 16px; background: white; border: 2px solid #e0e0e0; border-radius: 14px; font-weight: 700; color: #666; cursor: pointer; }
         .loader { width: 40px; height: 40px; border: 4px solid #e0f7fa; border-top-color: #00bcd4; border-radius: 50%; }
 
-        /* Responsive */
-        .container-app { max-width: 100%; margin: 0 auto; }
-        
-        /* Tablet */
-        @media (min-width: 768px) {
-            .container-app { max-width: 600px; }
-            .card { border-radius: 28px; }
-            .input-field { padding: 16px 20px; font-size: 16px; }
-        }
-        
-        /* Desktop */
-        @media (min-width: 1024px) {
-            .container-app { max-width: 480px; }
-            body { display: flex; justify-content: center; align-items: flex-start; padding-top: 20px; }
-            #root { width: 100%; max-width: 480px; min-height: calc(100vh - 40px); background: white; border-radius: 32px; box-shadow: 0 20px 60px rgba(0,0,0,0.1); overflow: hidden; }
-        }
-
         /* Mobile adjustments */
         @media (max-width: 380px) {
             .input-field { padding: 12px 14px; font-size: 13px; }
-            .card { border-radius: 20px; padding: 16px; }
+            .card { border-radius: 20px; }
         }
 
         /* Safe area for iPhone notch */
         @supports (padding: max(0px)) {
             .nav-safe { padding-bottom: max(1.5rem, env(safe-area-inset-bottom)); }
         }
-
-        /* Prevent pull-to-refresh on mobile */
-        body { overscroll-behavior-y: contain; }
     </style>
 </head>
 <body>
@@ -192,7 +171,7 @@
             const textColors = { cyan: 'text-cyan-600', purple: 'text-purple-600', green: 'text-green-600', orange: 'text-orange-600' };
             
             return (
-                <nav className="fixed bottom-0 inset-x-0 bg-white border-t-2 border-cyan-100 px-4 py-2 nav-safe flex justify-around z-50 shadow-lg lg:max-w-[480px] lg:mx-auto lg:rounded-b-[32px]">
+                <nav className="fixed bottom-0 inset-x-0 bg-white border-t-2 border-cyan-100 px-4 py-2 nav-safe flex justify-around z-50 shadow-lg">
                     {items.map(({ id, icon: Ic, label, c }) => (
                         <button key={id} onClick={() => go(id)} className="flex flex-col items-center gap-1 min-w-[60px]">
                             <div className={`p-2.5 rounded-2xl transition-all ${current === id ? `${colors[c]} text-white shadow-lg` : 'text-gray-400'}`}>
@@ -507,7 +486,7 @@
 
             // SPLASH
             if (view === 'splash') return (
-                <div className="min-h-screen flex flex-col items-center justify-center p-6 animate-fade container-app">
+                <div className="min-h-screen flex flex-col items-center justify-center p-6 animate-fade">
                     <Logo size="xl"/>
                     <button onClick={() => setView('login')} className="mt-8 px-12 py-4 btn-gradient text-white rounded-2xl font-bold text-lg shadow-xl animate-glow flex items-center gap-3">Ingresar <I.ArrowRight size={24}/></button>
                     <p className="text-center text-xs text-gray-400 mt-8">Secretaría de Educación y Empleo<br/><span className="font-bold text-gray-500">Municipalidad de Vicente López</span></p>
@@ -516,7 +495,7 @@
 
             // LOGIN
             if (view === 'login' && loginMode === 'check') return (
-                <div className="min-h-screen p-6 animate-fade container-app">
+                <div className="min-h-screen p-6 animate-fade">
                     <BackBtn onClick={() => setView('splash')}/>
                     <div className="max-w-sm mx-auto mt-8">
                         <div className="text-center mb-8"><Logo size="md"/><h2 className="text-2xl font-extrabold text-gray-800 mt-4">¡Bienvenido!</h2><p className="text-gray-500 mt-2">Ingresá con tu correo institucional</p></div>
@@ -539,7 +518,7 @@
 
             // REGISTER
             if (view === 'login' && loginMode === 'register') return (
-                <div className="min-h-screen p-6 animate-fade container-app">
+                <div className="min-h-screen p-6 animate-fade">
                     <BackBtn onClick={() => setLoginMode('check')}/>
                     <div className="max-w-sm mx-auto mt-4">
                         <div className="text-center mb-6">
@@ -588,7 +567,7 @@
 
             // DASHBOARD
             if (view === 'dashboard') return (
-                <div className="min-h-screen pb-28 container-app">
+                <div className="min-h-screen pb-28">
                     <div className="p-5 pt-6">
                         <div className="flex justify-between items-start"><Logo size="md"/><button onClick={refresh} disabled={syncing} className="p-3 bg-white rounded-xl shadow border-2 border-gray-100"><I.Refresh size={20} className={`text-cyan-500 ${syncing ? 'animate-spin' : ''}`}/></button></div>
                         <div className={`mt-5 card p-4 text-center ${user?.role === 'Administrativo' ? 'card-purple' : 'card-cyan'}`}>
@@ -666,7 +645,7 @@
                 };
 
                 return (
-                    <div className="min-h-screen pb-28 container-app">
+                    <div className="min-h-screen pb-28">
                         <div className="sticky top-0 z-40 bg-white/95 backdrop-blur-sm border-b-2 border-purple-100 p-4">
                             <div className="flex items-center gap-3 mb-3"><BackBtn onClick={() => setView('dashboard')}/><div className="flex-1"><h1 className="text-xl font-extrabold text-gray-800">📦 Stock</h1><p className="text-xs text-gray-500 font-semibold">{filtInv.length} materiales</p></div><button onClick={refresh} disabled={syncing} className="p-2 bg-cyan-100 rounded-xl"><I.Refresh size={18} className={`text-cyan-600 ${syncing ? 'animate-spin' : ''}`}/></button></div>
                             <div className="relative"><I.Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-cyan-400"/><input type="text" placeholder="Buscar..." value={search} onChange={e => setSearch(e.target.value)} className="w-full pl-11 pr-4 py-3 bg-cyan-50 rounded-2xl text-sm font-semibold border-2 border-cyan-200"/></div>
@@ -691,7 +670,7 @@
 
             // ORDER
             if (view === 'order' && user?.role === 'Docente') return (
-                <div className="min-h-screen pb-32 container-app">
+                <div className="min-h-screen pb-32">
                     <div className="sticky top-0 z-40 bg-white/95 backdrop-blur-sm border-b-2 border-green-100 p-4"><div className="flex items-center gap-3"><BackBtn onClick={() => setView('dashboard')}/><h1 className="text-xl font-extrabold text-gray-800">📝 Nuevo pedido</h1></div></div>
                     <div className="p-4 space-y-4">
                         <div className="card p-4 card-green space-y-3">
@@ -740,7 +719,7 @@
 
             // COURSES
             if (view === 'courses') return (
-                <div className="min-h-screen pb-28 container-app">
+                <div className="min-h-screen pb-28">
                     <div className="sticky top-0 z-40 bg-white/95 backdrop-blur-sm border-b-2 border-purple-100 p-4"><div className="flex items-center gap-3"><BackBtn onClick={() => setView('order')}/><h1 className="text-xl font-extrabold text-gray-800">🎓 Cursos</h1></div></div>
                     <div className="p-4">
                         <div className="flex gap-2 mb-4"><input type="text" placeholder="Nuevo curso..." value={newCrs} onChange={e => setNewCrs(e.target.value)} className="flex-1 input-field font-semibold"/><button onClick={() => { addCourse(newCrs); setNewCrs(''); }} disabled={syncing} className="px-5 btn-gradient text-white rounded-2xl"><I.Plus size={22}/></button></div>
@@ -792,7 +771,7 @@
                 const filteredOrders = user?.role === 'Docente' ? ord.filter(o => o.teacher === user.fullName) : ord;
 
                 return (
-                    <div className="min-h-screen pb-28 container-app">
+                    <div className="min-h-screen pb-28">
                         <div className="sticky top-0 z-40 bg-white/95 backdrop-blur-sm border-b-2 border-cyan-100 p-4"><div className="flex items-center gap-3"><BackBtn onClick={() => setView('dashboard')}/><h1 className="text-xl font-extrabold text-gray-800 flex-1">📖 Cuaderno</h1><button onClick={refresh} disabled={syncing} className="p-2 bg-cyan-100 rounded-xl"><I.Refresh size={18} className={`text-cyan-600 ${syncing ? 'animate-spin' : ''}`}/></button></div></div>
                         <div className="p-4 space-y-4">{filteredOrders.length === 0 ? <div className="text-center py-16"><I.Book size={48} className="mx-auto text-gray-200 mb-3"/><p className="text-gray-400 font-bold">Sin novedades</p></div> : filteredOrders.map(o => <OrdCard key={o.id} o={o}/>)}</div>
                         <Nav current="handover" go={setView} role={user?.role}/>
@@ -802,7 +781,7 @@
 
             // HISTORY
             if (view === 'history') return (
-                <div className="min-h-screen pb-28 container-app">
+                <div className="min-h-screen pb-28">
                     <div className="sticky top-0 z-40 bg-white/95 backdrop-blur-sm border-b-2 border-purple-100 p-4"><div className="flex items-center gap-3"><BackBtn onClick={() => setView('dashboard')}/><div className="flex-1"><h1 className="text-xl font-extrabold text-gray-800">📊 Historial</h1><p className="text-xs text-gray-500">{his.length} mov.</p></div><button onClick={refresh} disabled={syncing} className="p-2 bg-purple-100 rounded-xl"><I.Refresh size={18} className={`text-purple-600 ${syncing ? 'animate-spin' : ''}`}/></button></div></div>
                     <div className="p-4 space-y-3">{his.length === 0 ? <div className="text-center py-16"><I.History size={48} className="mx-auto text-gray-200 mb-3"/><p className="text-gray-400 font-bold">Sin movimientos</p></div> : his.map(h => (
                         <div key={h.id} className={`card p-4 border-2 ${h.type === 'in' ? 'border-green-300' : 'border-red-300'}`}>
@@ -825,7 +804,7 @@
             if (view === 'incidents') {
                 const incs = ord.filter(o => o.obs);
                 return (
-                    <div className="min-h-screen pb-28 container-app">
+                    <div className="min-h-screen pb-28">
                         <div className="sticky top-0 z-40 bg-white/95 backdrop-blur-sm border-b-2 border-orange-100 p-4"><div className="flex items-center gap-3"><BackBtn onClick={() => setView('dashboard')}/><h1 className="text-xl font-extrabold text-gray-800">🔧 Bitácora</h1></div></div>
                         <div className="p-4 space-y-4">{incs.length === 0 ? <div className="text-center py-16"><I.CheckCircle size={56} className="mx-auto text-green-400 mb-3"/><p className="text-gray-800 font-bold text-lg">¡Todo en orden!</p></div> : incs.map(o => {
                             const [res, setRes] = useState('');
@@ -848,7 +827,7 @@
 
             // PROFILE
             if (view === 'profile') return (
-                <div className="min-h-screen pb-28 container-app">
+                <div className="min-h-screen pb-28">
                     <div className="sticky top-0 z-40 bg-white/95 backdrop-blur-sm border-b-2 border-orange-100 p-4"><div className="flex items-center gap-3"><BackBtn onClick={() => setView('dashboard')}/><h1 className="text-xl font-extrabold text-gray-800">👤 Mi perfil</h1></div></div>
                     <div className="p-4 space-y-4">
                         <div className={`card p-6 text-center ${user?.role === 'Administrativo' ? 'card-purple' : 'card-cyan'}`}>
