@@ -1,0 +1,743 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Mise en App - Rainero Culinaria 4.0</title>
+    
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="theme-color" content="#00BCD4">
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        html, body, #root { height: 100%; font-family: 'Nunito', sans-serif; }
+        body { background: linear-gradient(180deg, #e3f6f9 0%, #f0f7fa 100%); min-height: 100vh; }
+        
+        @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-12px); } }
+        @keyframes fadeUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes glow { 0%, 100% { box-shadow: 0 0 20px rgba(156,39,176,0.3); } 50% { box-shadow: 0 0 40px rgba(156,39,176,0.6); } }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        
+        .animate-float { animation: float 4s ease-in-out infinite; }
+        .animate-fade { animation: fadeUp 0.5s ease-out forwards; }
+        .animate-glow { animation: glow 2s ease-in-out infinite; }
+        .animate-spin { animation: spin 1s linear infinite; }
+
+        .card { background: white; border-radius: 24px; box-shadow: 0 4px 20px rgba(0,188,212,0.1); transition: all 0.3s ease; }
+        .card:hover { transform: translateY(-4px); box-shadow: 0 12px 40px rgba(0,188,212,0.2); }
+        .card-cyan { border: 3px solid #4dd0e1; background: linear-gradient(135deg, #e0f7fa 0%, #fff 100%); }
+        .card-purple { border: 3px solid #ce93d8; background: linear-gradient(135deg, #f3e5f5 0%, #fff 100%); }
+        .card-green { border: 3px solid #81c784; background: linear-gradient(135deg, #e8f5e9 0%, #fff 100%); }
+        .card-orange { border: 3px solid #ffb74d; background: linear-gradient(135deg, #fff3e0 0%, #fff 100%); }
+        .card-gradient { background: linear-gradient(135deg, #00bcd4 0%, #26c6da 30%, #4dd0e1 60%, #9c27b0 100%); }
+
+        .btn-gradient { background: linear-gradient(135deg, #9c27b0 0%, #ab47bc 50%, #ba68c8 100%); }
+        .btn-cyan { background: linear-gradient(135deg, #00bcd4 0%, #26c6da 100%); }
+        .btn-green { background: linear-gradient(135deg, #4caf50 0%, #66bb6a 100%); }
+        .btn-orange { background: linear-gradient(135deg, #ff9800 0%, #ffb74d 100%); }
+
+        .input-field { background: #f5f5f5; border: 2px solid #e0e0e0; border-radius: 16px; padding: 14px 16px; font-size: 14px; transition: all 0.3s; }
+        .input-field:focus { outline: none; border-color: #00bcd4; background: white; box-shadow: 0 0 0 4px rgba(0,188,212,0.15); }
+
+        .badge-cyan { background: #e0f7fa; color: #00838f; }
+        .badge-purple { background: #f3e5f5; color: #7b1fa2; }
+        .badge-green { background: #e8f5e9; color: #2e7d32; }
+        .badge-orange { background: #fff3e0; color: #e65100; }
+        .badge-red { background: #ffebee; color: #c62828; }
+
+        .back-btn { display: flex; align-items: center; gap: 8px; padding: 10px 16px; background: white; border: 2px solid #e0e0e0; border-radius: 14px; font-weight: 700; color: #666; }
+        .loader { width: 40px; height: 40px; border: 4px solid #e0f7fa; border-top-color: #00bcd4; border-radius: 50%; }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+    <script type="text/babel">
+        const { useState, useEffect, useRef, useMemo, useCallback } = React;
+
+        // SUPABASE
+        const SUPABASE_URL = 'https://dukgjrhyhyxvdqzhthje.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR1a2dqcmh5aHl4dmRxemh0aGplIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc5MTQzNjIsImV4cCI6MjA4MzQ5MDM2Mn0.JYZWv2vYwMbTopyL-T8_kjbX2py5IL7Ap6ASZc2B4dM';
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        // ICONS
+        const Icon = ({ children, size = 24, sw = 2 }) => (
+            <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={sw} strokeLinecap="round" strokeLinejoin="round">{children}</svg>
+        );
+        const I = {
+            Home: (p) => <Icon {...p}><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></Icon>,
+            Search: (p) => <Icon {...p}><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></Icon>,
+            Book: (p) => <Icon {...p}><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/></Icon>,
+            Clipboard: (p) => <Icon {...p}><rect width="8" height="4" x="8" y="2" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/></Icon>,
+            User: (p) => <Icon {...p}><circle cx="12" cy="8" r="5"/><path d="M20 21a8 8 0 1 0-16 0"/></Icon>,
+            LogOut: (p) => <Icon {...p}><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/></Icon>,
+            Plus: (p) => <Icon {...p}><path d="M5 12h14"/><path d="M12 5v14"/></Icon>,
+            Minus: (p) => <Icon {...p}><path d="M5 12h14"/></Icon>,
+            Trash: (p) => <Icon {...p}><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></Icon>,
+            Check: (p) => <Icon {...p}><polyline points="20 6 9 17 4 12"/></Icon>,
+            CheckCircle: (p) => <Icon {...p}><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></Icon>,
+            ArrowLeft: (p) => <Icon {...p}><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></Icon>,
+            ArrowRight: (p) => <Icon {...p}><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></Icon>,
+            AlertTriangle: (p) => <Icon {...p}><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></Icon>,
+            Package: (p) => <Icon {...p}><path d="m7.5 4.27 9 5.15"/><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></Icon>,
+            Settings: (p) => <Icon {...p}><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></Icon>,
+            X: (p) => <Icon {...p}><path d="M18 6 6 18"/><path d="m6 6 12 12"/></Icon>,
+            Send: (p) => <Icon {...p}><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></Icon>,
+            Edit: (p) => <Icon {...p}><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></Icon>,
+            History: (p) => <Icon {...p}><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l4 2"/></Icon>,
+            TrendingUp: (p) => <Icon {...p}><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></Icon>,
+            TrendingDown: (p) => <Icon {...p}><polyline points="22 17 13.5 8.5 8.5 13.5 2 7"/><polyline points="16 17 22 17 22 11"/></Icon>,
+            Mail: (p) => <Icon {...p}><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></Icon>,
+            ShoppingBag: (p) => <Icon {...p}><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/></Icon>,
+            Refresh: (p) => <Icon {...p}><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M3 21v-5h5"/></Icon>,
+        };
+
+        const CATEGORIAS = ["Utensilios", "Batería", "Cuchillería", "Pastelería", "Maquinaria", "Equipamiento"];
+        const MOTIVOS = { in: ["Compra", "Donación", "Reposición", "Devolución", "Otro"], out: ["Rotura", "Pérdida", "Desgaste", "Préstamo", "Baja", "Otro"] };
+
+        const catStyle = (c) => {
+            const s = c?.toLowerCase() || '';
+            if (s.includes('maquinaria')) return { bg: 'bg-orange-100', tx: 'text-orange-600', border: 'border-orange-300' };
+            if (s.includes('cuchillería')) return { bg: 'bg-red-100', tx: 'text-red-600', border: 'border-red-300' };
+            if (s.includes('pastelería')) return { bg: 'bg-pink-100', tx: 'text-pink-600', border: 'border-pink-300' };
+            if (s.includes('batería')) return { bg: 'bg-cyan-100', tx: 'text-cyan-600', border: 'border-cyan-300' };
+            if (s.includes('equipamiento')) return { bg: 'bg-purple-100', tx: 'text-purple-600', border: 'border-purple-300' };
+            return { bg: 'bg-green-100', tx: 'text-green-600', border: 'border-green-300' };
+        };
+
+        // COMPONENTS
+        const Logo = ({ size = "md" }) => {
+            const sizes = { sm: "w-32", md: "w-48", lg: "w-64", xl: "w-80" };
+            return <div className={`${sizes[size]} animate-float`}><img src="logo.png" alt="Mise en App" className="w-full h-auto drop-shadow-2xl"/></div>;
+        };
+
+        const Loader = ({ text = "Cargando..." }) => (
+            <div className="flex flex-col items-center justify-center py-12">
+                <div className="loader animate-spin mb-4"></div>
+                <p className="text-gray-500 font-semibold">{text}</p>
+            </div>
+        );
+
+        const BackBtn = ({ onClick }) => (
+            <button onClick={onClick} className="back-btn"><I.ArrowLeft size={20}/> Volver</button>
+        );
+
+        const Nav = ({ current, go, role }) => {
+            const items = role === 'Administrativo' 
+                ? [{ id: 'dashboard', icon: I.Home, label: 'Inicio', c: 'cyan' }, { id: 'inventory', icon: I.Package, label: 'Stock', c: 'purple' }, { id: 'handover', icon: I.Book, label: 'Cuaderno', c: 'green' }, { id: 'profile', icon: I.User, label: 'Perfil', c: 'orange' }]
+                : [{ id: 'dashboard', icon: I.Home, label: 'Inicio', c: 'cyan' }, { id: 'order', icon: I.Clipboard, label: 'Pedidos', c: 'green' }, { id: 'handover', icon: I.Book, label: 'Cuaderno', c: 'orange' }, { id: 'profile', icon: I.User, label: 'Perfil', c: 'purple' }];
+            
+            const colors = { cyan: 'bg-cyan-500 shadow-cyan-200', purple: 'bg-purple-500 shadow-purple-200', green: 'bg-green-500 shadow-green-200', orange: 'bg-orange-500 shadow-orange-200' };
+            const textColors = { cyan: 'text-cyan-600', purple: 'text-purple-600', green: 'text-green-600', orange: 'text-orange-600' };
+            
+            return (
+                <nav className="fixed bottom-0 inset-x-0 bg-white border-t-2 border-cyan-100 px-4 py-2 pb-6 flex justify-around z-50 shadow-lg">
+                    {items.map(({ id, icon: Ic, label, c }) => (
+                        <button key={id} onClick={() => go(id)} className="flex flex-col items-center gap-1 min-w-[60px]">
+                            <div className={`p-2.5 rounded-2xl transition-all ${current === id ? `${colors[c]} text-white shadow-lg` : 'text-gray-400'}`}>
+                                <Ic size={22} sw={current === id ? 2.5 : 2}/>
+                            </div>
+                            <span className={`text-[10px] font-bold ${current === id ? textColors[c] : 'text-gray-400'}`}>{label}</span>
+                        </button>
+                    ))}
+                </nav>
+            );
+        };
+
+        const SignPad = ({ onSave, initial }) => {
+            const ref = useRef(null);
+            const [drawing, setDrawing] = useState(false);
+
+            if (initial) return (
+                <div className="text-center">
+                    <div className="inline-flex items-center gap-1.5 text-green-600 text-sm font-bold mb-2"><I.CheckCircle size={16}/> Firma registrada</div>
+                    <div className="bg-gradient-to-br from-green-50 to-cyan-50 rounded-2xl p-4 border-2 border-green-200"><img src={initial} alt="Firma" className="h-12 mx-auto"/></div>
+                    <button onClick={() => onSave(null)} className="text-xs text-gray-400 mt-2 hover:text-purple-500 font-semibold">Cambiar</button>
+                </div>
+            );
+
+            const pos = (e) => { const r = ref.current.getBoundingClientRect(); return { x: (e.touches ? e.touches[0].clientX : e.clientX) - r.left, y: (e.touches ? e.touches[0].clientY : e.clientY) - r.top }; };
+            const start = (e) => { e.preventDefault(); setDrawing(true); const ctx = ref.current.getContext('2d'); const { x, y } = pos(e); ctx.beginPath(); ctx.moveTo(x, y); ctx.strokeStyle = '#1f2937'; ctx.lineWidth = 2.5; ctx.lineCap = 'round'; };
+            const draw = (e) => { if (!drawing) return; e.preventDefault(); const ctx = ref.current.getContext('2d'); const { x, y } = pos(e); ctx.lineTo(x, y); ctx.stroke(); };
+            const end = () => setDrawing(false);
+            const clear = () => ref.current.getContext('2d').clearRect(0, 0, 280, 90);
+
+            return (
+                <div>
+                    <p className="text-sm text-gray-600 mb-2 text-center font-semibold">✍️ Dibuja tu firma</p>
+                    <div className="relative bg-white rounded-2xl border-3 border-dashed border-purple-200 overflow-hidden">
+                        <canvas ref={ref} width={280} height={90} className="w-full touch-none cursor-crosshair" onMouseDown={start} onMouseMove={draw} onMouseUp={end} onMouseLeave={end} onTouchStart={start} onTouchMove={draw} onTouchEnd={end}/>
+                        <button onClick={clear} className="absolute top-2 right-2 p-1.5 bg-red-100 text-red-500 rounded-lg"><I.Trash size={14}/></button>
+                    </div>
+                    <button onClick={() => onSave(ref.current.toDataURL())} className="w-full mt-3 py-3 btn-gradient text-white rounded-2xl font-bold shadow-lg">Guardar firma</button>
+                </div>
+            );
+        };
+
+        // APP
+        const App = () => {
+            const [loading, setLoading] = useState(true);
+            const [syncing, setSyncing] = useState(false);
+            const [view, setView] = useState('splash');
+            const [user, setUser] = useState(null);
+            const [selectedRole, setSelectedRole] = useState(null);
+            const [inv, setInv] = useState([]);
+            const [ord, setOrd] = useState([]);
+            const [crs, setCrs] = useState([]);
+            const [his, setHis] = useState([]);
+            const [form, setForm] = useState({ name: '', surname: '', email: '', sig: null });
+            const [cart, setCart] = useState([]);
+            const [meta, setMeta] = useState({ career: '', date: new Date().toISOString().split('T')[0], time: '08:00' });
+            const [search, setSearch] = useState('');
+            const [newCrs, setNewCrs] = useState('');
+            const [newItem, setNewItem] = useState({ name: '', qty: '', cat: 'Utensilios' });
+
+            // LOAD DATA
+            const loadData = useCallback(async () => {
+                try {
+                    const [{ data: invData }, { data: crsData }, { data: ordData }, { data: hisData }] = await Promise.all([
+                        supabase.from('inventory').select('*').order('name'),
+                        supabase.from('courses').select('*').order('name'),
+                        supabase.from('orders').select('*').order('created_at', { ascending: false }),
+                        supabase.from('stock_history').select('*').order('created_at', { ascending: false })
+                    ]);
+                    
+                    if (invData) setInv(invData);
+                    if (crsData) setCrs(crsData.map(c => c.name));
+                    if (hisData) setHis(hisData.map(h => ({ ...h, name: h.item_name, amt: h.amount, before: h.before_qty, after: h.after_qty, by: h.user_name, at: h.created_at })));
+                    
+                    if (ordData) {
+                        const ordersWithItems = await Promise.all(ordData.map(async (o) => {
+                            const { data: items } = await supabase.from('order_items').select('*').eq('order_id', o.id);
+                            return { ...o, items: items?.map(i => ({ id: i.item_id, name: i.item_name, q: i.qty })) || [], teacher: o.teacher_name, obs: o.observations || '', res: o.resolution || '', sig: o.signature };
+                        }));
+                        setOrd(ordersWithItems);
+                    }
+                } catch (e) { console.error('Load error:', e); }
+            }, []);
+
+            useEffect(() => {
+                const init = async () => {
+                    const saved = localStorage.getItem('mise_user');
+                    if (saved) {
+                        const u = JSON.parse(saved);
+                        const { data } = await supabase.from('users').select('*').eq('email', u.email).single();
+                        if (data) { setUser({ ...data, fullName: data.full_name, sig: data.signature }); setView('dashboard'); }
+                    }
+                    await loadData();
+                    setLoading(false);
+                };
+                init();
+            }, [loadData]);
+
+            const refresh = async () => { setSyncing(true); await loadData(); setSyncing(false); };
+
+            // AUTH
+            const register = async () => {
+                if (!form.name || !form.surname || !form.email) return alert('Completa todos los campos');
+                if (!form.email.endsWith('@mvl.edu.ar')) return alert('Usa tu correo @mvl.edu.ar');
+                if (!form.sig) return alert('La firma es obligatoria');
+                
+                setSyncing(true);
+                try {
+                    const { data: existing } = await supabase.from('users').select('*').eq('email', form.email).single();
+                    if (existing) {
+                        const u = { ...existing, fullName: existing.full_name, sig: existing.signature };
+                        setUser(u); localStorage.setItem('mise_user', JSON.stringify(u)); setView('dashboard');
+                    } else {
+                        const { data, error } = await supabase.from('users').insert([{ email: form.email, name: form.name, surname: form.surname, full_name: `${form.name} ${form.surname}`, role: selectedRole, signature: form.sig }]).select().single();
+                        if (error) throw error;
+                        const u = { ...data, fullName: data.full_name, sig: data.signature };
+                        setUser(u); localStorage.setItem('mise_user', JSON.stringify(u)); setView('dashboard');
+                    }
+                } catch (e) { alert('Error: ' + e.message); }
+                setSyncing(false);
+            };
+
+            const logout = () => { if (confirm('¿Cerrar sesión?')) { localStorage.removeItem('mise_user'); setUser(null); setSelectedRole(null); setForm({ name: '', surname: '', email: '', sig: null }); setView('splash'); }};
+
+            // CART
+            const addCart = (item, qty = 1) => {
+                if (item.qty <= 0) return alert('Sin stock');
+                const ex = cart.find(c => c.id === item.id);
+                const newQty = Math.min((ex?.q || 0) + qty, item.qty);
+                if (ex) setCart(cart.map(c => c.id === item.id ? { ...c, q: newQty } : c));
+                else setCart([...cart, { ...item, q: Math.min(qty, item.qty) }]);
+            };
+
+            const setCartQty = (id, qty) => {
+                const item = inv.find(i => i.id === id);
+                if (!item) return;
+                const nq = Math.max(0, Math.min(qty, item.qty));
+                if (nq === 0) setCart(cart.filter(c => c.id !== id));
+                else setCart(cart.map(c => c.id === id ? { ...c, q: nq } : c));
+            };
+
+            const remCart = (id) => setCart(cart.filter(c => c.id !== id));
+
+            // ORDERS
+            const sendOrd = async () => {
+                if (!cart.length) return alert('Carrito vacío');
+                if (!meta.career) return alert('Selecciona curso');
+                
+                setSyncing(true);
+                try {
+                    const { data: order, error } = await supabase.from('orders').insert([{ teacher_id: user.id, teacher_name: user.fullName, teacher_email: user.email, career: meta.career, date: meta.date, time: meta.time, signature: user.sig, status: 'Solicitado' }]).select().single();
+                    if (error) throw error;
+                    
+                    await supabase.from('order_items').insert(cart.map(i => ({ order_id: order.id, item_id: i.id, item_name: i.name, qty: i.q })));
+                    
+                    for (const item of cart) {
+                        const invItem = inv.find(i => i.id === item.id);
+                        if (invItem) await supabase.from('inventory').update({ qty: invItem.qty - item.q }).eq('id', item.id);
+                    }
+                    
+                    setCart([]); await loadData(); alert('✅ ¡Pedido enviado!'); setView('dashboard');
+                } catch (e) { alert('Error: ' + e.message); }
+                setSyncing(false);
+            };
+
+            const confirmDel = async (orderId, items) => {
+                setSyncing(true);
+                try {
+                    const order = ord.find(o => o.id === orderId);
+                    for (const old of order.items) {
+                        const newItem = items.find(i => i.id === old.id);
+                        if (newItem && newItem.q < old.q) {
+                            const invItem = inv.find(i => i.id === old.id);
+                            if (invItem) await supabase.from('inventory').update({ qty: invItem.qty + (old.q - newItem.q) }).eq('id', old.id);
+                        }
+                        if (newItem) await supabase.from('order_items').update({ qty: newItem.q }).eq('order_id', orderId).eq('item_id', old.id);
+                    }
+                    await supabase.from('orders').update({ status: 'En Curso' }).eq('id', orderId);
+                    await loadData();
+                } catch (e) { alert('Error: ' + e.message); }
+                setSyncing(false);
+            };
+
+            const returnMat = async (orderId, obs) => { setSyncing(true); await supabase.from('orders').update({ status: 'Devolución Pendiente', observations: obs }).eq('id', orderId); await loadData(); setSyncing(false); };
+
+            const finRet = async (orderId) => {
+                setSyncing(true);
+                const order = ord.find(o => o.id === orderId);
+                for (const item of order.items) {
+                    const invItem = inv.find(i => i.id === item.id);
+                    if (invItem) await supabase.from('inventory').update({ qty: invItem.qty + item.q }).eq('id', item.id);
+                }
+                await supabase.from('orders').update({ status: 'Finalizado' }).eq('id', orderId);
+                await loadData(); setSyncing(false);
+            };
+
+            const resolve = async (orderId, res) => { setSyncing(true); await supabase.from('orders').update({ resolution: res }).eq('id', orderId); await loadData(); setSyncing(false); };
+
+            // STOCK
+            const stockMove = async (itemId, type, amt, reason, note = '') => {
+                const item = inv.find(i => i.id === itemId);
+                if (!item) return;
+                const a = parseInt(amt) || 0;
+                if (a <= 0) return alert('Cantidad inválida');
+                const nq = type === 'in' ? item.qty + a : item.qty - a;
+                if (nq < 0) return alert('Stock insuficiente');
+                
+                setSyncing(true);
+                try {
+                    await supabase.from('inventory').update({ qty: nq }).eq('id', itemId);
+                    await supabase.from('stock_history').insert([{ item_id: itemId, item_name: item.name, type, amount: a, reason, note, before_qty: item.qty, after_qty: nq, user_name: user.fullName }]);
+                    await loadData(); return true;
+                } catch (e) { alert('Error: ' + e.message); }
+                setSyncing(false);
+            };
+
+            const addNewItem = async () => {
+                if (!newItem.name.trim()) return alert('Ingresa un nombre');
+                const qty = parseInt(newItem.qty) || 0;
+                
+                setSyncing(true);
+                try {
+                    const { data, error } = await supabase.from('inventory').insert([{ name: newItem.name.trim(), qty, cat: newItem.cat }]).select().single();
+                    if (error) throw error;
+                    if (qty > 0) await supabase.from('stock_history').insert([{ item_id: data.id, item_name: data.name, type: 'in', amount: qty, reason: 'Inventario inicial', note: 'Nuevo material', before_qty: 0, after_qty: qty, user_name: user.fullName }]);
+                    setNewItem({ name: '', qty: '', cat: 'Utensilios' }); await loadData(); alert('✅ Material agregado');
+                } catch (e) { alert('Error: ' + e.message); }
+                setSyncing(false);
+            };
+
+            const updateItemName = async (id, newName) => { if (!newName.trim()) return; setSyncing(true); await supabase.from('inventory').update({ name: newName.trim() }).eq('id', id); await loadData(); setSyncing(false); };
+            const deleteItem = async (id) => { if (!confirm('¿Eliminar material?')) return; setSyncing(true); await supabase.from('inventory').delete().eq('id', id); await loadData(); setSyncing(false); };
+
+            // COURSES
+            const addCourse = async (name) => { if (!name.trim()) return; setSyncing(true); await supabase.from('courses').insert([{ name: name.trim() }]); await loadData(); setSyncing(false); };
+            const deleteCourse = async (name) => { if (!confirm(`¿Eliminar "${name}"?`)) return; setSyncing(true); await supabase.from('courses').delete().eq('name', name); await loadData(); setSyncing(false); };
+
+            const filtInv = useMemo(() => inv.filter(i => i.name.toLowerCase().includes(search.toLowerCase())).sort((a, b) => a.name.localeCompare(b.name, 'es')), [inv, search]);
+
+            if (loading) return <div className="min-h-screen flex flex-col items-center justify-center"><Logo size="lg"/><Loader text="Conectando..."/></div>;
+
+            // SPLASH
+            if (view === 'splash') return (
+                <div className="min-h-screen flex flex-col items-center justify-center p-6 animate-fade">
+                    <Logo size="xl"/>
+                    <button onClick={() => setView('role_select')} className="mt-8 px-12 py-4 btn-gradient text-white rounded-2xl font-bold text-lg shadow-xl animate-glow flex items-center gap-3">Ingresar <I.ArrowRight size={24}/></button>
+                    <p className="text-center text-xs text-gray-400 mt-8">Secretaría de Educación y Empleo<br/><span className="font-bold text-gray-500">Municipalidad de Vicente López</span></p>
+                </div>
+            );
+
+            // ROLE SELECT
+            if (view === 'role_select') return (
+                <div className="min-h-screen p-6 animate-fade">
+                    <BackBtn onClick={() => setView('splash')}/>
+                    <div className="text-center my-8"><Logo size="md"/><h2 className="text-2xl font-extrabold text-gray-800 mt-4">¿Cómo ingresás?</h2></div>
+                    <div className="space-y-4 max-w-sm mx-auto">
+                        <button onClick={() => { setSelectedRole('Docente'); setView('register'); }} className="w-full card p-6 card-cyan text-left">
+                            <div className="flex items-center gap-4">
+                                <div className="w-16 h-16 bg-cyan-500 rounded-2xl flex items-center justify-center shadow-lg"><span className="text-3xl">👨‍🏫</span></div>
+                                <div className="flex-1"><h3 className="text-xl font-bold text-gray-800">Docente</h3><p className="text-sm text-gray-500">Solicitar materiales</p></div>
+                                <div className="w-10 h-10 rounded-full btn-cyan flex items-center justify-center"><I.ArrowRight size={20} className="text-white"/></div>
+                            </div>
+                        </button>
+                        <button onClick={() => { setSelectedRole('Administrativo'); setView('register'); }} className="w-full card p-6 card-purple text-left">
+                            <div className="flex items-center gap-4">
+                                <div className="w-16 h-16 bg-purple-500 rounded-2xl flex items-center justify-center shadow-lg"><span className="text-3xl">📋</span></div>
+                                <div className="flex-1"><h3 className="text-xl font-bold text-gray-800">Administración</h3><p className="text-sm text-gray-500">Gestionar stock</p></div>
+                                <div className="w-10 h-10 rounded-full btn-gradient flex items-center justify-center"><I.ArrowRight size={20} className="text-white"/></div>
+                            </div>
+                        </button>
+                    </div>
+                </div>
+            );
+
+            // REGISTER
+            if (view === 'register') return (
+                <div className="min-h-screen p-6 animate-fade">
+                    <BackBtn onClick={() => setView('role_select')}/>
+                    <div className="max-w-sm mx-auto mt-4">
+                        <div className="text-center mb-6">
+                            <div className={`inline-block px-4 py-2 rounded-full font-bold text-sm ${selectedRole === 'Docente' ? 'badge-cyan' : 'badge-purple'}`}>{selectedRole === 'Docente' ? '👨‍🏫 DOCENTE' : '📋 ADMINISTRACIÓN'}</div>
+                            <h2 className="text-2xl font-extrabold text-gray-800 mt-3">Registro</h2>
+                        </div>
+                        <div className={`card p-6 ${selectedRole === 'Docente' ? 'card-cyan' : 'card-purple'}`}>
+                            <div className="space-y-4">
+                                <div className="grid grid-cols-2 gap-3">
+                                    <div><label className="text-xs font-bold text-gray-500 mb-1 block">Nombre</label><input type="text" placeholder="Juan" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} className="w-full input-field font-semibold"/></div>
+                                    <div><label className="text-xs font-bold text-gray-500 mb-1 block">Apellido</label><input type="text" placeholder="Pérez" value={form.surname} onChange={e => setForm({ ...form, surname: e.target.value })} className="w-full input-field font-semibold"/></div>
+                                </div>
+                                <div>
+                                    <label className="text-xs font-bold text-gray-500 mb-1 block">Correo institucional</label>
+                                    <div className="flex items-center input-field p-0 overflow-hidden">
+                                        <I.Mail size={18} className="ml-4 text-cyan-400"/>
+                                        <input type="text" placeholder="usuario" value={form.email.replace('@mvl.edu.ar', '')} onChange={e => setForm({ ...form, email: e.target.value.replace(/@/g, '') + '@mvl.edu.ar' })} className="flex-1 px-3 py-3.5 bg-transparent text-sm font-semibold"/>
+                                        <span className="pr-4 text-sm font-bold text-cyan-600">@mvl.edu.ar</span>
+                                    </div>
+                                </div>
+                                <div className="bg-gradient-to-br from-purple-50 via-cyan-50 to-green-50 p-4 rounded-2xl border-2 border-purple-100"><SignPad onSave={sig => setForm({ ...form, sig })} initial={form.sig}/></div>
+                                <button onClick={register} disabled={syncing} className="w-full py-4 btn-gradient text-white rounded-2xl font-bold flex items-center justify-center gap-2 shadow-xl disabled:opacity-50">{syncing ? <><div className="loader w-5 h-5 border-2 animate-spin"></div> Registrando...</> : <>Registrarse <I.ArrowRight size={20}/></>}</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+
+            // DASHBOARD
+            if (view === 'dashboard') return (
+                <div className="min-h-screen pb-28">
+                    <div className="p-5 pt-6">
+                        <div className="flex justify-between items-start"><Logo size="md"/><button onClick={refresh} disabled={syncing} className="p-3 bg-white rounded-xl shadow border-2 border-gray-100"><I.Refresh size={20} className={`text-cyan-500 ${syncing ? 'animate-spin' : ''}`}/></button></div>
+                        <div className={`mt-5 card p-4 text-center ${user?.role === 'Administrativo' ? 'card-purple' : 'card-cyan'}`}>
+                            <p className="text-gray-600 font-medium">Hola, <span className="text-gray-800 font-bold">{user?.fullName}</span> 👋</p>
+                            <span className={`inline-block mt-2 px-4 py-1.5 rounded-full text-xs font-bold ${user?.role === 'Administrativo' ? 'badge-purple' : 'badge-cyan'}`}>{user?.role === 'Administrativo' ? '👑 ADMIN' : '👨‍🏫 DOCENTE'}</span>
+                        </div>
+                    </div>
+                    <div className="px-5 space-y-4">
+                        {user?.role === 'Docente' && <>
+                            <div className="grid grid-cols-2 gap-4">
+                                <button onClick={() => setView('inventory')} className="card p-5 text-left card-cyan"><div className="w-12 h-12 bg-cyan-500 rounded-2xl flex items-center justify-center mb-3 shadow-lg"><I.Package size={24} className="text-white"/></div><h3 className="font-bold text-gray-800">Stock</h3><p className="text-xs text-gray-500">Ver disponibilidad</p></button>
+                                <button onClick={() => setView('order')} className="card p-5 text-left card-green"><div className="w-12 h-12 bg-green-500 rounded-2xl flex items-center justify-center mb-3 shadow-lg"><I.Clipboard size={24} className="text-white"/></div><h3 className="font-bold text-gray-800">Pedidos</h3><p className="text-xs text-gray-500">Solicitar material</p></button>
+                            </div>
+                            <button onClick={() => setView('handover')} className="w-full card-gradient p-5 rounded-3xl text-left shadow-xl"><div className="flex items-center justify-between"><div className="flex items-center gap-4"><div className="w-14 h-14 bg-white/25 rounded-2xl flex items-center justify-center"><I.Book size={28} className="text-white"/></div><div><h3 className="font-bold text-white text-lg">Cuaderno Digital</h3><p className="text-sm text-white/80">Mis entregas</p></div></div><I.ArrowRight size={24} className="text-white/80"/></div></button>
+                        </>}
+                        {user?.role === 'Administrativo' && <>
+                            <button onClick={() => setView('inventory')} className="w-full card p-5 text-left card-purple"><div className="flex items-center gap-4"><div className="w-14 h-14 bg-purple-500 rounded-2xl flex items-center justify-center shadow-lg"><I.Package size={28} className="text-white"/></div><div className="flex-1"><h3 className="font-bold text-gray-800 text-lg">Gestión de Stock</h3><p className="text-sm text-gray-500">Agregar, editar, controlar</p></div><I.ArrowRight size={24} className="text-purple-400"/></div></button>
+                            <button onClick={() => setView('handover')} className="w-full card-gradient p-5 rounded-3xl text-left shadow-xl"><div className="flex items-center justify-between"><div className="flex items-center gap-4"><div className="w-14 h-14 bg-white/25 rounded-2xl flex items-center justify-center"><I.Book size={28} className="text-white"/></div><div><h3 className="font-bold text-white text-lg">Cuaderno Digital</h3><p className="text-sm text-white/80">Entregas y devoluciones</p></div></div>{ord.filter(o => o.status === 'Solicitado' || o.status === 'Devolución Pendiente').length > 0 && <span className="bg-white text-purple-600 text-sm font-bold px-3 py-1 rounded-full">{ord.filter(o => o.status === 'Solicitado' || o.status === 'Devolución Pendiente').length}</span>}</div></button>
+                            <div className="grid grid-cols-2 gap-3">
+                                <button onClick={() => setView('history')} className="card p-4 flex flex-col items-center gap-2 card-cyan"><div className="w-11 h-11 bg-cyan-500 rounded-xl flex items-center justify-center shadow-lg"><I.History size={22} className="text-white"/></div><h3 className="font-bold text-gray-800 text-sm">Historial</h3></button>
+                                <button onClick={() => setView('incidents')} className="card p-4 flex flex-col items-center gap-2 card-orange relative"><div className="w-11 h-11 bg-orange-500 rounded-xl flex items-center justify-center shadow-lg"><I.AlertTriangle size={22} className="text-white"/></div><h3 className="font-bold text-gray-800 text-sm">Bitácora</h3>{ord.filter(o => o.obs && !o.res).length > 0 && <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold w-6 h-6 rounded-full flex items-center justify-center">{ord.filter(o => o.obs && !o.res).length}</span>}</button>
+                            </div>
+                        </>}
+                    </div>
+                    <Nav current="dashboard" go={setView} role={user?.role}/>
+                </div>
+            );
+
+            // INVENTORY
+            if (view === 'inventory') {
+                const StockItem = ({ item }) => {
+                    const [open, setOpen] = useState(false);
+                    const [type, setType] = useState('in');
+                    const [amt, setAmt] = useState('');
+                    const [reason, setReason] = useState('');
+                    const [note, setNote] = useState('');
+                    const [editName, setEditName] = useState(item.name);
+                    const [isEditing, setIsEditing] = useState(false);
+                    const st = catStyle(item.cat);
+
+                    const submit = async () => { if (await stockMove(item.id, type, amt, reason, note)) { setAmt(''); setReason(''); setNote(''); setOpen(false); }};
+                    const saveName = () => { updateItemName(item.id, editName); setIsEditing(false); };
+
+                    return (
+                        <div className={`card p-4 border-2 ${st.border}`}>
+                            <div className="flex items-center gap-3">
+                                <div className={`w-11 h-11 rounded-xl flex items-center justify-center ${st.bg} ${st.tx}`}><I.Package size={20}/></div>
+                                <div className="flex-1 min-w-0">
+                                    {isEditing && user?.role === 'Administrativo' ? <input type="text" value={editName} onChange={e => setEditName(e.target.value)} onBlur={saveName} onKeyDown={e => e.key === 'Enter' && saveName()} className="w-full px-2 py-1 border-2 border-purple-300 rounded-lg font-bold text-gray-800 text-sm" autoFocus/>
+                                    : <p className="font-bold text-gray-800 text-sm truncate cursor-pointer" onClick={() => user?.role === 'Administrativo' && setIsEditing(true)}>{item.name}</p>}
+                                    <p className="text-[10px] text-gray-400 font-semibold uppercase">{item.cat}</p>
+                                </div>
+                                <div className="text-right"><span className={`text-2xl font-black ${st.tx}`}>{item.qty}</span><p className="text-[10px] text-gray-400 font-bold">unid.</p></div>
+                                {user?.role === 'Administrativo' && <button onClick={() => setOpen(!open)} className={`p-2.5 rounded-xl ${open ? 'bg-purple-500 text-white' : 'bg-gray-100 text-gray-400'}`}><I.Edit size={18}/></button>}
+                            </div>
+                            {open && user?.role === 'Administrativo' && (
+                                <div className="mt-4 pt-4 border-t-2 border-dashed border-gray-200 space-y-3 animate-fade">
+                                    <div className="flex bg-gray-100 p-1.5 rounded-xl">
+                                        <button onClick={() => setType('in')} className={`flex-1 py-2.5 rounded-lg text-sm font-bold flex items-center justify-center gap-1 ${type === 'in' ? 'bg-green-500 text-white shadow-lg' : 'text-gray-500'}`}><I.TrendingUp size={16}/> Ingreso</button>
+                                        <button onClick={() => setType('out')} className={`flex-1 py-2.5 rounded-lg text-sm font-bold flex items-center justify-center gap-1 ${type === 'out' ? 'bg-red-500 text-white shadow-lg' : 'text-gray-500'}`}><I.TrendingDown size={16}/> Egreso</button>
+                                    </div>
+                                    <input type="number" placeholder="Cantidad" value={amt} onChange={e => setAmt(e.target.value)} className={`w-full px-4 py-3 rounded-xl text-sm font-bold border-2 ${type === 'in' ? 'bg-green-50 border-green-300 text-green-700' : 'bg-red-50 border-red-300 text-red-600'}`}/>
+                                    <select value={reason} onChange={e => setReason(e.target.value)} className="w-full px-4 py-3 bg-gray-50 rounded-xl text-sm font-semibold border-2 border-gray-200"><option value="">Motivo...</option>{MOTIVOS[type].map(m => <option key={m}>{m}</option>)}</select>
+                                    <input type="text" placeholder="Observación" value={note} onChange={e => setNote(e.target.value)} className="w-full px-4 py-3 bg-gray-50 rounded-xl text-sm border-2 border-gray-200"/>
+                                    <div className="flex gap-2">
+                                        <button onClick={submit} disabled={syncing} className={`flex-1 py-3 rounded-xl text-sm font-bold text-white ${type === 'in' ? 'bg-green-500' : 'bg-red-500'} disabled:opacity-50`}>{syncing ? 'Guardando...' : (type === 'in' ? '+ Ingreso' : '- Egreso')}</button>
+                                        <button onClick={() => deleteItem(item.id)} className="px-4 py-3 bg-red-100 text-red-500 rounded-xl"><I.Trash size={18}/></button>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    );
+                };
+
+                return (
+                    <div className="min-h-screen pb-28">
+                        <div className="sticky top-0 z-40 bg-white/95 backdrop-blur-sm border-b-2 border-purple-100 p-4">
+                            <div className="flex items-center gap-3 mb-3">
+                                <BackBtn onClick={() => setView('dashboard')}/>
+                                <div className="flex-1"><h1 className="text-xl font-extrabold text-gray-800">📦 Stock</h1><p className="text-xs text-gray-500 font-semibold">{filtInv.length} materiales</p></div>
+                                <button onClick={refresh} disabled={syncing} className="p-2 bg-cyan-100 rounded-xl"><I.Refresh size={18} className={`text-cyan-600 ${syncing ? 'animate-spin' : ''}`}/></button>
+                            </div>
+                            <div className="relative"><I.Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-cyan-400"/><input type="text" placeholder="Buscar..." value={search} onChange={e => setSearch(e.target.value)} className="w-full pl-11 pr-4 py-3 bg-cyan-50 rounded-2xl text-sm font-semibold border-2 border-cyan-200"/></div>
+                        </div>
+                        <div className="p-4 space-y-3">
+                            {user?.role === 'Administrativo' && (
+                                <div className="card p-4 card-green mb-4">
+                                    <h3 className="font-bold text-gray-800 mb-3 flex items-center gap-2"><I.Plus size={18}/> Agregar material</h3>
+                                    <div className="space-y-2">
+                                        <input type="text" placeholder="Nombre" value={newItem.name} onChange={e => setNewItem({ ...newItem, name: e.target.value })} className="w-full input-field font-semibold"/>
+                                        <div className="flex gap-2">
+                                            <input type="number" placeholder="Cant." value={newItem.qty} onChange={e => setNewItem({ ...newItem, qty: e.target.value })} className="w-24 input-field font-semibold"/>
+                                            <select value={newItem.cat} onChange={e => setNewItem({ ...newItem, cat: e.target.value })} className="flex-1 input-field font-semibold">{CATEGORIAS.map(c => <option key={c}>{c}</option>)}</select>
+                                        </div>
+                                        <button onClick={addNewItem} disabled={syncing} className="w-full py-3 btn-green text-white rounded-xl font-bold disabled:opacity-50">{syncing ? 'Agregando...' : '+ Agregar'}</button>
+                                    </div>
+                                </div>
+                            )}
+                            {filtInv.map(i => <StockItem key={i.id} item={i}/>)}
+                        </div>
+                        <Nav current="inventory" go={setView} role={user?.role}/>
+                    </div>
+                );
+            }
+
+            // ORDER
+            if (view === 'order' && user?.role === 'Docente') return (
+                <div className="min-h-screen pb-32">
+                    <div className="sticky top-0 z-40 bg-white/95 backdrop-blur-sm border-b-2 border-green-100 p-4"><div className="flex items-center gap-3"><BackBtn onClick={() => setView('dashboard')}/><h1 className="text-xl font-extrabold text-gray-800">📝 Nuevo pedido</h1></div></div>
+                    <div className="p-4 space-y-4">
+                        <div className="card p-4 card-green space-y-3">
+                            <div className="flex items-center justify-between"><label className="text-sm text-gray-600 font-bold">🎓 Curso</label><button onClick={() => setView('courses')} className="text-green-500"><I.Settings size={18}/></button></div>
+                            <select value={meta.career} onChange={e => setMeta({ ...meta, career: e.target.value })} className="w-full input-field font-semibold"><option value="">Seleccionar...</option>{crs.map(c => <option key={c}>{c}</option>)}</select>
+                            <div className="grid grid-cols-2 gap-3">
+                                <div><label className="text-xs text-gray-500 font-bold">📅 Fecha</label><input type="date" value={meta.date} onChange={e => setMeta({ ...meta, date: e.target.value })} className="w-full input-field mt-1 font-semibold"/></div>
+                                <div><label className="text-xs text-gray-500 font-bold">🕐 Hora</label><input type="time" value={meta.time} onChange={e => setMeta({ ...meta, time: e.target.value })} className="w-full input-field mt-1 font-semibold"/></div>
+                            </div>
+                        </div>
+                        <div>
+                            <h3 className="text-sm text-gray-600 font-bold mb-2">🛒 Mi pedido <span className="badge-cyan px-3 py-1 rounded-full">{cart.reduce((s, i) => s + i.q, 0)} items</span></h3>
+                            {cart.length === 0 ? <div className="card p-8 text-center border-3 border-dashed border-gray-200 bg-gray-50"><I.ShoppingBag size={40} className="mx-auto text-gray-300 mb-2"/><p className="text-gray-400 font-semibold">Carrito vacío</p></div>
+                            : <div className="space-y-2">{cart.map(i => {
+                                const maxQty = inv.find(x => x.id === i.id)?.qty || 0;
+                                return (
+                                    <div key={i.id} className="card p-3 flex items-center justify-between border-2 border-cyan-200">
+                                        <span className="text-sm font-bold text-gray-700 flex-1">{i.name}</span>
+                                        <div className="flex items-center gap-2">
+                                            <button onClick={() => setCartQty(i.id, i.q - 1)} className="w-8 h-8 rounded-lg bg-gray-100 text-gray-600 flex items-center justify-center font-bold">-</button>
+                                            <input type="number" value={i.q} onChange={e => setCartQty(i.id, parseInt(e.target.value) || 0)} min="0" max={maxQty + i.q} className="w-14 text-center py-1 px-2 border-2 border-cyan-300 rounded-lg font-black text-cyan-600"/>
+                                            <button onClick={() => setCartQty(i.id, i.q + 1)} className="w-8 h-8 rounded-lg bg-cyan-500 text-white flex items-center justify-center font-bold">+</button>
+                                            <button onClick={() => remCart(i.id)} className="p-2 bg-red-100 text-red-500 rounded-lg ml-1"><I.Trash size={16}/></button>
+                                        </div>
+                                    </div>
+                                );
+                            })}</div>}
+                        </div>
+                        <div>
+                            <h3 className="text-sm text-gray-600 font-bold mb-2">📋 Disponible</h3>
+                            <div className="space-y-2 max-h-52 overflow-y-auto">
+                                {inv.filter(i => i.qty > 0).map(i => {
+                                    const st = catStyle(i.cat);
+                                    return (
+                                        <div key={i.id} className={`card p-3 flex items-center gap-3 border-2 ${st.border}`}>
+                                            <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${st.bg} ${st.tx}`}><I.Package size={18}/></div>
+                                            <div className="flex-1"><p className="text-sm font-bold text-gray-700">{i.name}</p><p className="text-xs text-green-600 font-bold">Stock: {i.qty}</p></div>
+                                            <input type="number" min="1" max={i.qty} defaultValue="1" className="w-14 text-center py-2 border-2 border-gray-200 rounded-lg font-bold text-gray-700" id={`qty-${i.id}`}/>
+                                            <button onClick={() => { const input = document.getElementById(`qty-${i.id}`); const val = parseInt(input?.value) || 1; addCart(i, val); if(input) input.value = "1"; }} className="px-3 py-2 rounded-xl bg-cyan-500 text-white font-bold text-sm shadow-lg">+ Agregar</button>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                        <button onClick={sendOrd} disabled={!cart.length || syncing} className={`w-full py-4 rounded-2xl font-bold text-white flex items-center justify-center gap-2 ${cart.length && !syncing ? 'btn-gradient' : 'bg-gray-300'}`}>{syncing ? <><div className="loader w-5 h-5 border-2 animate-spin"></div> Enviando...</> : <><I.Send size={20}/> Enviar pedido</>}</button>
+                    </div>
+                    <Nav current="order" go={setView} role={user?.role}/>
+                </div>
+            );
+
+            // COURSES
+            if (view === 'courses') return (
+                <div className="min-h-screen pb-28">
+                    <div className="sticky top-0 z-40 bg-white/95 backdrop-blur-sm border-b-2 border-purple-100 p-4"><div className="flex items-center gap-3"><BackBtn onClick={() => setView('order')}/><h1 className="text-xl font-extrabold text-gray-800">🎓 Cursos</h1></div></div>
+                    <div className="p-4">
+                        <div className="flex gap-2 mb-4"><input type="text" placeholder="Nuevo curso..." value={newCrs} onChange={e => setNewCrs(e.target.value)} className="flex-1 input-field font-semibold"/><button onClick={() => { addCourse(newCrs); setNewCrs(''); }} disabled={syncing} className="px-5 btn-gradient text-white rounded-2xl"><I.Plus size={22}/></button></div>
+                        <div className="space-y-2">{crs.map(c => <div key={c} className="card p-4 flex items-center justify-between border-2 border-purple-200"><span className="text-sm font-bold text-gray-700">{c}</span><button onClick={() => deleteCourse(c)} className="p-2 bg-red-100 text-red-500 rounded-lg"><I.X size={18}/></button></div>)}</div>
+                    </div>
+                    <Nav current="order" go={setView} role={user?.role}/>
+                </div>
+            );
+
+            // HANDOVER
+            if (view === 'handover') {
+                const OrdCard = ({ o }) => {
+                    const [items, setItems] = useState(o.items);
+                    const [obs, setObs] = useState('');
+                    const stCol = { 'Solicitado': 'bg-yellow-400', 'En Curso': 'bg-cyan-500', 'Devolución Pendiente': 'bg-orange-500', 'Finalizado': 'bg-green-500' };
+                    const stBorder = { 'Solicitado': 'border-yellow-300', 'En Curso': 'border-cyan-300', 'Devolución Pendiente': 'border-orange-300', 'Finalizado': 'border-green-300' };
+
+                    if (user?.role === 'Docente' && o.teacher !== user.fullName) return null;
+
+                    return (
+                        <div className={`card p-5 relative overflow-hidden border-2 ${stBorder[o.status]}`}>
+                            <div className={`absolute left-0 top-0 bottom-0 w-2 ${stCol[o.status]}`}/>
+                            <div className="flex justify-between items-start mb-3"><div><p className="text-xs text-gray-400 font-semibold">👨‍🏫 Docente</p><p className="font-bold text-gray-800 text-lg">{o.teacher}</p></div><span className={`px-3 py-1.5 rounded-full text-[10px] font-bold text-white ${stCol[o.status]}`}>{o.status.toUpperCase()}</span></div>
+                            <div className="flex gap-4 text-xs text-gray-500 font-semibold mb-3"><span>🎓 {o.career}</span><span>📅 {o.date} · {o.time}</span></div>
+                            <div className="bg-gray-50 rounded-2xl p-4 mb-3 border-2 border-gray-200">
+                                <p className="text-xs text-gray-400 font-bold mb-2">📦 MATERIAL</p>
+                                {items.map(i => (
+                                    <div key={i.id} className="flex justify-between items-center py-2 border-b border-gray-100 last:border-0">
+                                        <span className="text-sm text-gray-700 font-semibold">{i.name}</span>
+                                        {user?.role === 'Administrativo' && o.status === 'Solicitado' ? (
+                                            <div className="flex items-center gap-1 bg-white rounded-xl px-2 py-1 border-2 border-gray-200">
+                                                <button onClick={() => setItems(items.map(x => x.id === i.id ? { ...x, q: Math.max(0, x.q - 1) } : x))} className="w-7 h-7 flex items-center justify-center text-red-500"><I.Minus size={14}/></button>
+                                                <span className="text-sm font-black w-6 text-center text-cyan-600">{i.q}</span>
+                                                <button onClick={() => setItems(items.map(x => x.id === i.id ? { ...x, q: x.q + 1 } : x))} className="w-7 h-7 flex items-center justify-center text-green-500"><I.Plus size={14}/></button>
+                                            </div>
+                                        ) : <span className="text-sm font-black text-cyan-600">×{i.q}</span>}
+                                    </div>
+                                ))}
+                            </div>
+                            {o.status === 'En Curso' && user?.role === 'Docente' && <textarea placeholder="⚠️ Observaciones..." value={obs} onChange={e => setObs(e.target.value)} className="w-full px-4 py-3 bg-orange-50 rounded-2xl text-sm border-2 border-orange-200 mb-3 font-semibold" rows={2}/>}
+                            {o.obs && <div className="bg-orange-50 rounded-2xl p-4 mb-3 border-2 border-orange-200"><p className="text-xs font-bold text-orange-600"><I.AlertTriangle size={14} className="inline mr-1"/> OBSERVACIONES</p><p className="text-sm text-gray-700 italic mt-1">"{o.obs}"</p></div>}
+                            {o.res && <div className="bg-green-50 rounded-2xl p-4 mb-3 border-2 border-green-200"><p className="text-xs font-bold text-green-600"><I.CheckCircle size={14} className="inline mr-1"/> RESOLUCIÓN</p><p className="text-sm text-gray-700 mt-1">{o.res}</p></div>}
+                            <div className="flex justify-between items-center pt-3 border-t-2 border-dashed border-gray-200"><span className="text-[10px] text-gray-400 font-bold">ID: #{o.id?.slice(0,8)}</span>{o.sig && <img src={o.sig} className="h-6 opacity-50" alt=""/>}</div>
+                            {user?.role === 'Administrativo' && o.status === 'Solicitado' && <button onClick={() => confirmDel(o.id, items)} disabled={syncing} className="w-full mt-4 py-3 btn-cyan text-white rounded-2xl font-bold disabled:opacity-50">{syncing ? 'Procesando...' : '✓ Confirmar entrega'}</button>}
+                            {user?.role === 'Docente' && o.status === 'En Curso' && <button onClick={() => returnMat(o.id, obs)} disabled={syncing} className="w-full mt-4 py-3 btn-orange text-white rounded-2xl font-bold disabled:opacity-50">{syncing ? 'Procesando...' : '↩ Devolver material'}</button>}
+                            {user?.role === 'Administrativo' && o.status === 'Devolución Pendiente' && <button onClick={() => finRet(o.id)} disabled={syncing} className="w-full mt-4 py-3 btn-green text-white rounded-2xl font-bold disabled:opacity-50">{syncing ? 'Procesando...' : '✓ Confirmar reingreso'}</button>}
+                        </div>
+                    );
+                };
+
+                const filteredOrders = user?.role === 'Docente' ? ord.filter(o => o.teacher === user.fullName) : ord;
+
+                return (
+                    <div className="min-h-screen pb-28">
+                        <div className="sticky top-0 z-40 bg-white/95 backdrop-blur-sm border-b-2 border-cyan-100 p-4"><div className="flex items-center gap-3"><BackBtn onClick={() => setView('dashboard')}/><h1 className="text-xl font-extrabold text-gray-800 flex-1">📖 Cuaderno Digital</h1><button onClick={refresh} disabled={syncing} className="p-2 bg-cyan-100 rounded-xl"><I.Refresh size={18} className={`text-cyan-600 ${syncing ? 'animate-spin' : ''}`}/></button></div></div>
+                        <div className="p-4 space-y-4">{filteredOrders.length === 0 ? <div className="text-center py-16"><I.Book size={48} className="mx-auto text-gray-200 mb-3"/><p className="text-gray-400 font-bold">Sin novedades</p></div> : filteredOrders.map(o => <OrdCard key={o.id} o={o}/>)}</div>
+                        <Nav current="handover" go={setView} role={user?.role}/>
+                    </div>
+                );
+            }
+
+            // HISTORY
+            if (view === 'history') return (
+                <div className="min-h-screen pb-28">
+                    <div className="sticky top-0 z-40 bg-white/95 backdrop-blur-sm border-b-2 border-purple-100 p-4"><div className="flex items-center gap-3"><BackBtn onClick={() => setView('dashboard')}/><div className="flex-1"><h1 className="text-xl font-extrabold text-gray-800">📊 Historial</h1><p className="text-xs text-gray-500">{his.length} mov.</p></div><button onClick={refresh} disabled={syncing} className="p-2 bg-purple-100 rounded-xl"><I.Refresh size={18} className={`text-purple-600 ${syncing ? 'animate-spin' : ''}`}/></button></div></div>
+                    <div className="p-4 space-y-3">{his.length === 0 ? <div className="text-center py-16"><I.History size={48} className="mx-auto text-gray-200 mb-3"/><p className="text-gray-400 font-bold">Sin movimientos</p></div> : his.map(h => (
+                        <div key={h.id} className={`card p-4 border-2 ${h.type === 'in' ? 'border-green-300' : 'border-red-300'}`}>
+                            <div className="flex items-start gap-3">
+                                <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${h.type === 'in' ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-500'}`}>{h.type === 'in' ? <I.TrendingUp size={20}/> : <I.TrendingDown size={20}/>}</div>
+                                <div className="flex-1">
+                                    <p className="font-bold text-gray-800">{h.name}</p>
+                                    <p className="text-xs text-gray-400">{new Date(h.at).toLocaleString('es-AR')}</p>
+                                    <div className="flex gap-2 mt-2 flex-wrap"><span className={`px-3 py-1 rounded-full text-xs font-bold ${h.type === 'in' ? 'badge-green' : 'badge-red'}`}>{h.type === 'in' ? '+' : '-'}{h.amt}</span><span className="badge-purple px-3 py-1 rounded-full text-xs font-bold">{h.reason}</span></div>
+                                    {h.note && <p className="text-xs text-gray-500 mt-2 italic">"{h.note}"</p>}
+                                </div>
+                            </div>
+                        </div>
+                    ))}</div>
+                    <Nav current="dashboard" go={setView} role={user?.role}/>
+                </div>
+            );
+
+            // INCIDENTS
+            if (view === 'incidents') {
+                const incs = ord.filter(o => o.obs);
+                return (
+                    <div className="min-h-screen pb-28">
+                        <div className="sticky top-0 z-40 bg-white/95 backdrop-blur-sm border-b-2 border-orange-100 p-4"><div className="flex items-center gap-3"><BackBtn onClick={() => setView('dashboard')}/><h1 className="text-xl font-extrabold text-gray-800">🔧 Bitácora</h1></div></div>
+                        <div className="p-4 space-y-4">{incs.length === 0 ? <div className="text-center py-16"><I.CheckCircle size={56} className="mx-auto text-green-400 mb-3"/><p className="text-gray-800 font-bold text-lg">¡Todo en orden!</p></div> : incs.map(o => {
+                            const [res, setRes] = useState('');
+                            return (
+                                <div key={o.id} className="card p-5 border-3 border-red-200 relative overflow-hidden">
+                                    <div className="absolute left-0 top-0 bottom-0 w-2 bg-red-500"/>
+                                    <div className="flex justify-between mb-2"><span className="text-xs text-gray-400 font-bold">{o.date}</span><span className="badge-red px-3 py-1 rounded-full font-bold">⚠️ INCIDENTE</span></div>
+                                    <p className="font-bold text-gray-800 text-lg">{o.teacher}</p>
+                                    <p className="text-xs text-gray-500 font-semibold mb-3">🎓 {o.career}</p>
+                                    <div className="bg-red-50 rounded-2xl p-4 mb-3 border-2 border-red-200"><p className="text-sm text-red-800 italic">"{o.obs}"</p></div>
+                                    {o.res ? <div className="bg-green-50 rounded-2xl p-4 border-2 border-green-200"><p className="text-xs font-bold text-green-600"><I.CheckCircle size={14} className="inline mr-1"/> RESUELTO</p><p className="text-sm text-gray-700 mt-1">{o.res}</p></div>
+                                    : <div className="flex gap-2"><input type="text" placeholder="Resolución..." value={res} onChange={e => setRes(e.target.value)} className="flex-1 input-field font-semibold"/><button onClick={() => { if (res.trim()) resolve(o.id, res); }} disabled={syncing} className="px-5 btn-gradient text-white rounded-2xl"><I.Check size={20}/></button></div>}
+                                </div>
+                            );
+                        })}</div>
+                        <Nav current="dashboard" go={setView} role={user?.role}/>
+                    </div>
+                );
+            }
+
+            // PROFILE
+            if (view === 'profile') return (
+                <div className="min-h-screen pb-28">
+                    <div className="sticky top-0 z-40 bg-white/95 backdrop-blur-sm border-b-2 border-orange-100 p-4"><div className="flex items-center gap-3"><BackBtn onClick={() => setView('dashboard')}/><h1 className="text-xl font-extrabold text-gray-800">👤 Mi perfil</h1></div></div>
+                    <div className="p-4 space-y-4">
+                        <div className={`card p-6 text-center ${user?.role === 'Administrativo' ? 'card-purple' : 'card-cyan'}`}>
+                            <div className="w-24 h-24 mx-auto mb-4 rounded-full bg-gradient-to-br from-cyan-400 via-purple-500 to-pink-500 flex items-center justify-center text-white text-3xl font-black shadow-xl">{user?.name?.[0]}{user?.surname?.[0]}</div>
+                            <h2 className="text-2xl font-extrabold text-gray-800">{user?.fullName}</h2>
+                            <span className={`inline-block mt-2 px-5 py-2 rounded-full font-bold ${user?.role === 'Administrativo' ? 'badge-purple text-sm' : 'badge-cyan text-sm'}`}>{user?.role === 'Administrativo' ? '👑 ADMINISTRACIÓN' : '👨‍🏫 DOCENTE'}</span>
+                            <div className="mt-5 bg-gradient-to-br from-cyan-50 to-purple-50 rounded-2xl p-4 text-left border-2 border-purple-100"><p className="text-xs text-gray-400 font-bold uppercase">📧 Correo</p><p className="text-base font-bold text-gray-700 mt-1">{user?.email}</p></div>
+                        </div>
+                        {user?.sig && <div className="card p-5 card-green"><h3 className="text-base font-bold text-gray-800 mb-3">✍️ Mi firma</h3><div className="bg-gradient-to-br from-green-50 to-cyan-50 rounded-2xl p-5 border-2 border-green-200"><img src={user.sig} alt="Firma" className="h-14 mx-auto"/></div></div>}
+                        <button onClick={logout} className="w-full py-4 bg-red-100 text-red-600 rounded-2xl font-bold flex items-center justify-center gap-2 border-2 border-red-200"><I.LogOut size={20}/> Cerrar sesión</button>
+                        <p className="text-center text-xs text-gray-400 pt-4">Mise en App v5.0<br/><span className="font-bold text-gray-500">Rainero Culinaria 4.0</span><br/><span className="text-green-500">● Conectado a Supabase</span></p>
+                    </div>
+                    <Nav current="profile" go={setView} role={user?.role}/>
+                </div>
+            );
+
+            return null;
+        };
+
+        ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+    </script>
+</body>
+</html>
