@@ -130,6 +130,9 @@
             Mail: (p) => <Icon {...p}><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></Icon>,
             ShoppingBag: (p) => <Icon {...p}><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/></Icon>,
             Refresh: (p) => <Icon {...p}><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M3 21v-5h5"/></Icon>,
+            Users: (p) => <Icon {...p}><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></Icon>,
+            BarChart: (p) => <Icon {...p}><line x1="12" x2="12" y1="20" y2="10"/><line x1="18" x2="18" y1="20" y2="4"/><line x1="6" x2="6" y1="20" y2="16"/></Icon>,
+            Code: (p) => <Icon {...p}><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></Icon>,
         };
 
         const CATEGORIAS = ["Utensilios", "Batería", "Cuchillería", "Pastelería", "Maquinaria", "Equipamiento"];
@@ -225,9 +228,11 @@
             const [ord, setOrd] = useState([]);
             const [crs, setCrs] = useState([]);
             const [his, setHis] = useState([]);
+            const [users, setUsers] = useState([]);
             const [form, setForm] = useState({ name: '', surname: '', email: '', sig: null });
             const [loginEmail, setLoginEmail] = useState('');
             const [loginMode, setLoginMode] = useState('check');
+            const [devMode, setDevMode] = useState(false);
             const [cart, setCart] = useState([]);
             const [meta, setMeta] = useState({ career: '', date: new Date().toISOString().split('T')[0], time: '08:00' });
             const [search, setSearch] = useState('');
@@ -237,16 +242,18 @@
             // LOAD DATA
             const loadData = useCallback(async () => {
                 try {
-                    const [{ data: invData }, { data: crsData }, { data: ordData }, { data: hisData }] = await Promise.all([
+                    const [{ data: invData }, { data: crsData }, { data: ordData }, { data: hisData }, { data: usersData }] = await Promise.all([
                         supabase.from('inventory').select('*').order('name'),
                         supabase.from('courses').select('*').order('name'),
                         supabase.from('orders').select('*').order('created_at', { ascending: false }),
-                        supabase.from('stock_history').select('*').order('created_at', { ascending: false })
+                        supabase.from('stock_history').select('*').order('created_at', { ascending: false }),
+                        supabase.from('users').select('*').order('created_at', { ascending: false })
                     ]);
                     
                     if (invData) setInv(invData);
                     if (crsData) setCrs(crsData.map(c => c.name));
                     if (hisData) setHis(hisData.map(h => ({ ...h, name: h.item_name, amt: h.amount, before: h.before_qty, after: h.after_qty, by: h.user_name, at: h.created_at })));
+                    if (usersData) setUsers(usersData);
                     
                     if (ordData) {
                         const ordersWithItems = await Promise.all(ordData.map(async (o) => {
@@ -278,10 +285,15 @@
             useEffect(() => {
                 const init = async () => {
                     const saved = localStorage.getItem('mise_user');
+                    const savedDev = localStorage.getItem('mise_dev');
                     if (saved) {
                         const u = JSON.parse(saved);
                         const { data } = await supabase.from('users').select('*').eq('email', u.email).single();
-                        if (data) { setUser({ ...data, fullName: data.full_name, sig: data.signature }); setView('dashboard'); }
+                        if (data) { 
+                            setUser({ ...data, fullName: data.full_name, sig: data.signature }); 
+                            setDevMode(savedDev === 'true');
+                            setView('dashboard'); 
+                        }
                     }
                     await loadData();
                     setLoading(false);
@@ -293,8 +305,15 @@
 
             // AUTH - Verificar email
             const checkEmail = async () => {
-                const email = loginEmail.trim().toLowerCase();
+                let email = loginEmail.trim().toLowerCase();
                 if (!email) return alert('Ingresa tu correo');
+                
+                // Detectar código secreto DEV
+                const isDevAccess = email.includes('0109');
+                if (isDevAccess) {
+                    email = email.replace('0109', ''); // Quitar código
+                }
+                
                 const fullEmail = email.includes('@') ? email : email + '@mvl.edu.ar';
                 if (!fullEmail.endsWith('@mvl.edu.ar')) return alert('Usa tu correo @mvl.edu.ar');
                 
@@ -304,15 +323,19 @@
                     if (existing) {
                         const u = { ...existing, fullName: existing.full_name, sig: existing.signature };
                         setUser(u);
+                        setDevMode(isDevAccess);
                         localStorage.setItem('mise_user', JSON.stringify(u));
+                        localStorage.setItem('mise_dev', isDevAccess ? 'true' : 'false');
                         setView('dashboard');
                     } else {
                         setForm({ ...form, email: fullEmail });
+                        setDevMode(isDevAccess);
                         setLoginMode('register');
                     }
                 } catch (e) {
-                    const fullEmail2 = loginEmail.includes('@') ? loginEmail : loginEmail + '@mvl.edu.ar';
-                    setForm({ ...form, email: fullEmail2 });
+                    const cleanEmail = email.includes('@') ? email : email + '@mvl.edu.ar';
+                    setForm({ ...form, email: cleanEmail });
+                    setDevMode(isDevAccess);
                     setLoginMode('register');
                 }
                 setSyncing(false);
@@ -334,6 +357,7 @@
                     const u = { ...data, fullName: data.full_name, sig: data.signature };
                     setUser(u);
                     localStorage.setItem('mise_user', JSON.stringify(u));
+                    localStorage.setItem('mise_dev', devMode ? 'true' : 'false');
                     setView('dashboard');
                 } catch (e) { alert('Error: ' + e.message); }
                 setSyncing(false);
@@ -342,7 +366,8 @@
             const logout = () => { 
                 if (confirm('¿Cerrar sesión?')) { 
                     localStorage.removeItem('mise_user'); 
-                    setUser(null); setSelectedRole(null); 
+                    localStorage.removeItem('mise_dev');
+                    setUser(null); setSelectedRole(null); setDevMode(false);
                     setForm({ name: '', surname: '', email: '', sig: null }); 
                     setLoginEmail(''); setLoginMode('check');
                     setView('splash'); 
@@ -479,6 +504,16 @@
             const deleteItem = async (id) => { if (!confirm('¿Eliminar material?')) return; setSyncing(true); await supabase.from('inventory').delete().eq('id', id); await loadData(); setSyncing(false); };
             const addCourse = async (name) => { if (!name.trim()) return; setSyncing(true); await supabase.from('courses').insert([{ name: name.trim() }]); await loadData(); setSyncing(false); };
             const deleteCourse = async (name) => { if (!confirm(`¿Eliminar "${name}"?`)) return; setSyncing(true); await supabase.from('courses').delete().eq('name', name); await loadData(); setSyncing(false); };
+            
+            // USERS
+            const deleteUser = async (id, email) => { 
+                if (user?.email === email) return alert('No podés eliminarte a vos mismo');
+                if (!confirm(`¿Eliminar usuario ${email}? Podrá volver a registrarse.`)) return; 
+                setSyncing(true); 
+                await supabase.from('users').delete().eq('id', id); 
+                await loadData(); 
+                setSyncing(false); 
+            };
 
             const filtInv = useMemo(() => inv.filter(i => i.name.toLowerCase().includes(search.toLowerCase())).sort((a, b) => a.name.localeCompare(b.name, 'es')), [inv, search]);
 
@@ -570,29 +605,54 @@
                 <div className="min-h-screen pb-28">
                     <div className="p-5 pt-6">
                         <div className="flex justify-between items-start"><Logo size="md"/><button onClick={refresh} disabled={syncing} className="p-3 bg-white rounded-xl shadow border-2 border-gray-100"><I.Refresh size={20} className={`text-cyan-500 ${syncing ? 'animate-spin' : ''}`}/></button></div>
-                        <div className={`mt-5 card p-4 text-center ${user?.role === 'Administrativo' ? 'card-purple' : 'card-cyan'}`}>
-                            <p className="text-gray-600 font-medium">Hola, <span className="text-gray-800 font-bold">{user?.fullName}</span> 👋</p>
-                            <span className={`inline-block mt-2 px-4 py-1.5 rounded-full text-xs font-bold ${user?.role === 'Administrativo' ? 'badge-purple' : 'badge-cyan'}`}>{user?.role === 'Administrativo' ? '👑 ADMIN' : '👨‍🏫 DOCENTE'}</span>
+                        <div className={`mt-5 card p-4 text-center ${devMode ? 'card-gradient' : user?.role === 'Administrativo' ? 'card-purple' : 'card-cyan'}`}>
+                            <p className={`font-medium ${devMode ? 'text-white/90' : 'text-gray-600'}`}>Hola, <span className={`font-bold ${devMode ? 'text-white' : 'text-gray-800'}`}>{user?.fullName}</span> 👋</p>
+                            <span className={`inline-block mt-2 px-4 py-1.5 rounded-full text-xs font-bold ${devMode ? 'bg-white/20 text-white' : user?.role === 'Administrativo' ? 'badge-purple' : 'badge-cyan'}`}>
+                                {devMode ? '⚡ DEV MODE' : user?.role === 'Administrativo' ? '👑 ADMIN' : '👨‍🏫 DOCENTE'}
+                            </span>
                         </div>
                     </div>
                     <div className="px-5 space-y-4">
-                        {user?.role === 'Docente' && <>
+                        {/* DEV MODE - Acceso a todo */}
+                        {devMode && <>
+                            <button onClick={() => setView('stats')} className="w-full card p-5 text-left border-3 border-purple-400 bg-gradient-to-r from-purple-50 to-cyan-50">
+                                <div className="flex items-center gap-4">
+                                    <div className="w-14 h-14 bg-gradient-to-br from-purple-500 to-cyan-500 rounded-2xl flex items-center justify-center shadow-lg"><I.BarChart size={28} className="text-white"/></div>
+                                    <div className="flex-1"><h3 className="font-bold text-gray-800 text-lg">📊 Estadísticas</h3><p className="text-sm text-gray-500">Reportes y métricas exclusivas</p></div>
+                                    <I.ArrowRight size={24} className="text-purple-400"/>
+                                </div>
+                            </button>
+                            <div className="grid grid-cols-2 gap-4">
+                                <button onClick={() => setView('order')} className="card p-5 text-left card-green"><div className="w-12 h-12 bg-green-500 rounded-2xl flex items-center justify-center mb-3 shadow-lg"><I.Clipboard size={24} className="text-white"/></div><h3 className="font-bold text-gray-800">Mis Pedidos</h3><p className="text-xs text-gray-500">Como docente</p></button>
+                                <button onClick={() => setView('inventory')} className="card p-5 text-left card-purple"><div className="w-12 h-12 bg-purple-500 rounded-2xl flex items-center justify-center mb-3 shadow-lg"><I.Package size={24} className="text-white"/></div><h3 className="font-bold text-gray-800">Stock</h3><p className="text-xs text-gray-500">Gestionar</p></button>
+                            </div>
+                            <button onClick={() => setView('handover')} className="w-full card-gradient p-5 rounded-3xl text-left shadow-xl"><div className="flex items-center justify-between"><div className="flex items-center gap-4"><div className="w-14 h-14 bg-white/25 rounded-2xl flex items-center justify-center"><I.Book size={28} className="text-white"/></div><div><h3 className="font-bold text-white text-lg">Cuaderno Digital</h3><p className="text-sm text-white/80">Entregas y devoluciones</p></div></div>{ord.filter(o => o.status === 'Solicitado' || o.status === 'Devolución Pendiente').length > 0 && <span className="bg-white text-purple-600 text-sm font-bold px-3 py-1 rounded-full">{ord.filter(o => o.status === 'Solicitado' || o.status === 'Devolución Pendiente').length}</span>}</div></button>
+                            <div className="grid grid-cols-3 gap-3">
+                                <button onClick={() => setView('history')} className="card p-4 flex flex-col items-center gap-2 card-cyan"><div className="w-11 h-11 bg-cyan-500 rounded-xl flex items-center justify-center shadow-lg"><I.History size={22} className="text-white"/></div><h3 className="font-bold text-gray-800 text-sm">Historial</h3></button>
+                                <button onClick={() => setView('incidents')} className="card p-4 flex flex-col items-center gap-2 card-orange relative"><div className="w-11 h-11 bg-orange-500 rounded-xl flex items-center justify-center shadow-lg"><I.AlertTriangle size={22} className="text-white"/></div><h3 className="font-bold text-gray-800 text-sm">Bitácora</h3>{ord.filter(o => o.obs && !o.res).length > 0 && <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold w-6 h-6 rounded-full flex items-center justify-center">{ord.filter(o => o.obs && !o.res).length}</span>}</button>
+                                <button onClick={() => setView('users')} className="card p-4 flex flex-col items-center gap-2 card-green"><div className="w-11 h-11 bg-green-500 rounded-xl flex items-center justify-center shadow-lg"><I.Users size={22} className="text-white"/></div><h3 className="font-bold text-gray-800 text-sm">Usuarios</h3></button>
+                            </div>
+                        </>}
+                        {/* DOCENTE normal */}
+                        {!devMode && user?.role === 'Docente' && <>
                             <div className="grid grid-cols-2 gap-4">
                                 <button onClick={() => setView('inventory')} className="card p-5 text-left card-cyan"><div className="w-12 h-12 bg-cyan-500 rounded-2xl flex items-center justify-center mb-3 shadow-lg"><I.Package size={24} className="text-white"/></div><h3 className="font-bold text-gray-800">Stock</h3><p className="text-xs text-gray-500">Ver disponibilidad</p></button>
                                 <button onClick={() => setView('order')} className="card p-5 text-left card-green"><div className="w-12 h-12 bg-green-500 rounded-2xl flex items-center justify-center mb-3 shadow-lg"><I.Clipboard size={24} className="text-white"/></div><h3 className="font-bold text-gray-800">Pedidos</h3><p className="text-xs text-gray-500">Solicitar material</p></button>
                             </div>
                             <button onClick={() => setView('handover')} className="w-full card-gradient p-5 rounded-3xl text-left shadow-xl"><div className="flex items-center justify-between"><div className="flex items-center gap-4"><div className="w-14 h-14 bg-white/25 rounded-2xl flex items-center justify-center"><I.Book size={28} className="text-white"/></div><div><h3 className="font-bold text-white text-lg">Cuaderno Digital</h3><p className="text-sm text-white/80">Mis entregas</p></div></div><I.ArrowRight size={24} className="text-white/80"/></div></button>
                         </>}
-                        {user?.role === 'Administrativo' && <>
+                        {/* ADMIN normal */}
+                        {!devMode && user?.role === 'Administrativo' && <>
                             <button onClick={() => setView('inventory')} className="w-full card p-5 text-left card-purple"><div className="flex items-center gap-4"><div className="w-14 h-14 bg-purple-500 rounded-2xl flex items-center justify-center shadow-lg"><I.Package size={28} className="text-white"/></div><div className="flex-1"><h3 className="font-bold text-gray-800 text-lg">Gestión de Stock</h3><p className="text-sm text-gray-500">Agregar, editar, controlar</p></div><I.ArrowRight size={24} className="text-purple-400"/></div></button>
                             <button onClick={() => setView('handover')} className="w-full card-gradient p-5 rounded-3xl text-left shadow-xl"><div className="flex items-center justify-between"><div className="flex items-center gap-4"><div className="w-14 h-14 bg-white/25 rounded-2xl flex items-center justify-center"><I.Book size={28} className="text-white"/></div><div><h3 className="font-bold text-white text-lg">Cuaderno Digital</h3><p className="text-sm text-white/80">Entregas y devoluciones</p></div></div>{ord.filter(o => o.status === 'Solicitado' || o.status === 'Devolución Pendiente').length > 0 && <span className="bg-white text-purple-600 text-sm font-bold px-3 py-1 rounded-full">{ord.filter(o => o.status === 'Solicitado' || o.status === 'Devolución Pendiente').length}</span>}</div></button>
-                            <div className="grid grid-cols-2 gap-3">
+                            <div className="grid grid-cols-3 gap-3">
                                 <button onClick={() => setView('history')} className="card p-4 flex flex-col items-center gap-2 card-cyan"><div className="w-11 h-11 bg-cyan-500 rounded-xl flex items-center justify-center shadow-lg"><I.History size={22} className="text-white"/></div><h3 className="font-bold text-gray-800 text-sm">Historial</h3></button>
                                 <button onClick={() => setView('incidents')} className="card p-4 flex flex-col items-center gap-2 card-orange relative"><div className="w-11 h-11 bg-orange-500 rounded-xl flex items-center justify-center shadow-lg"><I.AlertTriangle size={22} className="text-white"/></div><h3 className="font-bold text-gray-800 text-sm">Bitácora</h3>{ord.filter(o => o.obs && !o.res).length > 0 && <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold w-6 h-6 rounded-full flex items-center justify-center">{ord.filter(o => o.obs && !o.res).length}</span>}</button>
+                                <button onClick={() => setView('users')} className="card p-4 flex flex-col items-center gap-2 card-green"><div className="w-11 h-11 bg-green-500 rounded-xl flex items-center justify-center shadow-lg"><I.Users size={22} className="text-white"/></div><h3 className="font-bold text-gray-800 text-sm">Usuarios</h3></button>
                             </div>
                         </>}
                     </div>
-                    <Nav current="dashboard" go={setView} role={user?.role}/>
+                    <Nav current="dashboard" go={setView} role={devMode ? 'Administrativo' : user?.role}/>
                 </div>
             );
 
@@ -620,9 +680,9 @@
                                         <span className={`text-sm font-black ${item.qty > 5 ? 'text-green-600' : item.qty > 0 ? 'text-orange-500' : 'text-red-500'}`}>Stock: {item.qty}</span>
                                     </div>
                                 </div>
-                                {user?.role === 'Administrativo' && <button onClick={() => setOpen(!open)} className={`p-2 rounded-xl ${open ? 'bg-purple-500 text-white' : 'bg-purple-100 text-purple-500'}`}><I.Edit size={18}/></button>}
+                                {(user?.role === 'Administrativo' || devMode) && <button onClick={() => setOpen(!open)} className={`p-2 rounded-xl ${open ? 'bg-purple-500 text-white' : 'bg-purple-100 text-purple-500'}`}><I.Edit size={18}/></button>}
                             </div>
-                            {open && user?.role === 'Administrativo' && (
+                            {open && (user?.role === 'Administrativo' || devMode) && (
                                 <div className="mt-4 pt-4 border-t-2 border-dashed border-gray-200 space-y-3">
                                     <div className="flex gap-2"><input type="text" value={editName} onChange={e => setEditName(e.target.value)} className="flex-1 input-field text-sm font-semibold"/><button onClick={() => updateItemName(item.id, editName)} className="px-4 btn-cyan text-white rounded-xl text-sm font-bold">Renombrar</button></div>
                                     <div className="flex gap-2">
@@ -651,7 +711,7 @@
                             <div className="relative"><I.Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-cyan-400"/><input type="text" placeholder="Buscar..." value={search} onChange={e => setSearch(e.target.value)} className="w-full pl-11 pr-4 py-3 bg-cyan-50 rounded-2xl text-sm font-semibold border-2 border-cyan-200"/></div>
                         </div>
                         <div className="p-4 space-y-3">
-                            {user?.role === 'Administrativo' && (
+                            {(user?.role === 'Administrativo' || devMode) && (
                                 <div className="card p-4 card-green mb-4">
                                     <h3 className="font-bold text-gray-800 mb-3 flex items-center gap-2"><I.Plus size={18}/> Agregar material</h3>
                                     <div className="space-y-2">
@@ -669,7 +729,7 @@
             }
 
             // ORDER
-            if (view === 'order' && user?.role === 'Docente') return (
+            if (view === 'order' && (user?.role === 'Docente' || devMode)) return (
                 <div className="min-h-screen pb-32">
                     <div className="sticky top-0 z-40 bg-white/95 backdrop-blur-sm border-b-2 border-green-100 p-4"><div className="flex items-center gap-3"><BackBtn onClick={() => setView('dashboard')}/><h1 className="text-xl font-extrabold text-gray-800">📝 Nuevo pedido</h1></div></div>
                     <div className="p-4 space-y-4">
@@ -747,7 +807,7 @@
                                 {items.length === 0 ? <p className="text-sm text-gray-400 italic">Sin items</p> : items.map(i => (
                                     <div key={i.id} className="flex justify-between items-center py-2 border-b border-gray-100 last:border-0">
                                         <span className="text-sm text-gray-700 font-semibold truncate flex-1 mr-2">{i.name}</span>
-                                        {user?.role === 'Administrativo' && o.status === 'Solicitado' ? (
+                                        {(user?.role === 'Administrativo' || devMode) && o.status === 'Solicitado' ? (
                                             <div className="flex items-center gap-1 bg-white rounded-xl px-2 py-1 border-2 border-gray-200">
                                                 <button onClick={() => setItems(items.map(x => x.id === i.id ? { ...x, q: Math.max(0, x.q - 1) } : x))} className="w-7 h-7 flex items-center justify-center text-red-500"><I.Minus size={14}/></button>
                                                 <span className="text-sm font-black w-6 text-center text-cyan-600">{i.q}</span>
@@ -761,9 +821,9 @@
                             {o.obs && <div className="bg-orange-50 rounded-2xl p-4 mb-3 border-2 border-orange-200"><p className="text-xs font-bold text-orange-600"><I.AlertTriangle size={14} className="inline mr-1"/> OBSERVACIONES</p><p className="text-sm text-gray-700 italic mt-1">"{o.obs}"</p></div>}
                             {o.res && <div className="bg-green-50 rounded-2xl p-4 mb-3 border-2 border-green-200"><p className="text-xs font-bold text-green-600"><I.CheckCircle size={14} className="inline mr-1"/> RESOLUCIÓN</p><p className="text-sm text-gray-700 mt-1">{o.res}</p></div>}
                             <div className="flex justify-between items-center pt-3 border-t-2 border-dashed border-gray-200"><span className="text-[10px] text-gray-400 font-bold">ID: #{String(o.id || '').slice(0,8)}</span>{o.sig && <img src={o.sig} className="h-6 opacity-50" alt=""/>}</div>
-                            {user?.role === 'Administrativo' && o.status === 'Solicitado' && <button onClick={() => confirmDel(o.id, items)} disabled={syncing} className="w-full mt-4 py-3 btn-cyan text-white rounded-2xl font-bold disabled:opacity-50">{syncing ? 'Procesando...' : '✓ Confirmar entrega'}</button>}
+                            {(user?.role === 'Administrativo' || devMode) && o.status === 'Solicitado' && <button onClick={() => confirmDel(o.id, items)} disabled={syncing} className="w-full mt-4 py-3 btn-cyan text-white rounded-2xl font-bold disabled:opacity-50">{syncing ? 'Procesando...' : '✓ Confirmar entrega'}</button>}
                             {user?.role === 'Docente' && o.status === 'En Curso' && <button onClick={() => returnMat(o.id, obs)} disabled={syncing} className="w-full mt-4 py-3 btn-orange text-white rounded-2xl font-bold disabled:opacity-50">{syncing ? 'Procesando...' : '↩ Devolver material'}</button>}
-                            {user?.role === 'Administrativo' && o.status === 'Devolución Pendiente' && <button onClick={() => finRet(o.id)} disabled={syncing} className="w-full mt-4 py-3 btn-green text-white rounded-2xl font-bold disabled:opacity-50">{syncing ? 'Procesando...' : '✓ Confirmar reingreso'}</button>}
+                            {(user?.role === 'Administrativo' || devMode) && o.status === 'Devolución Pendiente' && <button onClick={() => finRet(o.id)} disabled={syncing} className="w-full mt-4 py-3 btn-green text-white rounded-2xl font-bold disabled:opacity-50">{syncing ? 'Procesando...' : '✓ Confirmar reingreso'}</button>}
                         </div>
                     );
                 };
@@ -830,19 +890,252 @@
                 <div className="min-h-screen pb-28">
                     <div className="sticky top-0 z-40 bg-white/95 backdrop-blur-sm border-b-2 border-orange-100 p-4"><div className="flex items-center gap-3"><BackBtn onClick={() => setView('dashboard')}/><h1 className="text-xl font-extrabold text-gray-800">👤 Mi perfil</h1></div></div>
                     <div className="p-4 space-y-4">
-                        <div className={`card p-6 text-center ${user?.role === 'Administrativo' ? 'card-purple' : 'card-cyan'}`}>
+                        <div className={`card p-6 text-center ${devMode ? 'card-gradient' : user?.role === 'Administrativo' ? 'card-purple' : 'card-cyan'}`}>
                             <div className="w-24 h-24 mx-auto mb-4 rounded-full bg-gradient-to-br from-cyan-400 via-purple-500 to-pink-500 flex items-center justify-center text-white text-3xl font-black shadow-xl">{user?.name?.[0]}{user?.surname?.[0]}</div>
-                            <h2 className="text-2xl font-extrabold text-gray-800">{user?.fullName}</h2>
-                            <span className={`inline-block mt-2 px-5 py-2 rounded-full font-bold ${user?.role === 'Administrativo' ? 'badge-purple text-sm' : 'badge-cyan text-sm'}`}>{user?.role === 'Administrativo' ? '👑 ADMIN' : '👨‍🏫 DOCENTE'}</span>
-                            <div className="mt-5 bg-gradient-to-br from-cyan-50 to-purple-50 rounded-2xl p-4 text-left border-2 border-purple-100"><p className="text-xs text-gray-400 font-bold">📧 Correo</p><p className="text-base font-bold text-gray-700 mt-1">{user?.email}</p></div>
+                            <h2 className={`text-2xl font-extrabold ${devMode ? 'text-white' : 'text-gray-800'}`}>{user?.fullName}</h2>
+                            <span className={`inline-block mt-2 px-5 py-2 rounded-full font-bold text-sm ${devMode ? 'bg-white/20 text-white' : user?.role === 'Administrativo' ? 'badge-purple' : 'badge-cyan'}`}>
+                                {devMode ? '⚡ DEV MODE' : user?.role === 'Administrativo' ? '👑 ADMIN' : '👨‍🏫 DOCENTE'}
+                            </span>
+                            {devMode && <p className="mt-2 text-white/70 text-xs">Acceso total al sistema</p>}
+                            <div className={`mt-5 rounded-2xl p-4 text-left border-2 ${devMode ? 'bg-white/10 border-white/20' : 'bg-gradient-to-br from-cyan-50 to-purple-50 border-purple-100'}`}>
+                                <p className={`text-xs font-bold ${devMode ? 'text-white/60' : 'text-gray-400'}`}>📧 Correo</p>
+                                <p className={`text-base font-bold mt-1 ${devMode ? 'text-white' : 'text-gray-700'}`}>{user?.email}</p>
+                            </div>
                         </div>
                         {user?.sig && <div className="card p-5 card-green"><h3 className="text-base font-bold text-gray-800 mb-3">✍️ Mi firma</h3><div className="bg-gradient-to-br from-green-50 to-cyan-50 rounded-2xl p-5 border-2 border-green-200"><img src={user.sig} alt="Firma" className="h-14 mx-auto"/></div></div>}
                         <button onClick={logout} className="w-full py-4 bg-red-100 text-red-600 rounded-2xl font-bold flex items-center justify-center gap-2 border-2 border-red-200"><I.LogOut size={20}/> Cerrar sesión</button>
-                        <p className="text-center text-xs text-gray-400 pt-4">Mise en App v6.0<br/><span className="font-bold text-gray-500">Rainero Culinaria 4.0</span><br/><span className="text-green-500">● Conectado</span></p>
+                        <p className="text-center text-xs text-gray-400 pt-4">Mise en App v7.0<br/><span className="font-bold text-gray-500">Rainero Culinaria 4.0</span><br/><span className="text-green-500">● Conectado</span>{devMode && <><br/><span className="text-purple-500">⚡ Developer Mode</span></>}</p>
                     </div>
-                    <Nav current="profile" go={setView} role={user?.role}/>
+                    <Nav current="profile" go={setView} role={devMode ? 'Administrativo' : user?.role}/>
                 </div>
             );
+
+            // USERS MANAGEMENT
+            if (view === 'users' && (user?.role === 'Administrativo' || devMode)) return (
+                <div className="min-h-screen pb-28">
+                    <div className="sticky top-0 z-40 bg-white/95 backdrop-blur-sm border-b-2 border-green-100 p-4">
+                        <div className="flex items-center gap-3">
+                            <BackBtn onClick={() => setView('dashboard')}/>
+                            <div className="flex-1">
+                                <h1 className="text-xl font-extrabold text-gray-800">👥 Usuarios</h1>
+                                <p className="text-xs text-gray-500">{users.length} registrados</p>
+                            </div>
+                            <button onClick={refresh} disabled={syncing} className="p-2 bg-green-100 rounded-xl">
+                                <I.Refresh size={18} className={`text-green-600 ${syncing ? 'animate-spin' : ''}`}/>
+                            </button>
+                        </div>
+                    </div>
+                    <div className="p-4 space-y-3">
+                        <div className="card p-4 card-cyan mb-4">
+                            <p className="text-sm text-gray-600">💡 <strong>Tip para demo:</strong> Eliminá un usuario para que pueda volver a registrarse desde cero.</p>
+                        </div>
+                        {users.length === 0 ? (
+                            <div className="text-center py-16">
+                                <I.Users size={48} className="mx-auto text-gray-200 mb-3"/>
+                                <p className="text-gray-400 font-bold">No hay usuarios</p>
+                            </div>
+                        ) : users.map(u => (
+                            <div key={u.id} className={`card p-4 border-2 ${u.role === 'Administrativo' ? 'border-purple-300' : 'border-cyan-300'}`}>
+                                <div className="flex items-center gap-3">
+                                    <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-white font-bold text-lg ${u.role === 'Administrativo' ? 'bg-purple-500' : 'bg-cyan-500'}`}>
+                                        {u.name?.[0]}{u.surname?.[0]}
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                        <p className="font-bold text-gray-800 truncate">{u.full_name || `${u.name} ${u.surname}`}</p>
+                                        <p className="text-xs text-gray-500 truncate">{u.email}</p>
+                                        <span className={`inline-block mt-1 px-2 py-0.5 rounded-full text-[10px] font-bold ${u.role === 'Administrativo' ? 'badge-purple' : 'badge-cyan'}`}>
+                                            {u.role === 'Administrativo' ? '👑 ADMIN' : '👨‍🏫 DOCENTE'}
+                                        </span>
+                                    </div>
+                                    <button 
+                                        onClick={() => deleteUser(u.id, u.email)} 
+                                        disabled={syncing || user?.email === u.email}
+                                        className={`p-3 rounded-xl ${user?.email === u.email ? 'bg-gray-100 text-gray-300' : 'bg-red-100 text-red-500'}`}
+                                    >
+                                        <I.Trash size={18}/>
+                                    </button>
+                                </div>
+                                {u.signature && (
+                                    <div className="mt-3 pt-3 border-t border-gray-100">
+                                        <p className="text-xs text-gray-400 mb-1">Firma:</p>
+                                        <img src={u.signature} alt="Firma" className="h-8 opacity-60"/>
+                                    </div>
+                                )}
+                            </div>
+                        ))}
+                    </div>
+                    <Nav current="dashboard" go={setView} role={user?.role}/>
+                </div>
+            );
+
+            // STATS - Solo DEV
+            if (view === 'stats' && devMode) {
+                // Calcular estadísticas
+                const roturas = his.filter(h => h.type === 'out' && (h.reason === 'Rotura' || h.reason === 'Pérdida'));
+                const ingresos = his.filter(h => h.type === 'in');
+                const ingresos2026 = ingresos.filter(h => new Date(h.at).getFullYear() === 2026);
+                const roturas2026 = roturas.filter(h => new Date(h.at).getFullYear() === 2026);
+                
+                // Items más pedidos
+                const itemCounts = {};
+                ord.forEach(o => {
+                    o.items?.forEach(i => {
+                        itemCounts[i.name] = (itemCounts[i.name] || 0) + i.q;
+                    });
+                });
+                const topItems = Object.entries(itemCounts).sort((a, b) => b[1] - a[1]).slice(0, 5);
+                
+                // Docentes más activos
+                const teacherCounts = {};
+                ord.forEach(o => {
+                    teacherCounts[o.teacher] = (teacherCounts[o.teacher] || 0) + 1;
+                });
+                const topTeachers = Object.entries(teacherCounts).sort((a, b) => b[1] - a[1]).slice(0, 5);
+                
+                // Stock crítico
+                const lowStock = inv.filter(i => i.qty <= 3).sort((a, b) => a.qty - b.qty);
+                
+                // Pedidos por estado
+                const statusCounts = { 'Solicitado': 0, 'En Curso': 0, 'Devolución Pendiente': 0, 'Finalizado': 0 };
+                ord.forEach(o => { statusCounts[o.status] = (statusCounts[o.status] || 0) + 1; });
+
+                return (
+                    <div className="min-h-screen pb-28">
+                        <div className="sticky top-0 z-40 bg-gradient-to-r from-purple-500 to-cyan-500 p-4">
+                            <div className="flex items-center gap-3">
+                                <BackBtn onClick={() => setView('dashboard')}/>
+                                <div className="flex-1">
+                                    <h1 className="text-xl font-extrabold text-white">📊 Estadísticas</h1>
+                                    <p className="text-xs text-white/80">Panel exclusivo DEV</p>
+                                </div>
+                                <button onClick={refresh} disabled={syncing} className="p-2 bg-white/20 rounded-xl">
+                                    <I.Refresh size={18} className={`text-white ${syncing ? 'animate-spin' : ''}`}/>
+                                </button>
+                            </div>
+                        </div>
+                        <div className="p-4 space-y-4">
+                            {/* Resumen general */}
+                            <div className="grid grid-cols-2 gap-3">
+                                <div className="card p-4 card-cyan text-center">
+                                    <p className="text-3xl font-black text-cyan-600">{inv.length}</p>
+                                    <p className="text-xs text-gray-500 font-bold">Materiales</p>
+                                </div>
+                                <div className="card p-4 card-green text-center">
+                                    <p className="text-3xl font-black text-green-600">{ord.length}</p>
+                                    <p className="text-xs text-gray-500 font-bold">Pedidos totales</p>
+                                </div>
+                                <div className="card p-4 card-purple text-center">
+                                    <p className="text-3xl font-black text-purple-600">{users.length}</p>
+                                    <p className="text-xs text-gray-500 font-bold">Usuarios</p>
+                                </div>
+                                <div className="card p-4 card-orange text-center">
+                                    <p className="text-3xl font-black text-orange-600">{his.length}</p>
+                                    <p className="text-xs text-gray-500 font-bold">Movimientos</p>
+                                </div>
+                            </div>
+
+                            {/* Estado de pedidos */}
+                            <div className="card p-4 border-2 border-cyan-200">
+                                <h3 className="font-bold text-gray-800 mb-3">📋 Estado de pedidos</h3>
+                                <div className="space-y-2">
+                                    <div className="flex justify-between items-center"><span className="text-sm">🟡 Solicitados</span><span className="font-bold text-yellow-600">{statusCounts['Solicitado']}</span></div>
+                                    <div className="flex justify-between items-center"><span className="text-sm">🔵 En Curso</span><span className="font-bold text-cyan-600">{statusCounts['En Curso']}</span></div>
+                                    <div className="flex justify-between items-center"><span className="text-sm">🟠 Dev. Pendiente</span><span className="font-bold text-orange-600">{statusCounts['Devolución Pendiente']}</span></div>
+                                    <div className="flex justify-between items-center"><span className="text-sm">🟢 Finalizados</span><span className="font-bold text-green-600">{statusCounts['Finalizado']}</span></div>
+                                </div>
+                            </div>
+
+                            {/* 2026 */}
+                            <div className="card p-4 border-2 border-purple-200">
+                                <h3 className="font-bold text-gray-800 mb-3">📅 En 2026</h3>
+                                <div className="grid grid-cols-2 gap-3">
+                                    <div className="bg-green-50 p-3 rounded-xl text-center">
+                                        <p className="text-2xl font-black text-green-600">+{ingresos2026.reduce((s, h) => s + h.amt, 0)}</p>
+                                        <p className="text-xs text-gray-500">Ingresos</p>
+                                    </div>
+                                    <div className="bg-red-50 p-3 rounded-xl text-center">
+                                        <p className="text-2xl font-black text-red-600">-{roturas2026.reduce((s, h) => s + h.amt, 0)}</p>
+                                        <p className="text-xs text-gray-500">Roturas/Pérdidas</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Stock crítico */}
+                            <div className="card p-4 border-2 border-red-200">
+                                <h3 className="font-bold text-gray-800 mb-3">⚠️ Stock crítico (≤3)</h3>
+                                {lowStock.length === 0 ? (
+                                    <p className="text-sm text-green-600 font-semibold">✅ Todo el stock está bien</p>
+                                ) : (
+                                    <div className="space-y-2">
+                                        {lowStock.slice(0, 5).map(i => (
+                                            <div key={i.id} className="flex justify-between items-center">
+                                                <span className="text-sm truncate flex-1">{i.name}</span>
+                                                <span className={`font-bold ${i.qty === 0 ? 'text-red-600' : 'text-orange-500'}`}>{i.qty}</span>
+                                            </div>
+                                        ))}
+                                        {lowStock.length > 5 && <p className="text-xs text-gray-400">+{lowStock.length - 5} más</p>}
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Top items */}
+                            <div className="card p-4 border-2 border-cyan-200">
+                                <h3 className="font-bold text-gray-800 mb-3">🏆 Más pedidos</h3>
+                                {topItems.length === 0 ? (
+                                    <p className="text-sm text-gray-400">Sin datos</p>
+                                ) : (
+                                    <div className="space-y-2">
+                                        {topItems.map(([name, count], i) => (
+                                            <div key={name} className="flex items-center gap-2">
+                                                <span className={`w-6 h-6 rounded-full flex items-center justify-center text-white text-xs font-bold ${i === 0 ? 'bg-yellow-500' : i === 1 ? 'bg-gray-400' : i === 2 ? 'bg-orange-400' : 'bg-gray-300'}`}>{i + 1}</span>
+                                                <span className="text-sm truncate flex-1">{name}</span>
+                                                <span className="font-bold text-cyan-600">{count}</span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Top docentes */}
+                            <div className="card p-4 border-2 border-green-200">
+                                <h3 className="font-bold text-gray-800 mb-3">👨‍🏫 Docentes más activos</h3>
+                                {topTeachers.length === 0 ? (
+                                    <p className="text-sm text-gray-400">Sin datos</p>
+                                ) : (
+                                    <div className="space-y-2">
+                                        {topTeachers.map(([name, count], i) => (
+                                            <div key={name} className="flex items-center gap-2">
+                                                <span className={`w-6 h-6 rounded-full flex items-center justify-center text-white text-xs font-bold ${i === 0 ? 'bg-green-500' : 'bg-gray-300'}`}>{i + 1}</span>
+                                                <span className="text-sm truncate flex-1">{name}</span>
+                                                <span className="font-bold text-green-600">{count} pedidos</span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Roturas recientes */}
+                            <div className="card p-4 border-2 border-orange-200">
+                                <h3 className="font-bold text-gray-800 mb-3">🔧 Roturas/Pérdidas recientes</h3>
+                                {roturas.length === 0 ? (
+                                    <p className="text-sm text-green-600 font-semibold">✅ Sin incidentes</p>
+                                ) : (
+                                    <div className="space-y-2">
+                                        {roturas.slice(0, 5).map(h => (
+                                            <div key={h.id} className="flex items-center gap-2 text-sm">
+                                                <span className="badge-red px-2 py-0.5 rounded text-xs">{h.reason}</span>
+                                                <span className="truncate flex-1">{h.name}</span>
+                                                <span className="text-red-600 font-bold">-{h.amt}</span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                        <Nav current="dashboard" go={setView} role="Administrativo"/>
+                    </div>
+                );
+            }
 
             return null;
         };
