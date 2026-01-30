@@ -317,9 +317,12 @@
                 const fullEmail = email.includes('@') ? email : email + '@mvl.edu.ar';
                 if (!fullEmail.endsWith('@mvl.edu.ar')) return alert('Usa tu correo @mvl.edu.ar');
                 
+                console.log('Buscando email:', fullEmail, '| DevMode:', isDevAccess);
+                
                 setSyncing(true);
                 try {
-                    const { data: existing } = await supabase.from('users').select('*').eq('email', fullEmail).single();
+                    const { data: existing, error } = await supabase.from('users').select('*').eq('email', fullEmail).single();
+                    console.log('Resultado:', existing, error);
                     if (existing) {
                         const u = { ...existing, fullName: existing.full_name, sig: existing.signature };
                         setUser(u);
@@ -333,6 +336,7 @@
                         setLoginMode('register');
                     }
                 } catch (e) {
+                    console.log('Error catch:', e);
                     const cleanEmail = email.includes('@') ? email : email + '@mvl.edu.ar';
                     setForm({ ...form, email: cleanEmail });
                     setDevMode(isDevAccess);
