@@ -236,6 +236,7 @@
             const [loginEmail, setLoginEmail] = useState('');
             const [loginMode, setLoginMode] = useState('check');
             const [devMode, setDevMode] = useState(false);
+            const [editingSig, setEditingSig] = useState(false);
             const [cart, setCart] = useState([]);
             const [meta, setMeta] = useState({ career: '', date: new Date().toISOString().split('T')[0], time: '08:00' });
             const [search, setSearch] = useState('');
@@ -320,12 +321,11 @@
                 const fullEmail = email.includes('@') ? email : email + '@mvl.edu.ar';
                 if (!fullEmail.endsWith('@mvl.edu.ar')) return alert('Usa tu correo @mvl.edu.ar');
                 
-                console.log('Buscando email:', fullEmail, '| DevMode:', isDevAccess);
+                console.log('Buscando:', fullEmail, '| Dev:', isDevAccess);
                 
                 setSyncing(true);
                 try {
                     const { data: existing, error } = await supabase.from('users').select('*').eq('email', fullEmail).single();
-                    console.log('Resultado:', existing, error);
                     if (existing) {
                         const u = { ...existing, fullName: existing.full_name, sig: existing.signature };
                         setUser(u);
@@ -339,7 +339,6 @@
                         setLoginMode('register');
                     }
                 } catch (e) {
-                    console.log('Error catch:', e);
                     const cleanEmail = email.includes('@') ? email : email + '@mvl.edu.ar';
                     setForm({ ...form, email: cleanEmail });
                     setDevMode(isDevAccess);
@@ -516,9 +515,16 @@
             const deleteUser = async (id, email) => { 
                 if (user?.email === email) return alert('No podés eliminarte a vos mismo');
                 if (!confirm(`¿Eliminar usuario ${email}? Podrá volver a registrarse.`)) return; 
-                setSyncing(true); 
-                await supabase.from('users').delete().eq('id', id); 
-                await loadData(); 
+                setSyncing(true);
+                try {
+                    const { error } = await supabase.from('users').delete().eq('id', id);
+                    if (error) throw error;
+                    await loadData();
+                    alert('✅ Usuario eliminado');
+                } catch (e) {
+                    console.error('Error eliminando usuario:', e);
+                    alert('Error al eliminar: ' + e.message);
+                }
                 setSyncing(false); 
             };
 
@@ -705,10 +711,11 @@
                                     {ord.filter(o => o.status === 'Pendiente Compra').length > 0 && <span className="absolute -top-2 -right-2 bg-orange-500 text-white text-xs font-bold w-6 h-6 rounded-full flex items-center justify-center">{ord.filter(o => o.status === 'Pendiente Compra').length}</span>}
                                 </button>
                             </div>
-                            <div className="grid grid-cols-3 gap-3">
-                                <button onClick={() => setView('history')} className="card p-4 flex flex-col items-center gap-2 card-cyan"><div className="w-11 h-11 bg-cyan-500 rounded-xl flex items-center justify-center shadow-lg"><I.History size={22} className="text-white"/></div><h3 className="font-bold text-gray-800 text-sm">Historial</h3></button>
-                                <button onClick={() => setView('incidents')} className="card p-4 flex flex-col items-center gap-2 card-orange relative"><div className="w-11 h-11 bg-orange-500 rounded-xl flex items-center justify-center shadow-lg"><I.AlertTriangle size={22} className="text-white"/></div><h3 className="font-bold text-gray-800 text-sm">Bitácora</h3>{ord.filter(o => o.obs && !o.res).length > 0 && <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold w-6 h-6 rounded-full flex items-center justify-center">{ord.filter(o => o.obs && !o.res).length}</span>}</button>
-                                <button onClick={() => setView('users')} className="card p-4 flex flex-col items-center gap-2 card-green"><div className="w-11 h-11 bg-green-500 rounded-xl flex items-center justify-center shadow-lg"><I.Users size={22} className="text-white"/></div><h3 className="font-bold text-gray-800 text-sm">Usuarios</h3></button>
+                            <div className="grid grid-cols-4 gap-3">
+                                <button onClick={() => setView('history')} className="card p-4 flex flex-col items-center gap-2 card-cyan"><div className="w-11 h-11 bg-cyan-500 rounded-xl flex items-center justify-center shadow-lg"><I.History size={22} className="text-white"/></div><h3 className="font-bold text-gray-800 text-[11px]">Historial</h3></button>
+                                <button onClick={() => setView('incidents')} className="card p-4 flex flex-col items-center gap-2 card-orange relative"><div className="w-11 h-11 bg-orange-500 rounded-xl flex items-center justify-center shadow-lg"><I.AlertTriangle size={22} className="text-white"/></div><h3 className="font-bold text-gray-800 text-[11px]">Bitácora</h3>{ord.filter(o => o.obs && !o.res).length > 0 && <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold w-6 h-6 rounded-full flex items-center justify-center">{ord.filter(o => o.obs && !o.res).length}</span>}</button>
+                                <button onClick={() => setView('courses')} className="card p-4 flex flex-col items-center gap-2 card-purple"><div className="w-11 h-11 bg-purple-500 rounded-xl flex items-center justify-center shadow-lg"><I.Book size={22} className="text-white"/></div><h3 className="font-bold text-gray-800 text-[11px]">Cursos</h3></button>
+                                <button onClick={() => setView('users')} className="card p-4 flex flex-col items-center gap-2 card-green"><div className="w-11 h-11 bg-green-500 rounded-xl flex items-center justify-center shadow-lg"><I.Users size={22} className="text-white"/></div><h3 className="font-bold text-gray-800 text-[11px]">Usuarios</h3></button>
                             </div>
                         </>}
                         {/* DOCENTE normal */}
@@ -737,10 +744,11 @@
                                     {ord.filter(o => o.status === 'Pendiente Compra').length > 0 && <span className="bg-orange-500 text-white text-sm font-bold px-3 py-1 rounded-full">{ord.filter(o => o.status === 'Pendiente Compra').length}</span>}
                                 </div>
                             </button>
-                            <div className="grid grid-cols-3 gap-3">
-                                <button onClick={() => setView('history')} className="card p-4 flex flex-col items-center gap-2 card-cyan"><div className="w-11 h-11 bg-cyan-500 rounded-xl flex items-center justify-center shadow-lg"><I.History size={22} className="text-white"/></div><h3 className="font-bold text-gray-800 text-sm">Historial</h3></button>
-                                <button onClick={() => setView('incidents')} className="card p-4 flex flex-col items-center gap-2 card-orange relative"><div className="w-11 h-11 bg-orange-500 rounded-xl flex items-center justify-center shadow-lg"><I.AlertTriangle size={22} className="text-white"/></div><h3 className="font-bold text-gray-800 text-sm">Bitácora</h3>{ord.filter(o => o.obs && !o.res).length > 0 && <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold w-6 h-6 rounded-full flex items-center justify-center">{ord.filter(o => o.obs && !o.res).length}</span>}</button>
-                                <button onClick={() => setView('users')} className="card p-4 flex flex-col items-center gap-2 card-green"><div className="w-11 h-11 bg-green-500 rounded-xl flex items-center justify-center shadow-lg"><I.Users size={22} className="text-white"/></div><h3 className="font-bold text-gray-800 text-sm">Usuarios</h3></button>
+                            <div className="grid grid-cols-4 gap-3">
+                                <button onClick={() => setView('history')} className="card p-4 flex flex-col items-center gap-2 card-cyan"><div className="w-11 h-11 bg-cyan-500 rounded-xl flex items-center justify-center shadow-lg"><I.History size={22} className="text-white"/></div><h3 className="font-bold text-gray-800 text-[11px]">Historial</h3></button>
+                                <button onClick={() => setView('incidents')} className="card p-4 flex flex-col items-center gap-2 card-orange relative"><div className="w-11 h-11 bg-orange-500 rounded-xl flex items-center justify-center shadow-lg"><I.AlertTriangle size={22} className="text-white"/></div><h3 className="font-bold text-gray-800 text-[11px]">Bitácora</h3>{ord.filter(o => o.obs && !o.res).length > 0 && <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold w-6 h-6 rounded-full flex items-center justify-center">{ord.filter(o => o.obs && !o.res).length}</span>}</button>
+                                <button onClick={() => setView('courses')} className="card p-4 flex flex-col items-center gap-2 card-purple"><div className="w-11 h-11 bg-purple-500 rounded-xl flex items-center justify-center shadow-lg"><I.Book size={22} className="text-white"/></div><h3 className="font-bold text-gray-800 text-[11px]">Cursos</h3></button>
+                                <button onClick={() => setView('users')} className="card p-4 flex flex-col items-center gap-2 card-green"><div className="w-11 h-11 bg-green-500 rounded-xl flex items-center justify-center shadow-lg"><I.Users size={22} className="text-white"/></div><h3 className="font-bold text-gray-800 text-[11px]">Usuarios</h3></button>
                             </div>
                         </>}
                     </div>
@@ -872,12 +880,43 @@
             // COURSES
             if (view === 'courses') return (
                 <div className="min-h-screen pb-28">
-                    <div className="sticky top-0 z-40 bg-white/95 backdrop-blur-sm border-b-2 border-purple-100 p-4"><div className="flex items-center gap-3"><BackBtn onClick={() => setView('order')}/><h1 className="text-xl font-extrabold text-gray-800">🎓 Cursos</h1></div></div>
-                    <div className="p-4">
-                        <div className="flex gap-2 mb-4"><input type="text" placeholder="Nuevo curso..." value={newCrs} onChange={e => setNewCrs(e.target.value)} className="flex-1 input-field font-semibold"/><button onClick={() => { addCourse(newCrs); setNewCrs(''); }} disabled={syncing} className="px-5 btn-gradient text-white rounded-2xl"><I.Plus size={22}/></button></div>
-                        <div className="space-y-2">{crs.map(c => <div key={c} className="card p-4 flex items-center justify-between border-2 border-purple-200"><span className="text-sm font-bold text-gray-700">{c}</span><button onClick={() => deleteCourse(c)} className="p-2 bg-red-100 text-red-500 rounded-lg"><I.X size={18}/></button></div>)}</div>
+                    <div className="sticky top-0 z-40 bg-white/95 backdrop-blur-sm border-b-2 border-purple-100 p-4">
+                        <div className="flex items-center gap-3">
+                            <BackBtn onClick={() => setView('dashboard')}/>
+                            <div className="flex-1">
+                                <h1 className="text-xl font-extrabold text-gray-800">🎓 Cursos / Carreras</h1>
+                                <p className="text-xs text-gray-500">{crs.length} registrados</p>
+                            </div>
+                        </div>
                     </div>
-                    <Nav current="order" go={setView} role={user?.role}/>
+                    <div className="p-4 space-y-4">
+                        <div className="card p-4 card-purple">
+                            <p className="text-sm text-gray-600 mb-3">➕ Agregar nuevo curso o carrera</p>
+                            <div className="flex gap-2">
+                                <input type="text" placeholder="Ej: Pastelería Profesional" value={newCrs} onChange={e => setNewCrs(e.target.value)} className="flex-1 input-field font-semibold"/>
+                                <button onClick={() => { addCourse(newCrs); setNewCrs(''); }} disabled={syncing || !newCrs.trim()} className="px-5 btn-gradient text-white rounded-2xl disabled:opacity-50"><I.Plus size={22}/></button>
+                            </div>
+                        </div>
+                        <div className="space-y-2">
+                            {crs.length === 0 ? (
+                                <div className="text-center py-10">
+                                    <I.Book size={48} className="mx-auto text-gray-200 mb-3"/>
+                                    <p className="text-gray-400 font-bold">No hay cursos</p>
+                                </div>
+                            ) : crs.map(c => (
+                                <div key={c} className="card p-4 flex items-center justify-between border-2 border-purple-200">
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-10 h-10 bg-purple-100 rounded-xl flex items-center justify-center">
+                                            <I.Book size={20} className="text-purple-600"/>
+                                        </div>
+                                        <span className="font-bold text-gray-700">{c}</span>
+                                    </div>
+                                    <button onClick={() => deleteCourse(c)} disabled={syncing} className="p-2 bg-red-100 text-red-500 rounded-lg disabled:opacity-50"><I.Trash size={18}/></button>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                    <Nav current="dashboard" go={setView} role={user?.role}/>
                 </div>
             );
 
@@ -979,8 +1018,6 @@
 
             // PROFILE
             if (view === 'profile') {
-                const [editingSig, setEditingSig] = useState(false);
-                
                 return (
                     <div className="min-h-screen pb-28">
                         <div className="sticky top-0 z-40 bg-white/95 backdrop-blur-sm border-b-2 border-orange-100 p-4"><div className="flex items-center gap-3"><BackBtn onClick={() => setView('dashboard')}/><h1 className="text-xl font-extrabold text-gray-800">👤 Mi perfil</h1></div></div>
