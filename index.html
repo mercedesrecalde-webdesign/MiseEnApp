@@ -59,6 +59,7 @@
         .card-purple { border: 3px solid #ce93d8; background: linear-gradient(135deg, #f3e5f5 0%, #fff 100%); }
         .card-green { border: 3px solid #81c784; background: linear-gradient(135deg, #e8f5e9 0%, #fff 100%); }
         .card-orange { border: 3px solid #ffb74d; background: linear-gradient(135deg, #fff3e0 0%, #fff 100%); }
+        .card-red { border: 3px solid #ef5350; background: linear-gradient(135deg, #ffebee 0%, #fff 100%); }
         .card-gradient { background: linear-gradient(135deg, #00bcd4 0%, #26c6da 30%, #4dd0e1 60%, #9c27b0 100%); }
 
         .btn-gradient { background: linear-gradient(135deg, #9c27b0 0%, #ab47bc 50%, #ba68c8 100%); }
@@ -133,6 +134,8 @@
             Users: (p) => <Icon {...p}><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></Icon>,
             BarChart: (p) => <Icon {...p}><line x1="12" x2="12" y1="20" y2="10"/><line x1="18" x2="18" y1="20" y2="4"/><line x1="6" x2="6" y1="20" y2="16"/></Icon>,
             Code: (p) => <Icon {...p}><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></Icon>,
+            ShoppingCart: (p) => <Icon {...p}><circle cx="8" cy="21" r="1"/><circle cx="19" cy="21" r="1"/><path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"/></Icon>,
+            FileText: (p) => <Icon {...p}><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><line x1="16" x2="8" y1="13" y2="13"/><line x1="16" x2="8" y1="17" y2="17"/><line x1="10" x2="8" y1="9" y2="9"/></Icon>,
         };
 
         const CATEGORIAS = ["Utensilios", "Batería", "Cuchillería", "Pastelería", "Maquinaria", "Equipamiento"];
@@ -519,6 +522,66 @@
                 setSyncing(false); 
             };
 
+            // Actualizar firma
+            const updateSignature = async (newSig) => {
+                if (!newSig) return;
+                setSyncing(true);
+                try {
+                    await supabase.from('users').update({ signature: newSig }).eq('id', user.id);
+                    setUser({ ...user, sig: newSig });
+                    localStorage.setItem('mise_user', JSON.stringify({ ...user, sig: newSig }));
+                    alert('✅ Firma actualizada');
+                } catch (e) { alert('Error: ' + e.message); }
+                setSyncing(false);
+            };
+
+            // Solicitud de compra
+            const sendPurchaseRequest = async (items, justification) => {
+                if (!items.length) return alert('Agregá al menos un item');
+                if (!justification.trim()) return alert('Escribí una justificación');
+                
+                setSyncing(true);
+                try {
+                    const { data: order, error } = await supabase.from('orders').insert([{ 
+                        teacher_id: user.id, 
+                        teacher_name: user.fullName, 
+                        teacher_email: user.email, 
+                        career: '📦 SOLICITUD DE COMPRA', 
+                        order_date: new Date().toISOString().split('T')[0], 
+                        order_time: new Date().toTimeString().slice(0,5), 
+                        signature: user.sig, 
+                        status: 'Pendiente Compra',
+                        observations: justification
+                    }]).select().single();
+                    
+                    if (error) throw error;
+                    
+                    const itemsToInsert = items.map(i => ({ 
+                        order_id: order.id, 
+                        inventory_id: null,
+                        item_name: i.name, 
+                        quantity: i.qty 
+                    }));
+                    
+                    await supabase.from('order_items').insert(itemsToInsert);
+                    await loadData();
+                    alert('✅ Solicitud de compra enviada');
+                    return true;
+                } catch (e) { 
+                    alert('Error: ' + e.message); 
+                    return false;
+                }
+                setSyncing(false);
+            };
+
+            // Aprobar/Rechazar solicitud
+            const updatePurchaseStatus = async (orderId, newStatus) => {
+                setSyncing(true);
+                await supabase.from('orders').update({ status: newStatus }).eq('id', orderId);
+                await loadData();
+                setSyncing(false);
+            };
+
             const filtInv = useMemo(() => inv.filter(i => i.name.toLowerCase().includes(search.toLowerCase())).sort((a, b) => a.name.localeCompare(b.name, 'es')), [inv, search]);
 
             if (loading) return <div className="min-h-screen flex flex-col items-center justify-center"><Logo size="lg"/><Loader text="Conectando..."/></div>;
@@ -631,6 +694,17 @@
                                 <button onClick={() => setView('inventory')} className="card p-5 text-left card-purple"><div className="w-12 h-12 bg-purple-500 rounded-2xl flex items-center justify-center mb-3 shadow-lg"><I.Package size={24} className="text-white"/></div><h3 className="font-bold text-gray-800">Stock</h3><p className="text-xs text-gray-500">Gestionar</p></button>
                             </div>
                             <button onClick={() => setView('handover')} className="w-full card-gradient p-5 rounded-3xl text-left shadow-xl"><div className="flex items-center justify-between"><div className="flex items-center gap-4"><div className="w-14 h-14 bg-white/25 rounded-2xl flex items-center justify-center"><I.Book size={28} className="text-white"/></div><div><h3 className="font-bold text-white text-lg">Cuaderno Digital</h3><p className="text-sm text-white/80">Entregas y devoluciones</p></div></div>{ord.filter(o => o.status === 'Solicitado' || o.status === 'Devolución Pendiente').length > 0 && <span className="bg-white text-purple-600 text-sm font-bold px-3 py-1 rounded-full">{ord.filter(o => o.status === 'Solicitado' || o.status === 'Devolución Pendiente').length}</span>}</div></button>
+                            <div className="grid grid-cols-2 gap-3">
+                                <button onClick={() => setView('purchase')} className="card p-4 flex flex-col items-center gap-2 card-orange relative">
+                                    <div className="w-11 h-11 bg-orange-500 rounded-xl flex items-center justify-center shadow-lg"><I.ShoppingCart size={22} className="text-white"/></div>
+                                    <h3 className="font-bold text-gray-800 text-sm">Solicitar</h3>
+                                </button>
+                                <button onClick={() => setView('purchases')} className="card p-4 flex flex-col items-center gap-2 card-cyan relative">
+                                    <div className="w-11 h-11 bg-cyan-500 rounded-xl flex items-center justify-center shadow-lg"><I.FileText size={22} className="text-white"/></div>
+                                    <h3 className="font-bold text-gray-800 text-sm">Expediente</h3>
+                                    {ord.filter(o => o.status === 'Pendiente Compra').length > 0 && <span className="absolute -top-2 -right-2 bg-orange-500 text-white text-xs font-bold w-6 h-6 rounded-full flex items-center justify-center">{ord.filter(o => o.status === 'Pendiente Compra').length}</span>}
+                                </button>
+                            </div>
                             <div className="grid grid-cols-3 gap-3">
                                 <button onClick={() => setView('history')} className="card p-4 flex flex-col items-center gap-2 card-cyan"><div className="w-11 h-11 bg-cyan-500 rounded-xl flex items-center justify-center shadow-lg"><I.History size={22} className="text-white"/></div><h3 className="font-bold text-gray-800 text-sm">Historial</h3></button>
                                 <button onClick={() => setView('incidents')} className="card p-4 flex flex-col items-center gap-2 card-orange relative"><div className="w-11 h-11 bg-orange-500 rounded-xl flex items-center justify-center shadow-lg"><I.AlertTriangle size={22} className="text-white"/></div><h3 className="font-bold text-gray-800 text-sm">Bitácora</h3>{ord.filter(o => o.obs && !o.res).length > 0 && <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold w-6 h-6 rounded-full flex items-center justify-center">{ord.filter(o => o.obs && !o.res).length}</span>}</button>
@@ -644,11 +718,25 @@
                                 <button onClick={() => setView('order')} className="card p-5 text-left card-green"><div className="w-12 h-12 bg-green-500 rounded-2xl flex items-center justify-center mb-3 shadow-lg"><I.Clipboard size={24} className="text-white"/></div><h3 className="font-bold text-gray-800">Pedidos</h3><p className="text-xs text-gray-500">Solicitar material</p></button>
                             </div>
                             <button onClick={() => setView('handover')} className="w-full card-gradient p-5 rounded-3xl text-left shadow-xl"><div className="flex items-center justify-between"><div className="flex items-center gap-4"><div className="w-14 h-14 bg-white/25 rounded-2xl flex items-center justify-center"><I.Book size={28} className="text-white"/></div><div><h3 className="font-bold text-white text-lg">Cuaderno Digital</h3><p className="text-sm text-white/80">Mis entregas</p></div></div><I.ArrowRight size={24} className="text-white/80"/></div></button>
+                            <button onClick={() => setView('purchase')} className="w-full card p-4 text-left card-orange">
+                                <div className="flex items-center gap-4">
+                                    <div className="w-12 h-12 bg-orange-500 rounded-2xl flex items-center justify-center shadow-lg"><I.ShoppingCart size={24} className="text-white"/></div>
+                                    <div className="flex-1"><h3 className="font-bold text-gray-800">Solicitar Compra</h3><p className="text-xs text-gray-500">Pedir material nuevo</p></div>
+                                    <I.ArrowRight size={20} className="text-orange-400"/>
+                                </div>
+                            </button>
                         </>}
                         {/* ADMIN normal */}
                         {!devMode && user?.role === 'Administrativo' && <>
                             <button onClick={() => setView('inventory')} className="w-full card p-5 text-left card-purple"><div className="flex items-center gap-4"><div className="w-14 h-14 bg-purple-500 rounded-2xl flex items-center justify-center shadow-lg"><I.Package size={28} className="text-white"/></div><div className="flex-1"><h3 className="font-bold text-gray-800 text-lg">Gestión de Stock</h3><p className="text-sm text-gray-500">Agregar, editar, controlar</p></div><I.ArrowRight size={24} className="text-purple-400"/></div></button>
                             <button onClick={() => setView('handover')} className="w-full card-gradient p-5 rounded-3xl text-left shadow-xl"><div className="flex items-center justify-between"><div className="flex items-center gap-4"><div className="w-14 h-14 bg-white/25 rounded-2xl flex items-center justify-center"><I.Book size={28} className="text-white"/></div><div><h3 className="font-bold text-white text-lg">Cuaderno Digital</h3><p className="text-sm text-white/80">Entregas y devoluciones</p></div></div>{ord.filter(o => o.status === 'Solicitado' || o.status === 'Devolución Pendiente').length > 0 && <span className="bg-white text-purple-600 text-sm font-bold px-3 py-1 rounded-full">{ord.filter(o => o.status === 'Solicitado' || o.status === 'Devolución Pendiente').length}</span>}</div></button>
+                            <button onClick={() => setView('purchases')} className="w-full card p-4 text-left card-orange">
+                                <div className="flex items-center gap-4">
+                                    <div className="w-12 h-12 bg-orange-500 rounded-2xl flex items-center justify-center shadow-lg"><I.FileText size={24} className="text-white"/></div>
+                                    <div className="flex-1"><h3 className="font-bold text-gray-800">Expediente Compras</h3><p className="text-xs text-gray-500">Solicitudes de docentes</p></div>
+                                    {ord.filter(o => o.status === 'Pendiente Compra').length > 0 && <span className="bg-orange-500 text-white text-sm font-bold px-3 py-1 rounded-full">{ord.filter(o => o.status === 'Pendiente Compra').length}</span>}
+                                </div>
+                            </button>
                             <div className="grid grid-cols-3 gap-3">
                                 <button onClick={() => setView('history')} className="card p-4 flex flex-col items-center gap-2 card-cyan"><div className="w-11 h-11 bg-cyan-500 rounded-xl flex items-center justify-center shadow-lg"><I.History size={22} className="text-white"/></div><h3 className="font-bold text-gray-800 text-sm">Historial</h3></button>
                                 <button onClick={() => setView('incidents')} className="card p-4 flex flex-col items-center gap-2 card-orange relative"><div className="w-11 h-11 bg-orange-500 rounded-xl flex items-center justify-center shadow-lg"><I.AlertTriangle size={22} className="text-white"/></div><h3 className="font-bold text-gray-800 text-sm">Bitácora</h3>{ord.filter(o => o.obs && !o.res).length > 0 && <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold w-6 h-6 rounded-full flex items-center justify-center">{ord.filter(o => o.obs && !o.res).length}</span>}</button>
@@ -890,29 +978,54 @@
             }
 
             // PROFILE
-            if (view === 'profile') return (
-                <div className="min-h-screen pb-28">
-                    <div className="sticky top-0 z-40 bg-white/95 backdrop-blur-sm border-b-2 border-orange-100 p-4"><div className="flex items-center gap-3"><BackBtn onClick={() => setView('dashboard')}/><h1 className="text-xl font-extrabold text-gray-800">👤 Mi perfil</h1></div></div>
-                    <div className="p-4 space-y-4">
-                        <div className={`card p-6 text-center ${devMode ? 'card-gradient' : user?.role === 'Administrativo' ? 'card-purple' : 'card-cyan'}`}>
-                            <div className="w-24 h-24 mx-auto mb-4 rounded-full bg-gradient-to-br from-cyan-400 via-purple-500 to-pink-500 flex items-center justify-center text-white text-3xl font-black shadow-xl">{user?.name?.[0]}{user?.surname?.[0]}</div>
-                            <h2 className={`text-2xl font-extrabold ${devMode ? 'text-white' : 'text-gray-800'}`}>{user?.fullName}</h2>
-                            <span className={`inline-block mt-2 px-5 py-2 rounded-full font-bold text-sm ${devMode ? 'bg-white/20 text-white' : user?.role === 'Administrativo' ? 'badge-purple' : 'badge-cyan'}`}>
-                                {devMode ? '⚡ DEV MODE' : user?.role === 'Administrativo' ? '👑 ADMIN' : '👨‍🏫 DOCENTE'}
-                            </span>
-                            {devMode && <p className="mt-2 text-white/70 text-xs">Acceso total al sistema</p>}
-                            <div className={`mt-5 rounded-2xl p-4 text-left border-2 ${devMode ? 'bg-white/10 border-white/20' : 'bg-gradient-to-br from-cyan-50 to-purple-50 border-purple-100'}`}>
-                                <p className={`text-xs font-bold ${devMode ? 'text-white/60' : 'text-gray-400'}`}>📧 Correo</p>
-                                <p className={`text-base font-bold mt-1 ${devMode ? 'text-white' : 'text-gray-700'}`}>{user?.email}</p>
+            if (view === 'profile') {
+                const [editingSig, setEditingSig] = useState(false);
+                
+                return (
+                    <div className="min-h-screen pb-28">
+                        <div className="sticky top-0 z-40 bg-white/95 backdrop-blur-sm border-b-2 border-orange-100 p-4"><div className="flex items-center gap-3"><BackBtn onClick={() => setView('dashboard')}/><h1 className="text-xl font-extrabold text-gray-800">👤 Mi perfil</h1></div></div>
+                        <div className="p-4 space-y-4">
+                            <div className={`card p-6 text-center ${devMode ? 'card-gradient' : user?.role === 'Administrativo' ? 'card-purple' : 'card-cyan'}`}>
+                                <div className="w-24 h-24 mx-auto mb-4 rounded-full bg-gradient-to-br from-cyan-400 via-purple-500 to-pink-500 flex items-center justify-center text-white text-3xl font-black shadow-xl">{user?.name?.[0]}{user?.surname?.[0]}</div>
+                                <h2 className={`text-2xl font-extrabold ${devMode ? 'text-white' : 'text-gray-800'}`}>{user?.fullName}</h2>
+                                <span className={`inline-block mt-2 px-5 py-2 rounded-full font-bold text-sm ${devMode ? 'bg-white/20 text-white' : user?.role === 'Administrativo' ? 'badge-purple' : 'badge-cyan'}`}>
+                                    {devMode ? '⚡ DEV MODE' : user?.role === 'Administrativo' ? '👑 ADMIN' : '👨‍🏫 DOCENTE'}
+                                </span>
+                                {devMode && <p className="mt-2 text-white/70 text-xs">Acceso total al sistema</p>}
+                                <div className={`mt-5 rounded-2xl p-4 text-left border-2 ${devMode ? 'bg-white/10 border-white/20' : 'bg-gradient-to-br from-cyan-50 to-purple-50 border-purple-100'}`}>
+                                    <p className={`text-xs font-bold ${devMode ? 'text-white/60' : 'text-gray-400'}`}>📧 Correo</p>
+                                    <p className={`text-base font-bold mt-1 ${devMode ? 'text-white' : 'text-gray-700'}`}>{user?.email}</p>
+                                </div>
                             </div>
+                            
+                            {/* Firma editable */}
+                            <div className="card p-5 card-green">
+                                <div className="flex items-center justify-between mb-3">
+                                    <h3 className="text-base font-bold text-gray-800">✍️ Mi firma</h3>
+                                    <button onClick={() => setEditingSig(!editingSig)} className={`px-3 py-1 rounded-lg text-xs font-bold ${editingSig ? 'bg-gray-200 text-gray-600' : 'bg-green-100 text-green-600'}`}>
+                                        {editingSig ? 'Cancelar' : 'Editar'}
+                                    </button>
+                                </div>
+                                {editingSig ? (
+                                    <SignPad onSave={(sig) => { if(sig) { updateSignature(sig); setEditingSig(false); } }} initial={null}/>
+                                ) : (
+                                    user?.sig ? (
+                                        <div className="bg-gradient-to-br from-green-50 to-cyan-50 rounded-2xl p-5 border-2 border-green-200">
+                                            <img src={user.sig} alt="Firma" className="h-14 mx-auto"/>
+                                        </div>
+                                    ) : (
+                                        <p className="text-gray-400 text-sm text-center py-4">Sin firma registrada</p>
+                                    )
+                                )}
+                            </div>
+                            
+                            <button onClick={logout} className="w-full py-4 bg-red-100 text-red-600 rounded-2xl font-bold flex items-center justify-center gap-2 border-2 border-red-200"><I.LogOut size={20}/> Cerrar sesión</button>
+                            <p className="text-center text-xs text-gray-400 pt-4">Mise en App v7.0<br/><span className="font-bold text-gray-500">Rainero Culinaria 4.0</span><br/><span className="text-green-500">● Conectado</span>{devMode && <><br/><span className="text-purple-500">⚡ Developer Mode</span></>}</p>
                         </div>
-                        {user?.sig && <div className="card p-5 card-green"><h3 className="text-base font-bold text-gray-800 mb-3">✍️ Mi firma</h3><div className="bg-gradient-to-br from-green-50 to-cyan-50 rounded-2xl p-5 border-2 border-green-200"><img src={user.sig} alt="Firma" className="h-14 mx-auto"/></div></div>}
-                        <button onClick={logout} className="w-full py-4 bg-red-100 text-red-600 rounded-2xl font-bold flex items-center justify-center gap-2 border-2 border-red-200"><I.LogOut size={20}/> Cerrar sesión</button>
-                        <p className="text-center text-xs text-gray-400 pt-4">Mise en App v7.0<br/><span className="font-bold text-gray-500">Rainero Culinaria 4.0</span><br/><span className="text-green-500">● Conectado</span>{devMode && <><br/><span className="text-purple-500">⚡ Developer Mode</span></>}</p>
+                        <Nav current="profile" go={setView} role={devMode ? 'Administrativo' : user?.role}/>
                     </div>
-                    <Nav current="profile" go={setView} role={devMode ? 'Administrativo' : user?.role}/>
-                </div>
-            );
+                );
+            }
 
             // USERS MANAGEMENT
             if (view === 'users' && (user?.role === 'Administrativo' || devMode)) return (
@@ -1049,6 +1162,19 @@
                                 </div>
                             </div>
 
+                            {/* Solicitudes de compra */}
+                            <div className="card p-4 border-2 border-orange-200">
+                                <h3 className="font-bold text-gray-800 mb-3">🛒 Solicitudes de compra</h3>
+                                <div className="space-y-2">
+                                    <div className="flex justify-between items-center"><span className="text-sm">⏳ Pendientes</span><span className="font-bold text-orange-600">{ord.filter(o => o.status === 'Pendiente Compra').length}</span></div>
+                                    <div className="flex justify-between items-center"><span className="text-sm">✅ Aprobadas</span><span className="font-bold text-green-600">{ord.filter(o => o.status === 'Compra Aprobada').length}</span></div>
+                                    <div className="flex justify-between items-center"><span className="text-sm">❌ Rechazadas</span><span className="font-bold text-red-500">{ord.filter(o => o.status === 'Compra Rechazada').length}</span></div>
+                                </div>
+                                {ord.filter(o => o.status === 'Pendiente Compra').length > 0 && (
+                                    <button onClick={() => setView('purchases')} className="w-full mt-3 py-2 btn-orange text-white rounded-xl font-bold text-sm">Ver expediente →</button>
+                                )}
+                            </div>
+
                             {/* 2026 */}
                             <div className="card p-4 border-2 border-purple-200">
                                 <h3 className="font-bold text-gray-800 mb-3">📅 En 2026</h3>
@@ -1137,6 +1263,240 @@
                             </div>
                         </div>
                         <Nav current="dashboard" go={setView} role="Administrativo"/>
+                    </div>
+                );
+            }
+
+            // PURCHASE REQUEST - Docentes solicitan material nuevo
+            if (view === 'purchase') {
+                const [purchaseItems, setPurchaseItems] = useState([]);
+                const [newPurchaseItem, setNewPurchaseItem] = useState({ name: '', qty: 1 });
+                const [justification, setJustification] = useState('');
+
+                const addPurchaseItem = () => {
+                    if (!newPurchaseItem.name.trim()) return alert('Ingresá el nombre del material');
+                    if (newPurchaseItem.qty < 1) return alert('Cantidad mínima: 1');
+                    setPurchaseItems([...purchaseItems, { ...newPurchaseItem, id: Date.now() }]);
+                    setNewPurchaseItem({ name: '', qty: 1 });
+                };
+
+                const removePurchaseItem = (id) => {
+                    setPurchaseItems(purchaseItems.filter(i => i.id !== id));
+                };
+
+                const submitPurchase = async () => {
+                    const ok = await sendPurchaseRequest(purchaseItems, justification);
+                    if (ok) {
+                        setPurchaseItems([]);
+                        setJustification('');
+                        setView('dashboard');
+                    }
+                };
+
+                return (
+                    <div className="min-h-screen pb-32">
+                        <div className="sticky top-0 z-40 bg-white/95 backdrop-blur-sm border-b-2 border-orange-100 p-4">
+                            <div className="flex items-center gap-3">
+                                <BackBtn onClick={() => setView('dashboard')}/>
+                                <h1 className="text-xl font-extrabold text-gray-800">🛒 Solicitar Compra</h1>
+                            </div>
+                        </div>
+                        <div className="p-4 space-y-4">
+                            <div className="card p-4 card-orange">
+                                <p className="text-sm text-gray-600">💡 Solicitá material <strong>nuevo</strong> que no existe en el inventario actual. Estas solicitudes se agregan al expediente de compras de fin de año.</p>
+                            </div>
+
+                            {/* Agregar items */}
+                            <div className="card p-4 border-2 border-orange-200">
+                                <h3 className="font-bold text-gray-800 mb-3">📦 Material a solicitar</h3>
+                                <div className="space-y-2">
+                                    <input type="text" placeholder="Nombre del material (ej: Espátula de silicona)" value={newPurchaseItem.name} onChange={e => setNewPurchaseItem({ ...newPurchaseItem, name: e.target.value })} className="w-full input-field font-semibold"/>
+                                    <div className="flex gap-2">
+                                        <input type="number" min="1" placeholder="Cant." value={newPurchaseItem.qty} onChange={e => setNewPurchaseItem({ ...newPurchaseItem, qty: parseInt(e.target.value) || 1 })} className="w-24 input-field font-semibold"/>
+                                        <button onClick={addPurchaseItem} className="flex-1 py-3 btn-orange text-white rounded-xl font-bold">+ Agregar</button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Lista de items */}
+                            {purchaseItems.length > 0 && (
+                                <div className="card p-4 border-2 border-cyan-200">
+                                    <h3 className="font-bold text-gray-800 mb-3">📋 Mi solicitud ({purchaseItems.length})</h3>
+                                    <div className="space-y-2">
+                                        {purchaseItems.map(i => (
+                                            <div key={i.id} className="flex items-center gap-2 bg-cyan-50 p-3 rounded-xl">
+                                                <span className="flex-1 font-semibold text-gray-700">{i.name}</span>
+                                                <span className="badge-cyan px-3 py-1 rounded-full font-bold">{i.qty}</span>
+                                                <button onClick={() => removePurchaseItem(i.id)} className="p-2 bg-red-100 rounded-lg text-red-500"><I.Trash size={16}/></button>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Justificación */}
+                            <div className="card p-4 border-2 border-purple-200">
+                                <h3 className="font-bold text-gray-800 mb-3">📝 Justificación</h3>
+                                <textarea 
+                                    placeholder="Explicá por qué se necesita este material (para qué curso, qué actividad, etc.)" 
+                                    value={justification} 
+                                    onChange={e => setJustification(e.target.value)} 
+                                    className="w-full input-field font-semibold min-h-[100px] resize-none"
+                                />
+                            </div>
+                        </div>
+
+                        {/* Botón enviar */}
+                        {purchaseItems.length > 0 && (
+                            <div className="fixed bottom-20 inset-x-0 p-4 bg-gradient-to-t from-white via-white">
+                                <button onClick={submitPurchase} disabled={syncing || !justification.trim()} className="w-full py-4 btn-gradient text-white rounded-2xl font-bold flex items-center justify-center gap-2 shadow-xl disabled:opacity-50">
+                                    {syncing ? <><div className="loader w-5 h-5 border-2 animate-spin"></div> Enviando...</> : <>Enviar Solicitud <I.ArrowRight size={20}/></>}
+                                </button>
+                            </div>
+                        )}
+                        <Nav current="dashboard" go={setView} role={user?.role}/>
+                    </div>
+                );
+            }
+
+            // PURCHASES - Expediente de compras (Admin/Dev)
+            if (view === 'purchases' && (user?.role === 'Administrativo' || devMode)) {
+                const purchaseOrders = ord.filter(o => o.status === 'Pendiente Compra' || o.status === 'Compra Aprobada' || o.status === 'Compra Rechazada');
+                const pending = purchaseOrders.filter(o => o.status === 'Pendiente Compra');
+                const approved = purchaseOrders.filter(o => o.status === 'Compra Aprobada');
+                const rejected = purchaseOrders.filter(o => o.status === 'Compra Rechazada');
+
+                return (
+                    <div className="min-h-screen pb-28">
+                        <div className="sticky top-0 z-40 bg-white/95 backdrop-blur-sm border-b-2 border-orange-100 p-4">
+                            <div className="flex items-center gap-3">
+                                <BackBtn onClick={() => setView('dashboard')}/>
+                                <div className="flex-1">
+                                    <h1 className="text-xl font-extrabold text-gray-800">📋 Expediente Compras</h1>
+                                    <p className="text-xs text-gray-500">{purchaseOrders.length} solicitudes</p>
+                                </div>
+                                <button onClick={refresh} disabled={syncing} className="p-2 bg-orange-100 rounded-xl">
+                                    <I.Refresh size={18} className={`text-orange-600 ${syncing ? 'animate-spin' : ''}`}/>
+                                </button>
+                            </div>
+                        </div>
+                        <div className="p-4 space-y-4">
+                            {/* Resumen */}
+                            <div className="grid grid-cols-3 gap-3">
+                                <div className="card p-3 card-orange text-center">
+                                    <p className="text-2xl font-black text-orange-600">{pending.length}</p>
+                                    <p className="text-[10px] text-gray-500 font-bold">Pendientes</p>
+                                </div>
+                                <div className="card p-3 card-green text-center">
+                                    <p className="text-2xl font-black text-green-600">{approved.length}</p>
+                                    <p className="text-[10px] text-gray-500 font-bold">Aprobadas</p>
+                                </div>
+                                <div className="card p-3 card-red text-center">
+                                    <p className="text-2xl font-black text-red-500">{rejected.length}</p>
+                                    <p className="text-[10px] text-gray-500 font-bold">Rechazadas</p>
+                                </div>
+                            </div>
+
+                            {purchaseOrders.length === 0 ? (
+                                <div className="text-center py-16">
+                                    <I.FileText size={48} className="mx-auto text-gray-200 mb-3"/>
+                                    <p className="text-gray-400 font-bold">Sin solicitudes</p>
+                                </div>
+                            ) : (
+                                <>
+                                    {/* Pendientes */}
+                                    {pending.length > 0 && (
+                                        <div>
+                                            <h3 className="font-bold text-orange-600 mb-2">⏳ Pendientes de aprobación</h3>
+                                            <div className="space-y-3">
+                                                {pending.map(o => (
+                                                    <div key={o.id} className="card p-4 border-2 border-orange-300">
+                                                        <div className="flex items-start gap-3">
+                                                            <div className="w-10 h-10 bg-orange-100 rounded-xl flex items-center justify-center text-orange-600 font-bold text-sm">
+                                                                {o.teacher?.split(' ').map(n => n[0]).join('').slice(0,2)}
+                                                            </div>
+                                                            <div className="flex-1">
+                                                                <p className="font-bold text-gray-800">{o.teacher}</p>
+                                                                <p className="text-xs text-gray-400">{new Date(o.date).toLocaleDateString('es-AR')}</p>
+                                                            </div>
+                                                        </div>
+                                                        <div className="mt-3 space-y-1">
+                                                            {o.items?.map((i, idx) => (
+                                                                <div key={idx} className="flex justify-between text-sm">
+                                                                    <span className="text-gray-600">{i.name}</span>
+                                                                    <span className="font-bold text-orange-600">x{i.q}</span>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                        {o.obs && (
+                                                            <div className="mt-3 p-3 bg-orange-50 rounded-xl">
+                                                                <p className="text-xs text-gray-500 font-bold mb-1">Justificación:</p>
+                                                                <p className="text-sm text-gray-700">{o.obs}</p>
+                                                            </div>
+                                                        )}
+                                                        <div className="mt-4 grid grid-cols-2 gap-2">
+                                                            <button onClick={() => updatePurchaseStatus(o.id, 'Compra Aprobada')} disabled={syncing} className="py-2 btn-green text-white rounded-xl font-bold text-sm disabled:opacity-50">✓ Aprobar</button>
+                                                            <button onClick={() => updatePurchaseStatus(o.id, 'Compra Rechazada')} disabled={syncing} className="py-2 bg-red-100 text-red-600 rounded-xl font-bold text-sm disabled:opacity-50">✗ Rechazar</button>
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* Aprobadas */}
+                                    {approved.length > 0 && (
+                                        <div>
+                                            <h3 className="font-bold text-green-600 mb-2">✓ Aprobadas para compra</h3>
+                                            <div className="space-y-3">
+                                                {approved.map(o => (
+                                                    <div key={o.id} className="card p-4 border-2 border-green-300">
+                                                        <div className="flex items-center gap-2 mb-2">
+                                                            <span className="badge-green px-2 py-1 rounded text-xs font-bold">APROBADA</span>
+                                                            <span className="text-xs text-gray-400">{o.teacher}</span>
+                                                        </div>
+                                                        <div className="space-y-1">
+                                                            {o.items?.map((i, idx) => (
+                                                                <div key={idx} className="flex justify-between text-sm">
+                                                                    <span className="text-gray-600">{i.name}</span>
+                                                                    <span className="font-bold text-green-600">x{i.q}</span>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* Rechazadas */}
+                                    {rejected.length > 0 && (
+                                        <div>
+                                            <h3 className="font-bold text-red-500 mb-2">✗ Rechazadas</h3>
+                                            <div className="space-y-3">
+                                                {rejected.map(o => (
+                                                    <div key={o.id} className="card p-4 border-2 border-red-200 opacity-60">
+                                                        <div className="flex items-center gap-2 mb-2">
+                                                            <span className="badge-red px-2 py-1 rounded text-xs font-bold">RECHAZADA</span>
+                                                            <span className="text-xs text-gray-400">{o.teacher}</span>
+                                                        </div>
+                                                        <div className="space-y-1">
+                                                            {o.items?.map((i, idx) => (
+                                                                <div key={idx} className="flex justify-between text-sm line-through">
+                                                                    <span className="text-gray-400">{i.name}</span>
+                                                                    <span className="text-gray-400">x{i.q}</span>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+                                </>
+                            )}
+                        </div>
+                        <Nav current="dashboard" go={setView} role={user?.role}/>
                     </div>
                 );
             }
