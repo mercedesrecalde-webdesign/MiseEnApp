@@ -1460,16 +1460,20 @@ th { background: #f0f0f0; font-weight: bold; }
 .info-box label { font-size: 10pt; color: #666; display: block; }
 .info-box span { font-weight: bold; font-size: 12pt; }
 .status { display: inline-block; padding: 4px 12px; border: 2px solid #333; font-weight: bold; font-size: 11pt; margin: 10px 0; }
-.signatures { margin-top: 50px; display: flex; justify-content: space-between; }
-.sig-block { text-align: center; width: 35%; }
-.sig-line { border-top: 1px solid #000; margin-top: 10px; padding-top: 5px; font-size: 10pt; }
-.sig-img { height: 50px; margin: 0 auto 5px; display: block; }
+.signatures { margin-top: 40px; }
+.sig-main { text-align: center; margin-bottom: 40px; }
+.sig-img { height: 60px; margin: 0 auto 8px; display: block; object-fit: contain; }
+.sig-line { border-top: 1px solid #000; padding-top: 5px; font-size: 10pt; display: inline-block; min-width: 200px; }
+.sig-others { display: flex; justify-content: space-between; margin-top: 30px; }
+.sig-block { text-align: center; width: 40%; }
+.sig-block .sig-line { margin-top: 60px; }
 .obs-box { background: #f9f9f9; padding: 12px; border-left: 3px solid #e67e22; margin: 15px 0; }
 .res-box { background: #f0fff0; padding: 12px; border-left: 3px solid #27ae60; margin: 15px 0; }
 .btn-print { position: fixed; top: 20px; right: 20px; padding: 12px 24px; background: #7c3aed; color: white; border: none; border-radius: 8px; font-size: 14px; cursor: pointer; font-weight: bold; }
 </style></head><body>
 <button class="btn-print no-print" onclick="window.print()">🖨️ Imprimir / Guardar PDF</button>
 <div class="header">
+<img src="logo.png" style="height:80px;margin:0 auto 10px;display:block" alt="Mise en App" />
 <p><strong>MUNICIPALIDAD DE VICENTE LÓPEZ</strong></p>
 <p>Secretaría de Educación y Empleo</p>
 <p><strong>Centro Municipal de Capacitación Laboral Santiago Rainero</strong></p>
@@ -1481,7 +1485,7 @@ th { background: #f0f0f0; font-weight: bold; }
 <div class="info-box"><label>Docente solicitante</label><span>${o.teacher}</span></div>
 <div class="info-box"><label>Curso / Carrera</label><span>${o.career}</span></div>
 <div class="info-box"><label>Fecha del pedido</label><span>${dateFormatted}</span></div>
-<div class="info-box"><label>Hora</label><span>${o.time || '--:--'}</span></div>
+<div class="info-box"><label>Hora</label><span>${(o.time || '--:--').slice(0,5)}</span></div>
 </div>
 <h3>Material solicitado</h3>
 <table>
@@ -1492,12 +1496,14 @@ th { background: #f0f0f0; font-weight: bold; }
 ${o.obs ? `<div class="obs-box"><strong>Observaciones:</strong><br/>${o.obs}</div>` : ''}
 ${o.res ? `<div class="res-box"><strong>Resolución:</strong><br/>${o.res}</div>` : ''}
 <div class="signatures">
-<div class="sig-block">
-${o.sig ? `<img src="${o.sig}" class="sig-img" alt="Firma docente"/>` : '<div style="height:50px"></div>'}
+<div class="sig-main">
+${o.sig ? `<img src="${o.sig}" class="sig-img" alt="Firma docente"/>` : ''}
 <div class="sig-line">${o.teacher}<br/>Docente</div>
 </div>
+<div class="sig-others">
 <div class="sig-block"><div class="sig-line">Responsable de Pañol<br/>Santiago Rainero</div></div>
 <div class="sig-block"><div class="sig-line">Dirección<br/>CMCL Santiago Rainero</div></div>
+</div>
 </div>
 <p style="text-align:center;font-size:9pt;color:#999;margin-top:40px">Documento generado por Mise en App — ${new Date().toLocaleString('es-AR')}</p>
 </body></html>`;
