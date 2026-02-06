@@ -1,10 +1,12 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Mise en App - Rainero Culinaria 4.0</title>
-    
+    <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Mise en App - Rainero Culinaria</title>
+
     <!-- PWA Meta Tags -->
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -14,10 +16,10 @@
     <meta name="theme-color" content="#00BCD4">
     <meta name="msapplication-TileColor" content="#00BCD4">
     <meta name="description" content="Sistema de control de stock - Rainero Culinaria 4.0">
-    
+
     <!-- PWA Manifest -->
     <link rel="manifest" href="manifest.json">
-    
+
     <!-- Icons -->
     <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
     <link rel="icon" type="image/png" sizes="512x512" href="icon-512.png">
@@ -25,72 +27,247 @@
     <link rel="apple-touch-icon" sizes="152x152" href="icon-152.png">
     <link rel="apple-touch-icon" sizes="144x144" href="icon-144.png">
     <link rel="apple-touch-icon" sizes="120x120" href="icon-120.png">
-    
+
     <!-- Favicon -->
     <link rel="icon" type="image/png" href="favicon.png">
     <link rel="shortcut icon" href="favicon.png">
-    
+
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-    
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800;900&display=swap"
+        rel="stylesheet">
+
     <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
     <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        html, body, #root { height: 100%; font-family: 'Nunito', sans-serif; }
-        body { background: linear-gradient(180deg, #e3f6f9 0%, #f0f7fa 100%); min-height: 100vh; overscroll-behavior-y: contain; }
-        
-        @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-12px); } }
-        @keyframes fadeUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
-        @keyframes glow { 0%, 100% { box-shadow: 0 0 20px rgba(156,39,176,0.3); } 50% { box-shadow: 0 0 40px rgba(156,39,176,0.6); } }
-        @keyframes spin { to { transform: rotate(360deg); } }
-        
-        .animate-float { animation: float 4s ease-in-out infinite; }
-        .animate-fade { animation: fadeUp 0.5s ease-out forwards; }
-        .animate-glow { animation: glow 2s ease-in-out infinite; }
-        .animate-spin { animation: spin 1s linear infinite; }
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
 
-        .card { background: white; border-radius: 24px; box-shadow: 0 4px 20px rgba(0,188,212,0.1); transition: all 0.3s ease; }
-        .card:hover { transform: translateY(-4px); box-shadow: 0 12px 40px rgba(0,188,212,0.2); }
-        .card-cyan { border: 3px solid #4dd0e1; background: linear-gradient(135deg, #e0f7fa 0%, #fff 100%); }
-        .card-purple { border: 3px solid #ce93d8; background: linear-gradient(135deg, #f3e5f5 0%, #fff 100%); }
-        .card-green { border: 3px solid #81c784; background: linear-gradient(135deg, #e8f5e9 0%, #fff 100%); }
-        .card-orange { border: 3px solid #ffb74d; background: linear-gradient(135deg, #fff3e0 0%, #fff 100%); }
-        .card-red { border: 3px solid #ef5350; background: linear-gradient(135deg, #ffebee 0%, #fff 100%); }
-        .card-gradient { background: linear-gradient(135deg, #00bcd4 0%, #26c6da 30%, #4dd0e1 60%, #9c27b0 100%); }
+        html,
+        body,
+        #root {
+            height: 100%;
+            font-family: 'Nunito', sans-serif;
+        }
 
-        .btn-gradient { background: linear-gradient(135deg, #9c27b0 0%, #ab47bc 50%, #ba68c8 100%); }
-        .btn-cyan { background: linear-gradient(135deg, #00bcd4 0%, #26c6da 100%); }
-        .btn-green { background: linear-gradient(135deg, #4caf50 0%, #66bb6a 100%); }
-        .btn-orange { background: linear-gradient(135deg, #ff9800 0%, #ffb74d 100%); }
+        body {
+            background: linear-gradient(180deg, #e3f6f9 0%, #f0f7fa 100%);
+            min-height: 100vh;
+            overscroll-behavior-y: contain;
+        }
 
-        .input-field { background: #f5f5f5; border: 2px solid #e0e0e0; border-radius: 16px; padding: 14px 16px; font-size: 14px; transition: all 0.3s; width: 100%; }
-        .input-field:focus { outline: none; border-color: #00bcd4; background: white; box-shadow: 0 0 0 4px rgba(0,188,212,0.15); }
-        
-        .badge-cyan { background: #e0f7fa; color: #00838f; }
-        .badge-purple { background: #f3e5f5; color: #7b1fa2; }
-        .badge-green { background: #e8f5e9; color: #2e7d32; }
-        .badge-orange { background: #fff3e0; color: #e65100; }
-        .badge-red { background: #ffebee; color: #c62828; }
+        @keyframes float {
 
-        .back-btn { display: flex; align-items: center; gap: 8px; padding: 10px 16px; background: white; border: 2px solid #e0e0e0; border-radius: 14px; font-weight: 700; color: #666; cursor: pointer; }
-        .loader { width: 40px; height: 40px; border: 4px solid #e0f7fa; border-top-color: #00bcd4; border-radius: 50%; }
+            0%,
+            100% {
+                transform: translateY(0);
+            }
+
+            50% {
+                transform: translateY(-12px);
+            }
+        }
+
+        @keyframes fadeUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes glow {
+
+            0%,
+            100% {
+                box-shadow: 0 0 20px rgba(156, 39, 176, 0.3);
+            }
+
+            50% {
+                box-shadow: 0 0 40px rgba(156, 39, 176, 0.6);
+            }
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .animate-float {
+            animation: float 4s ease-in-out infinite;
+        }
+
+        .animate-fade {
+            animation: fadeUp 0.5s ease-out forwards;
+        }
+
+        .animate-glow {
+            animation: glow 2s ease-in-out infinite;
+        }
+
+        .animate-spin {
+            animation: spin 1s linear infinite;
+        }
+
+        .card {
+            background: white;
+            border-radius: 24px;
+            box-shadow: 0 4px 20px rgba(0, 188, 212, 0.1);
+            transition: all 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 12px 40px rgba(0, 188, 212, 0.2);
+        }
+
+        .card-cyan {
+            border: 3px solid #4dd0e1;
+            background: linear-gradient(135deg, #e0f7fa 0%, #fff 100%);
+        }
+
+        .card-purple {
+            border: 3px solid #ce93d8;
+            background: linear-gradient(135deg, #f3e5f5 0%, #fff 100%);
+        }
+
+        .card-green {
+            border: 3px solid #81c784;
+            background: linear-gradient(135deg, #e8f5e9 0%, #fff 100%);
+        }
+
+        .card-orange {
+            border: 3px solid #ffb74d;
+            background: linear-gradient(135deg, #fff3e0 0%, #fff 100%);
+        }
+
+        .card-red {
+            border: 3px solid #ef5350;
+            background: linear-gradient(135deg, #ffebee 0%, #fff 100%);
+        }
+
+        .card-gradient {
+            background: linear-gradient(135deg, #00bcd4 0%, #26c6da 30%, #4dd0e1 60%, #9c27b0 100%);
+        }
+
+        .btn-gradient {
+            background: linear-gradient(135deg, #9c27b0 0%, #ab47bc 50%, #ba68c8 100%);
+        }
+
+        .btn-cyan {
+            background: linear-gradient(135deg, #00bcd4 0%, #26c6da 100%);
+        }
+
+        .btn-green {
+            background: linear-gradient(135deg, #4caf50 0%, #66bb6a 100%);
+        }
+
+        .btn-orange {
+            background: linear-gradient(135deg, #ff9800 0%, #ffb74d 100%);
+        }
+
+        .input-field {
+            background: #f5f5f5;
+            border: 2px solid #e0e0e0;
+            border-radius: 16px;
+            padding: 14px 16px;
+            font-size: 14px;
+            transition: all 0.3s;
+            width: 100%;
+        }
+
+        .input-field:focus {
+            outline: none;
+            border-color: #00bcd4;
+            background: white;
+            box-shadow: 0 0 0 4px rgba(0, 188, 212, 0.15);
+        }
+
+        .badge-cyan {
+            background: #e0f7fa;
+            color: #00838f;
+        }
+
+        .badge-purple {
+            background: #f3e5f5;
+            color: #7b1fa2;
+        }
+
+        .badge-green {
+            background: #e8f5e9;
+            color: #2e7d32;
+        }
+
+        .badge-orange {
+            background: #fff3e0;
+            color: #e65100;
+        }
+
+        .badge-red {
+            background: #ffebee;
+            color: #c62828;
+        }
+
+        .back-btn {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 16px;
+            background: white;
+            border: 2px solid #e0e0e0;
+            border-radius: 14px;
+            font-weight: 700;
+            color: #666;
+            cursor: pointer;
+        }
+
+        .loader {
+            width: 40px;
+            height: 40px;
+            border: 4px solid #e0f7fa;
+            border-top-color: #00bcd4;
+            border-radius: 50%;
+        }
 
         /* Mobile adjustments */
         @media (max-width: 380px) {
-            .input-field { padding: 12px 14px; font-size: 13px; }
-            .card { border-radius: 20px; }
+            .input-field {
+                padding: 12px 14px;
+                font-size: 13px;
+            }
+
+            .card {
+                border-radius: 20px;
+            }
         }
 
         /* Safe area for iPhone notch */
         @supports (padding: max(0px)) {
-            .nav-safe { padding-bottom: max(1.5rem, env(safe-area-inset-bottom)); }
+            .nav-safe {
+                padding-bottom: max(1.5rem, env(safe-area-inset-bottom));
+            }
+        }
+
+        /* Canvas táctil para firma */
+        .signature-canvas {
+            touch-action: none;
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            user-select: none;
         }
     </style>
 </head>
+
 <body>
     <div id="root"></div>
     <script type="text/babel">
@@ -106,36 +283,36 @@
             <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={sw} strokeLinecap="round" strokeLinejoin="round">{children}</svg>
         );
         const I = {
-            Home: (p) => <Icon {...p}><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></Icon>,
-            Search: (p) => <Icon {...p}><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></Icon>,
-            Book: (p) => <Icon {...p}><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/></Icon>,
-            Clipboard: (p) => <Icon {...p}><rect width="8" height="4" x="8" y="2" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/></Icon>,
-            User: (p) => <Icon {...p}><circle cx="12" cy="8" r="5"/><path d="M20 21a8 8 0 1 0-16 0"/></Icon>,
-            LogOut: (p) => <Icon {...p}><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/></Icon>,
-            Plus: (p) => <Icon {...p}><path d="M5 12h14"/><path d="M12 5v14"/></Icon>,
-            Minus: (p) => <Icon {...p}><path d="M5 12h14"/></Icon>,
-            Trash: (p) => <Icon {...p}><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></Icon>,
-            Check: (p) => <Icon {...p}><polyline points="20 6 9 17 4 12"/></Icon>,
-            CheckCircle: (p) => <Icon {...p}><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></Icon>,
-            ArrowLeft: (p) => <Icon {...p}><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></Icon>,
-            ArrowRight: (p) => <Icon {...p}><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></Icon>,
-            AlertTriangle: (p) => <Icon {...p}><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></Icon>,
-            Package: (p) => <Icon {...p}><path d="m7.5 4.27 9 5.15"/><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></Icon>,
-            Settings: (p) => <Icon {...p}><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></Icon>,
-            X: (p) => <Icon {...p}><path d="M18 6 6 18"/><path d="m6 6 12 12"/></Icon>,
-            Send: (p) => <Icon {...p}><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></Icon>,
-            Edit: (p) => <Icon {...p}><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></Icon>,
-            History: (p) => <Icon {...p}><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l4 2"/></Icon>,
-            TrendingUp: (p) => <Icon {...p}><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></Icon>,
-            TrendingDown: (p) => <Icon {...p}><polyline points="22 17 13.5 8.5 8.5 13.5 2 7"/><polyline points="16 17 22 17 22 11"/></Icon>,
-            Mail: (p) => <Icon {...p}><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></Icon>,
-            ShoppingBag: (p) => <Icon {...p}><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/></Icon>,
-            Refresh: (p) => <Icon {...p}><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M3 21v-5h5"/></Icon>,
-            Users: (p) => <Icon {...p}><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></Icon>,
-            BarChart: (p) => <Icon {...p}><line x1="12" x2="12" y1="20" y2="10"/><line x1="18" x2="18" y1="20" y2="4"/><line x1="6" x2="6" y1="20" y2="16"/></Icon>,
-            Code: (p) => <Icon {...p}><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></Icon>,
-            ShoppingCart: (p) => <Icon {...p}><circle cx="8" cy="21" r="1"/><circle cx="19" cy="21" r="1"/><path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"/></Icon>,
-            FileText: (p) => <Icon {...p}><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><line x1="16" x2="8" y1="13" y2="13"/><line x1="16" x2="8" y1="17" y2="17"/><line x1="10" x2="8" y1="9" y2="9"/></Icon>,
+            Home: (p) => <Icon {...p}><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" /><polyline points="9 22 9 12 15 12 15 22" /></Icon>,
+            Search: (p) => <Icon {...p}><circle cx="11" cy="11" r="8" /><path d="m21 21-4.3-4.3" /></Icon>,
+            Book: (p) => <Icon {...p}><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20" /></Icon>,
+            Clipboard: (p) => <Icon {...p}><rect width="8" height="4" x="8" y="2" rx="1" /><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" /></Icon>,
+            User: (p) => <Icon {...p}><circle cx="12" cy="8" r="5" /><path d="M20 21a8 8 0 1 0-16 0" /></Icon>,
+            LogOut: (p) => <Icon {...p}><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" /><polyline points="16 17 21 12 16 7" /><line x1="21" x2="9" y1="12" y2="12" /></Icon>,
+            Plus: (p) => <Icon {...p}><path d="M5 12h14" /><path d="M12 5v14" /></Icon>,
+            Minus: (p) => <Icon {...p}><path d="M5 12h14" /></Icon>,
+            Trash: (p) => <Icon {...p}><path d="M3 6h18" /><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" /><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" /></Icon>,
+            Check: (p) => <Icon {...p}><polyline points="20 6 9 17 4 12" /></Icon>,
+            CheckCircle: (p) => <Icon {...p}><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" /><polyline points="22 4 12 14.01 9 11.01" /></Icon>,
+            ArrowLeft: (p) => <Icon {...p}><path d="m12 19-7-7 7-7" /><path d="M19 12H5" /></Icon>,
+            ArrowRight: (p) => <Icon {...p}><path d="M5 12h14" /><path d="m12 5 7 7-7 7" /></Icon>,
+            AlertTriangle: (p) => <Icon {...p}><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z" /><path d="M12 9v4" /><path d="M12 17h.01" /></Icon>,
+            Package: (p) => <Icon {...p}><path d="m7.5 4.27 9 5.15" /><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z" /><path d="m3.3 7 8.7 5 8.7-5" /><path d="M12 22V12" /></Icon>,
+            Settings: (p) => <Icon {...p}><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z" /><circle cx="12" cy="12" r="3" /></Icon>,
+            X: (p) => <Icon {...p}><path d="M18 6 6 18" /><path d="m6 6 12 12" /></Icon>,
+            Send: (p) => <Icon {...p}><path d="m22 2-7 20-4-9-9-4Z" /><path d="M22 2 11 13" /></Icon>,
+            Edit: (p) => <Icon {...p}><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" /></Icon>,
+            History: (p) => <Icon {...p}><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" /><path d="M3 3v5h5" /><path d="M12 7v5l4 2" /></Icon>,
+            TrendingUp: (p) => <Icon {...p}><polyline points="22 7 13.5 15.5 8.5 10.5 2 17" /><polyline points="16 7 22 7 22 13" /></Icon>,
+            TrendingDown: (p) => <Icon {...p}><polyline points="22 17 13.5 8.5 8.5 13.5 2 7" /><polyline points="16 17 22 17 22 11" /></Icon>,
+            Mail: (p) => <Icon {...p}><rect width="20" height="16" x="2" y="4" rx="2" /><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" /></Icon>,
+            ShoppingBag: (p) => <Icon {...p}><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z" /><path d="M3 6h18" /><path d="M16 10a4 4 0 0 1-8 0" /></Icon>,
+            Refresh: (p) => <Icon {...p}><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8" /><path d="M21 3v5h-5" /><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16" /><path d="M3 21v-5h5" /></Icon>,
+            Users: (p) => <Icon {...p}><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M22 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" /></Icon>,
+            BarChart: (p) => <Icon {...p}><line x1="12" x2="12" y1="20" y2="10" /><line x1="18" x2="18" y1="20" y2="4" /><line x1="6" x2="6" y1="20" y2="16" /></Icon>,
+            Code: (p) => <Icon {...p}><polyline points="16 18 22 12 16 6" /><polyline points="8 6 2 12 8 18" /></Icon>,
+            ShoppingCart: (p) => <Icon {...p}><circle cx="8" cy="21" r="1" /><circle cx="19" cy="21" r="1" /><path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12" /></Icon>,
+            FileText: (p) => <Icon {...p}><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z" /><polyline points="14 2 14 8 20 8" /><line x1="16" x2="8" y1="13" y2="13" /><line x1="16" x2="8" y1="17" y2="17" /><line x1="10" x2="8" y1="9" y2="9" /></Icon>,
         };
 
         const CATEGORIAS = ["Utensilios", "Batería", "Cuchillería", "Pastelería", "Maquinaria", "Equipamiento"];
@@ -154,7 +331,7 @@
         // COMPONENTS
         const Logo = ({ size = "md" }) => {
             const sizes = { sm: "w-32", md: "w-48", lg: "w-64", xl: "w-80" };
-            return <div className={`${sizes[size]} animate-float`}><img src="logo.png" alt="Mise en App" className="w-full h-auto drop-shadow-2xl"/></div>;
+            return <div className={`${sizes[size]} animate-float`}><img src="logo.png" alt="Mise en App" className="w-full h-auto drop-shadow-2xl" /></div>;
         };
 
         const Loader = ({ text = "Cargando..." }) => (
@@ -165,23 +342,23 @@
         );
 
         const BackBtn = ({ onClick }) => (
-            <button onClick={onClick} className="back-btn"><I.ArrowLeft size={20}/> Volver</button>
+            <button onClick={onClick} className="back-btn"><I.ArrowLeft size={20} /> Volver</button>
         );
 
         const Nav = ({ current, go, role }) => {
-            const items = role === 'Administrativo' 
+            const items = role === 'Administrativo'
                 ? [{ id: 'dashboard', icon: I.Home, label: 'Inicio', c: 'cyan' }, { id: 'inventory', icon: I.Package, label: 'Stock', c: 'purple' }, { id: 'handover', icon: I.Book, label: 'Cuaderno', c: 'green' }, { id: 'profile', icon: I.User, label: 'Perfil', c: 'orange' }]
                 : [{ id: 'dashboard', icon: I.Home, label: 'Inicio', c: 'cyan' }, { id: 'order', icon: I.Clipboard, label: 'Pedidos', c: 'green' }, { id: 'handover', icon: I.Book, label: 'Cuaderno', c: 'orange' }, { id: 'profile', icon: I.User, label: 'Perfil', c: 'purple' }];
-            
+
             const colors = { cyan: 'bg-cyan-500 shadow-cyan-200', purple: 'bg-purple-500 shadow-purple-200', green: 'bg-green-500 shadow-green-200', orange: 'bg-orange-500 shadow-orange-200' };
             const textColors = { cyan: 'text-cyan-600', purple: 'text-purple-600', green: 'text-green-600', orange: 'text-orange-600' };
-            
+
             return (
                 <nav className="fixed bottom-0 inset-x-0 bg-white border-t-2 border-cyan-100 px-4 py-2 nav-safe flex justify-around z-50 shadow-lg">
                     {items.map(({ id, icon: Ic, label, c }) => (
                         <button key={id} onClick={() => go(id)} className="flex flex-col items-center gap-1 min-w-[60px]">
                             <div className={`p-2.5 rounded-2xl transition-all ${current === id ? `${colors[c]} text-white shadow-lg` : 'text-gray-400'}`}>
-                                <Ic size={22} sw={current === id ? 2.5 : 2}/>
+                                <Ic size={22} sw={current === id ? 2.5 : 2} />
                             </div>
                             <span className={`text-[10px] font-bold ${current === id ? textColors[c] : 'text-gray-400'}`}>{label}</span>
                         </button>
@@ -194,28 +371,71 @@
             const ref = useRef(null);
             const [drawing, setDrawing] = useState(false);
 
+            useEffect(() => {
+                if (!ref.current || initial) return;
+                const canvas = ref.current;
+                const rect = canvas.getBoundingClientRect();
+                // Establecer el tamaño interno igual al visual para evitar desfases
+                canvas.width = rect.width;
+                canvas.height = rect.height;
+                const ctx = canvas.getContext('2d');
+                ctx.lineCap = 'round';
+                ctx.lineJoin = 'round';
+                ctx.strokeStyle = '#1f2937';
+                ctx.lineWidth = 3;
+            }, [initial]);
+
             if (initial) return (
                 <div className="text-center">
-                    <div className="inline-flex items-center gap-1.5 text-green-600 text-sm font-bold mb-2"><I.CheckCircle size={16}/> Firma registrada</div>
-                    <div className="bg-gradient-to-br from-green-50 to-cyan-50 rounded-2xl p-4 border-2 border-green-200"><img src={initial} alt="Firma" className="h-12 mx-auto"/></div>
+                    <div className="inline-flex items-center gap-1.5 text-green-600 text-sm font-bold mb-2"><I.CheckCircle size={16} /> Firma registrada</div>
+                    <div className="bg-gradient-to-br from-green-50 to-cyan-50 rounded-2xl p-4 border-2 border-green-200"><img src={initial} alt="Firma" className="h-12 mx-auto" /></div>
                     <button onClick={() => onSave(null)} className="text-xs text-gray-400 mt-2 hover:text-purple-500 font-semibold">Cambiar</button>
                 </div>
             );
 
-            const pos = (e) => { const r = ref.current.getBoundingClientRect(); return { x: (e.touches ? e.touches[0].clientX : e.clientX) - r.left, y: (e.touches ? e.touches[0].clientY : e.clientY) - r.top }; };
-            const start = (e) => { e.preventDefault(); setDrawing(true); const ctx = ref.current.getContext('2d'); const { x, y } = pos(e); ctx.beginPath(); ctx.moveTo(x, y); ctx.strokeStyle = '#1f2937'; ctx.lineWidth = 2.5; ctx.lineCap = 'round'; };
-            const draw = (e) => { if (!drawing) return; e.preventDefault(); const ctx = ref.current.getContext('2d'); const { x, y } = pos(e); ctx.lineTo(x, y); ctx.stroke(); };
+            const pos = (e) => {
+                const canvas = ref.current;
+                const rect = canvas.getBoundingClientRect();
+                const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+                const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+                // Calcular posición relativa al canvas
+                const scaleX = canvas.width / rect.width;
+                const scaleY = canvas.height / rect.height;
+                return {
+                    x: (clientX - rect.left) * scaleX,
+                    y: (clientY - rect.top) * scaleY
+                };
+            };
+            const start = (e) => {
+                e.preventDefault();
+                setDrawing(true);
+                const ctx = ref.current.getContext('2d');
+                const { x, y } = pos(e);
+                ctx.beginPath();
+                ctx.moveTo(x, y);
+            };
+            const draw = (e) => {
+                if (!drawing) return;
+                e.preventDefault();
+                const ctx = ref.current.getContext('2d');
+                const { x, y } = pos(e);
+                ctx.lineTo(x, y);
+                ctx.stroke();
+            };
             const end = () => setDrawing(false);
-            const clear = () => ref.current.getContext('2d').clearRect(0, 0, 280, 90);
-
+            const clear = () => {
+                const canvas = ref.current;
+                const ctx = canvas.getContext('2d');
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+            };
             return (
                 <div>
                     <p className="text-sm text-gray-600 mb-2 text-center font-semibold">✍️ Dibuja tu firma</p>
                     <div className="relative bg-white rounded-2xl border-3 border-dashed border-purple-200 overflow-hidden">
-                        <canvas ref={ref} width={280} height={90} className="w-full touch-none cursor-crosshair" onMouseDown={start} onMouseMove={draw} onMouseUp={end} onMouseLeave={end} onTouchStart={start} onTouchMove={draw} onTouchEnd={end}/>
-                        <button onClick={clear} className="absolute top-2 right-2 p-1.5 bg-red-100 text-red-500 rounded-lg"><I.Trash size={14}/></button>
+                        <canvas ref={ref} className="w-full h-24 cursor-crosshair signature-canvas" onMouseDown={start} onMouseMove={draw} onMouseUp={end} onMouseLeave={end} onTouchStart={start} onTouchMove={draw} onTouchEnd={end} />
+                        <button onClick={clear} className="absolute top-2 right-2 p-1.5 bg-red-100 text-red-500 rounded-lg"><I.Trash size={14} /></button>
                     </div>
-                    <button onClick={() => onSave(ref.current.toDataURL())} className="w-full mt-3 py-3 btn-gradient text-white rounded-2xl font-bold shadow-lg">Guardar firma</button>
+                    <button onClick={() => onSave(ref.current.toDataURL('image/png', 1.0))} className="w-full mt-3 py-3 btn-gradient text-white rounded-2xl font-bold shadow-lg">Guardar firma</button>
                 </div>
             );
         };
@@ -242,45 +462,48 @@
             const [search, setSearch] = useState('');
             const [newCrs, setNewCrs] = useState('');
             const [newItem, setNewItem] = useState({ name: '', qty: '', cat: 'Utensilios' });
+            const [purchaseItems, setPurchaseItems] = useState([]);
+            const [newPurchaseItem, setNewPurchaseItem] = useState({ name: '', qty: 1, purpose: '', course: '' });
+            const [selectedCourse, setSelectedCourse] = useState('');
 
+            // LOAD DATA
             // LOAD DATA
             const loadData = useCallback(async () => {
                 try {
-                    const [{ data: invData }, { data: crsData }, { data: ordData }, { data: hisData }, { data: usersData }] = await Promise.all([
+                    // Cargar todo en paralelo (ahora order_items también se trae de golpe)
+                    const [{ data: invData }, { data: crsData }, { data: ordData }, { data: hisData }, { data: usersData }, { data: allItems }] = await Promise.all([
                         supabase.from('inventory').select('*').order('name'),
                         supabase.from('courses').select('*').order('name'),
                         supabase.from('orders').select('*').order('created_at', { ascending: false }),
                         supabase.from('stock_history').select('*').order('created_at', { ascending: false }),
-                        supabase.from('users').select('*').order('created_at', { ascending: false })
+                        supabase.from('users').select('*').order('created_at', { ascending: false }),
+                        supabase.from('order_items').select('*') // Traemos TODOS los items de una
                     ]);
-                    
+
                     if (invData) setInv(invData);
                     if (crsData) setCrs(crsData.map(c => c.name));
                     if (hisData) setHis(hisData.map(h => ({ ...h, name: h.item_name, amt: h.amount, before: h.before_qty, after: h.after_qty, by: h.user_name, at: h.created_at })));
                     if (usersData) setUsers(usersData);
-                    
+
                     if (ordData) {
-                        const ordersWithItems = await Promise.all(ordData.map(async (o) => {
-                            try {
-                                const { data: items, error } = await supabase.from('order_items').select('*').eq('order_id', o.id);
-                                if (error) console.error('Error loading items for order', o.id, error);
-                                return { 
-                                    id: o.id,
-                                    status: o.status || 'Solicitado',
-                                    date: o.order_date || o.date || '',
-                                    time: o.order_time || o.time || '',
-                                    career: o.career || '',
-                                    items: items?.map(i => ({ id: i.inventory_id || i.item_id, name: i.item_name, q: i.quantity || i.qty })) || [], 
-                                    teacher: o.teacher_name || 'Sin nombre', 
-                                    obs: o.observations || '', 
-                                    res: o.resolution || '', 
-                                    sig: o.signature || null
-                                };
-                            } catch (e) {
-                                console.error('Error processing order', o.id, e);
-                                return { id: o.id, status: o.status || 'Solicitado', date: '', time: '', career: '', items: [], teacher: o.teacher_name || 'Sin nombre', obs: '', res: '', sig: null };
-                            }
-                        }));
+                        // Procesar ordenes cruzando con items en memoria (mucho más rápido)
+                        const ordersWithItems = ordData.map(o => {
+                            // Filtrar items para esta orden específica desde el array completo
+                            const items = allItems ? allItems.filter(i => i.order_id === o.id) : [];
+                            return {
+                                id: o.id,
+                                status: o.status || 'Solicitado',
+                                date: o.date || o.order_date || '',
+                                time: o.time || o.order_time || '',
+                                career: o.career || '',
+                                items: items.map(i => ({ id: i.item_id || i.inventory_id, name: i.item_name, q: i.qty || i.quantity })),
+                                teacher: o.teacher_name || 'Sin nombre',
+                                teacher_email: o.teacher_email,
+                                obs: o.observations || '',
+                                res: o.resolution || '',
+                                sig: o.signature || null
+                            };
+                        });
                         setOrd(ordersWithItems);
                     }
                 } catch (e) { console.error('Load error:', e); }
@@ -293,10 +516,10 @@
                     if (saved) {
                         const u = JSON.parse(saved);
                         const { data } = await supabase.from('users').select('*').eq('email', u.email).single();
-                        if (data) { 
-                            setUser({ ...data, fullName: data.full_name, sig: data.signature }); 
+                        if (data) {
+                            setUser({ ...data, fullName: data.full_name, sig: data.signature });
                             setDevMode(savedDev === 'true');
-                            setView('dashboard'); 
+                            setView('dashboard');
                         }
                     }
                     await loadData();
@@ -311,54 +534,60 @@
             const checkEmail = async () => {
                 let email = loginEmail.trim().toLowerCase();
                 if (!email) return alert('Ingresa tu correo');
-                
+
                 // Detectar código secreto DEV
                 const isDevAccess = email.includes('0109');
                 if (isDevAccess) {
                     email = email.replace('0109', ''); // Quitar código
                 }
-                
+
                 const fullEmail = email.includes('@') ? email : email + '@mvl.edu.ar';
                 if (!fullEmail.endsWith('@mvl.edu.ar')) return alert('Usa tu correo @mvl.edu.ar');
-                
+
                 console.log('Buscando:', fullEmail, '| Dev:', isDevAccess);
-                
+
                 setSyncing(true);
                 try {
-                    const { data: existing, error } = await supabase.from('users').select('*').eq('email', fullEmail).single();
+                    const { data: existing, error } = await supabase.from('users').select('*').eq('email', fullEmail).maybeSingle();
+
                     if (existing) {
+                        // Usuario encontrado - login directo
                         const u = { ...existing, fullName: existing.full_name, sig: existing.signature };
                         setUser(u);
                         setDevMode(isDevAccess);
                         localStorage.setItem('mise_user', JSON.stringify(u));
                         localStorage.setItem('mise_dev', isDevAccess ? 'true' : 'false');
+                        setSyncing(false);
                         setView('dashboard');
                     } else {
+                        // Usuario nuevo - ir a registro
                         setForm({ ...form, email: fullEmail });
                         setDevMode(isDevAccess);
+                        setSyncing(false);
                         setLoginMode('register');
                     }
                 } catch (e) {
-                    const cleanEmail = email.includes('@') ? email : email + '@mvl.edu.ar';
-                    setForm({ ...form, email: cleanEmail });
+                    console.error('Error verificando email:', e);
+                    // Error de conexión - permitir registro igual
+                    setForm({ ...form, email: fullEmail });
                     setDevMode(isDevAccess);
+                    setSyncing(false);
                     setLoginMode('register');
                 }
-                setSyncing(false);
             };
 
             // AUTH - Registro
             const register = async () => {
                 if (!form.name || !form.surname) return alert('Completa nombre y apellido');
                 if (!form.sig) return alert('La firma es obligatoria');
-                
+
                 setSyncing(true);
                 try {
-                    const { data, error } = await supabase.from('users').insert([{ 
-                        email: form.email, name: form.name, surname: form.surname, 
-                        full_name: `${form.name} ${form.surname}`, role: selectedRole, signature: form.sig 
+                    const { data, error } = await supabase.from('users').insert([{
+                        email: form.email, name: form.name, surname: form.surname,
+                        full_name: `${form.name} ${form.surname}`, role: selectedRole, signature: form.sig
                     }]).select().single();
-                    
+
                     if (error) throw error;
                     const u = { ...data, fullName: data.full_name, sig: data.signature };
                     setUser(u);
@@ -369,14 +598,14 @@
                 setSyncing(false);
             };
 
-            const logout = () => { 
-                if (confirm('¿Cerrar sesión?')) { 
-                    localStorage.removeItem('mise_user'); 
+            const logout = () => {
+                if (confirm('¿Cerrar sesión?')) {
+                    localStorage.removeItem('mise_user');
                     localStorage.removeItem('mise_dev');
                     setUser(null); setSelectedRole(null); setDevMode(false);
-                    setForm({ name: '', surname: '', email: '', sig: null }); 
+                    setForm({ name: '', surname: '', email: '', sig: null });
                     setLoginEmail(''); setLoginMode('check');
-                    setView('splash'); 
+                    setView('splash');
                 }
             };
 
@@ -403,28 +632,28 @@
             const sendOrd = async () => {
                 if (!cart.length) return alert('Carrito vacío');
                 if (!meta.career) return alert('Selecciona curso');
-                
+
                 setSyncing(true);
                 try {
-                    const { data: order, error: orderError } = await supabase.from('orders').insert([{ 
-                        teacher_id: user.id, teacher_name: user.fullName, teacher_email: user.email, 
-                        career: meta.career, order_date: meta.date, order_time: meta.time, 
-                        signature: user.sig, status: 'Solicitado' 
+                    const { data: order, error: orderError } = await supabase.from('orders').insert([{
+                        teacher_id: user.id, teacher_name: user.fullName, teacher_email: user.email,
+                        career: meta.career, date: meta.date, time: meta.time,
+                        signature: user.sig, status: 'Solicitado'
                     }]).select().single();
-                    
+
                     if (orderError) throw orderError;
-                    
-                    const itemsToInsert = cart.map(i => ({ order_id: order.id, inventory_id: i.id, item_name: i.name, quantity: i.q }));
+
+                    const itemsToInsert = cart.map(i => ({ order_id: order.id, item_id: i.id, item_name: i.name, qty: i.q }));
                     const { error: itemsError } = await supabase.from('order_items').insert(itemsToInsert);
                     if (itemsError) throw itemsError;
-                    
+
                     for (const item of cart) {
                         const invItem = inv.find(i => i.id === item.id);
                         if (invItem) await supabase.from('inventory').update({ qty: Math.max(0, invItem.qty - item.q) }).eq('id', item.id);
                     }
-                    
-                    setCart([]); await loadData(); 
-                    alert('✅ ¡Pedido enviado!'); 
+
+                    setCart([]); await loadData();
+                    alert('✅ ¡Pedido enviado!');
                     setView('handover');
                 } catch (e) { alert('Error: ' + (e.message || 'Intenta de nuevo')); }
                 setSyncing(false);
@@ -435,27 +664,27 @@
                 try {
                     const order = ord.find(o => o.id === orderId);
                     if (!order) throw new Error('Pedido no encontrado');
-                    
+
                     for (const old of order.items) {
                         const newItem = items.find(i => i.id === old.id);
                         if (newItem && newItem.q < old.q) {
                             const invItem = inv.find(i => i.id === old.id);
                             if (invItem) await supabase.from('inventory').update({ qty: invItem.qty + (old.q - newItem.q) }).eq('id', old.id);
                         }
-                        if (newItem) await supabase.from('order_items').update({ quantity: newItem.q }).eq('order_id', orderId).eq('inventory_id', old.id);
+                        if (newItem) await supabase.from('order_items').update({ qty: newItem.q }).eq('order_id', orderId).eq('item_id', old.id);
                     }
-                    
+
                     await supabase.from('orders').update({ status: 'En Curso' }).eq('id', orderId);
                     await loadData();
                 } catch (e) { alert('Error: ' + (e.message || 'Intenta de nuevo')); }
                 setSyncing(false);
             };
 
-            const returnMat = async (orderId, obs) => { 
-                setSyncing(true); 
-                await supabase.from('orders').update({ status: 'Devolución Pendiente', observations: obs || null }).eq('id', orderId); 
-                await loadData(); 
-                setSyncing(false); 
+            const returnMat = async (orderId, obs) => {
+                setSyncing(true);
+                await supabase.from('orders').update({ status: 'Devolución Pendiente', observations: obs || null }).eq('id', orderId);
+                await loadData();
+                setSyncing(false);
             };
 
             const finRet = async (orderId) => {
@@ -468,11 +697,25 @@
                     }
                 }
                 await supabase.from('orders').update({ status: 'Finalizado' }).eq('id', orderId);
-                await loadData(); 
+                await loadData();
                 setSyncing(false);
             };
 
             const resolve = async (orderId, res) => { setSyncing(true); await supabase.from('orders').update({ resolution: res }).eq('id', orderId); await loadData(); setSyncing(false); };
+
+            // DELETE ORDER (Admin/Dev only)
+            const deleteOrder = async (orderId) => {
+                if (!confirm('¿Eliminar este pedido permanentemente?')) return;
+                setSyncing(true);
+                try {
+                    // Primero eliminar order_items (por el ON DELETE CASCADE debería ser automático, pero por las dudas)
+                    await supabase.from('order_items').delete().eq('order_id', orderId);
+                    // Luego eliminar el pedido
+                    await supabase.from('orders').delete().eq('id', orderId);
+                    await loadData();
+                } catch (e) { alert('Error: ' + (e.message || 'No se pudo eliminar')); }
+                setSyncing(false);
+            };
 
             // STOCK
             const stockMove = async (itemId, type, amt, reason, note = '') => {
@@ -482,11 +725,11 @@
                 if (a <= 0) return alert('Cantidad inválida');
                 const nq = type === 'in' ? item.qty + a : item.qty - a;
                 if (nq < 0) return alert('Stock insuficiente');
-                
+
                 setSyncing(true);
                 try {
                     await supabase.from('inventory').update({ qty: nq }).eq('id', itemId);
-                    await supabase.from('stock_history').insert([{ inventory_id: itemId, item_name: item.name, type, amount: a, reason, note, before_qty: item.qty, after_qty: nq, user_name: user.fullName }]);
+                    await supabase.from('stock_history').insert([{ item_id: itemId, item_name: item.name, type, amount: a, reason, note, before_qty: item.qty, after_qty: nq, user_name: user.fullName }]);
                     await loadData(); return true;
                 } catch (e) { alert('Error: ' + e.message); }
                 setSyncing(false);
@@ -495,12 +738,12 @@
             const addNewItem = async () => {
                 if (!newItem.name.trim()) return alert('Ingresa un nombre');
                 const qty = parseInt(newItem.qty) || 0;
-                
+
                 setSyncing(true);
                 try {
                     const { data, error } = await supabase.from('inventory').insert([{ name: newItem.name.trim(), qty, cat: newItem.cat }]).select().single();
                     if (error) throw error;
-                    if (qty > 0) await supabase.from('stock_history').insert([{ inventory_id: data.id, item_name: data.name, type: 'in', amount: qty, reason: 'Inventario inicial', note: 'Nuevo material', before_qty: 0, after_qty: qty, user_name: user.fullName }]);
+                    if (qty > 0) await supabase.from('stock_history').insert([{ item_id: data.id, item_name: data.name, type: 'in', amount: qty, reason: 'Inventario inicial', note: 'Nuevo material', before_qty: 0, after_qty: qty, user_name: user.fullName }]);
                     setNewItem({ name: '', qty: '', cat: 'Utensilios' }); await loadData(); alert('✅ Material agregado');
                 } catch (e) { alert('Error: ' + e.message); }
                 setSyncing(false);
@@ -510,11 +753,54 @@
             const deleteItem = async (id) => { if (!confirm('¿Eliminar material?')) return; setSyncing(true); await supabase.from('inventory').delete().eq('id', id); await loadData(); setSyncing(false); };
             const addCourse = async (name) => { if (!name.trim()) return; setSyncing(true); await supabase.from('courses').insert([{ name: name.trim() }]); await loadData(); setSyncing(false); };
             const deleteCourse = async (name) => { if (!confirm(`¿Eliminar "${name}"?`)) return; setSyncing(true); await supabase.from('courses').delete().eq('name', name); await loadData(); setSyncing(false); };
-            
+
+            // PURCHASE REQUESTS
+            const sendPurchaseRequest = async (items, justification) => {
+                if (!items.length) return alert('Agregá al menos un item');
+                setSyncing(true);
+                try {
+                    // Crear un pedido especial marcado como solicitud de compra
+                    const { data: order, error } = await supabase.from('orders').insert([{
+                        teacher_id: user.id,
+                        teacher_name: user.fullName,
+                        teacher_email: user.email,
+                        career: '🛒 COMPRA: ' + (items[0]?.course || 'General'),
+                        date: new Date().toISOString().split('T')[0],
+                        time: new Date().toTimeString().split(' ')[0].slice(0, 5),
+                        status: 'Pendiente Compra',
+                        observations: '📦 SOLICITUD DE COMPRA\n' + justification
+                    }]).select().single();
+                    if (error) throw error;
+
+                    // Guardar los items solicitados
+                    const orderItems = items.map(i => ({
+                        order_id: order.id,
+                        item_name: `${i.name} (${i.purpose})`,
+                        qty: i.qty
+                    }));
+                    await supabase.from('order_items').insert(orderItems);
+                    await loadData();
+                    alert('✅ Solicitud enviada al expediente de compras');
+                    return true;
+                } catch (e) { alert('Error: ' + e.message); }
+                setSyncing(false);
+                return false;
+            };
+
+            // UPDATE PURCHASE STATUS
+            const updatePurchaseStatus = async (orderId, newStatus) => {
+                setSyncing(true);
+                try {
+                    await supabase.from('orders').update({ status: newStatus }).eq('id', orderId);
+                    await loadData();
+                } catch (e) { alert('Error: ' + e.message); }
+                setSyncing(false);
+            };
+
             // USERS
-            const deleteUser = async (id, email) => { 
+            const deleteUser = async (id, email) => {
                 if (user?.email === email) return alert('No podés eliminarte a vos mismo');
-                if (!confirm(`¿Eliminar usuario ${email}? Podrá volver a registrarse.`)) return; 
+                if (!confirm(`¿Eliminar usuario ${email}? Podrá volver a registrarse.`)) return;
                 setSyncing(true);
                 try {
                     const { error } = await supabase.from('users').delete().eq('id', id);
@@ -525,7 +811,7 @@
                     console.error('Error eliminando usuario:', e);
                     alert('Error al eliminar: ' + e.message);
                 }
-                setSyncing(false); 
+                setSyncing(false);
             };
 
             // Actualizar firma
@@ -541,83 +827,36 @@
                 setSyncing(false);
             };
 
-            // Solicitud de compra
-            const sendPurchaseRequest = async (items, justification) => {
-                if (!items.length) return alert('Agregá al menos un item');
-                if (!justification.trim()) return alert('Escribí una justificación');
-                
-                setSyncing(true);
-                try {
-                    const { data: order, error } = await supabase.from('orders').insert([{ 
-                        teacher_id: user.id, 
-                        teacher_name: user.fullName, 
-                        teacher_email: user.email, 
-                        career: '📦 SOLICITUD DE COMPRA', 
-                        order_date: new Date().toISOString().split('T')[0], 
-                        order_time: new Date().toTimeString().slice(0,5), 
-                        signature: user.sig, 
-                        status: 'Pendiente Compra',
-                        observations: justification
-                    }]).select().single();
-                    
-                    if (error) throw error;
-                    
-                    const itemsToInsert = items.map(i => ({ 
-                        order_id: order.id, 
-                        inventory_id: null,
-                        item_name: i.name, 
-                        quantity: i.qty 
-                    }));
-                    
-                    await supabase.from('order_items').insert(itemsToInsert);
-                    await loadData();
-                    alert('✅ Solicitud de compra enviada');
-                    return true;
-                } catch (e) { 
-                    alert('Error: ' + e.message); 
-                    return false;
-                }
-                setSyncing(false);
-            };
-
-            // Aprobar/Rechazar solicitud
-            const updatePurchaseStatus = async (orderId, newStatus) => {
-                setSyncing(true);
-                await supabase.from('orders').update({ status: newStatus }).eq('id', orderId);
-                await loadData();
-                setSyncing(false);
-            };
-
             const filtInv = useMemo(() => inv.filter(i => i.name.toLowerCase().includes(search.toLowerCase())).sort((a, b) => a.name.localeCompare(b.name, 'es')), [inv, search]);
 
-            if (loading) return <div className="min-h-screen flex flex-col items-center justify-center"><Logo size="lg"/><Loader text="Conectando..."/></div>;
+            if (loading) return <div className="min-h-screen flex flex-col items-center justify-center"><Logo size="lg" /><Loader text="Conectando..." /></div>;
 
             // SPLASH
             if (view === 'splash') return (
                 <div className="min-h-screen flex flex-col items-center justify-center p-6 animate-fade">
-                    <Logo size="xl"/>
-                    <button onClick={() => setView('login')} className="mt-8 px-12 py-4 btn-gradient text-white rounded-2xl font-bold text-lg shadow-xl animate-glow flex items-center gap-3">Ingresar <I.ArrowRight size={24}/></button>
-                    <p className="text-center text-xs text-gray-400 mt-8">Secretaría de Educación y Empleo<br/><span className="font-bold text-gray-500">Municipalidad de Vicente López</span></p>
+                    <Logo size="xl" />
+                    <button onClick={() => setView('login')} className="mt-8 px-12 py-4 btn-gradient text-white rounded-2xl font-bold text-lg shadow-xl animate-glow flex items-center gap-3">Ingresar <I.ArrowRight size={24} /></button>
+                    <p className="text-center text-xs text-gray-400 mt-8">Secretaría de Educación y Empleo<br /><span className="font-bold text-gray-500">Municipalidad de Vicente López</span></p>
                 </div>
             );
 
             // LOGIN
             if (view === 'login' && loginMode === 'check') return (
                 <div className="min-h-screen p-6 animate-fade">
-                    <BackBtn onClick={() => setView('splash')}/>
+                    <BackBtn onClick={() => setView('splash')} />
                     <div className="max-w-sm mx-auto mt-8">
-                        <div className="text-center mb-8"><Logo size="md"/><h2 className="text-2xl font-extrabold text-gray-800 mt-4">¡Bienvenido!</h2><p className="text-gray-500 mt-2">Ingresá con tu correo institucional</p></div>
+                        <div className="text-center mb-8"><Logo size="md" /><h2 className="text-2xl font-extrabold text-gray-800 mt-4">¡Bienvenido!</h2><p className="text-gray-500 mt-2">Ingresá con tu correo institucional</p></div>
                         <div className="card p-6 card-cyan">
                             <div className="space-y-4">
                                 <div>
                                     <label className="text-xs font-bold text-gray-500 mb-1 block">📧 Correo institucional</label>
                                     <div className="flex items-center input-field p-0 overflow-hidden">
-                                        <I.Mail size={18} className="ml-4 text-cyan-400"/>
-                                        <input type="text" placeholder="usuario" value={loginEmail.replace('@mvl.edu.ar', '')} onChange={e => setLoginEmail(e.target.value.replace(/@/g, ''))} onKeyPress={e => e.key === 'Enter' && checkEmail()} className="flex-1 px-3 py-3.5 bg-transparent text-sm font-semibold"/>
+                                        <I.Mail size={18} className="ml-4 text-cyan-400" />
+                                        <input type="text" placeholder="usuario" value={loginEmail.replace('@mvl.edu.ar', '')} onChange={e => setLoginEmail(e.target.value.replace(/@/g, ''))} onKeyPress={e => e.key === 'Enter' && checkEmail()} className="flex-1 px-3 py-3.5 bg-transparent text-sm font-semibold" />
                                         <span className="pr-4 text-sm font-bold text-cyan-600">@mvl.edu.ar</span>
                                     </div>
                                 </div>
-                                <button onClick={checkEmail} disabled={syncing} className="w-full py-4 btn-gradient text-white rounded-2xl font-bold flex items-center justify-center gap-2 shadow-xl disabled:opacity-50">{syncing ? <><div className="loader w-5 h-5 border-2 animate-spin"></div> Verificando...</> : <>Continuar <I.ArrowRight size={20}/></>}</button>
+                                <button onClick={checkEmail} disabled={syncing} className="w-full py-4 btn-gradient text-white rounded-2xl font-bold flex items-center justify-center gap-2 shadow-xl disabled:opacity-50">{syncing ? <><div className="loader w-5 h-5 border-2 animate-spin"></div> Verificando...</> : <>Continuar <I.ArrowRight size={20} /></>}</button>
                             </div>
                         </div>
                     </div>
@@ -627,14 +866,14 @@
             // REGISTER
             if (view === 'login' && loginMode === 'register') return (
                 <div className="min-h-screen p-6 animate-fade">
-                    <BackBtn onClick={() => setLoginMode('check')}/>
+                    <BackBtn onClick={() => setLoginMode('check')} />
                     <div className="max-w-sm mx-auto mt-4">
                         <div className="text-center mb-6">
                             <h2 className="text-2xl font-extrabold text-gray-800">Registro</h2>
                             <p className="text-gray-500 text-sm mt-1">Primera vez? Completá tus datos</p>
                             <div className="mt-3 px-4 py-2 bg-cyan-50 rounded-xl inline-block"><span className="text-sm font-bold text-cyan-600">{form.email}</span></div>
                         </div>
-                        
+
                         {!selectedRole ? (
                             <div className="space-y-4">
                                 <p className="text-center text-gray-600 font-semibold">¿Cómo ingresás?</p>
@@ -642,14 +881,14 @@
                                     <div className="flex items-center gap-4">
                                         <div className="w-14 h-14 bg-cyan-500 rounded-2xl flex items-center justify-center shadow-lg"><span className="text-2xl">👨‍🏫</span></div>
                                         <div className="flex-1"><h3 className="text-lg font-bold text-gray-800">Docente</h3><p className="text-xs text-gray-500">Solicitar materiales</p></div>
-                                        <I.ArrowRight size={20} className="text-cyan-400"/>
+                                        <I.ArrowRight size={20} className="text-cyan-400" />
                                     </div>
                                 </button>
                                 <button onClick={() => setSelectedRole('Administrativo')} className="w-full card p-5 card-purple text-left">
                                     <div className="flex items-center gap-4">
                                         <div className="w-14 h-14 bg-purple-500 rounded-2xl flex items-center justify-center shadow-lg"><span className="text-2xl">📋</span></div>
                                         <div className="flex-1"><h3 className="text-lg font-bold text-gray-800">Administración</h3><p className="text-xs text-gray-500">Gestionar stock</p></div>
-                                        <I.ArrowRight size={20} className="text-purple-400"/>
+                                        <I.ArrowRight size={20} className="text-purple-400" />
                                     </div>
                                 </button>
                             </div>
@@ -661,11 +900,11 @@
                                 </div>
                                 <div className="space-y-4">
                                     <div className="grid grid-cols-2 gap-3">
-                                        <div><label className="text-xs font-bold text-gray-500 mb-1 block">Nombre</label><input type="text" placeholder="Juan" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} className="w-full input-field font-semibold"/></div>
-                                        <div><label className="text-xs font-bold text-gray-500 mb-1 block">Apellido</label><input type="text" placeholder="Pérez" value={form.surname} onChange={e => setForm({ ...form, surname: e.target.value })} className="w-full input-field font-semibold"/></div>
+                                        <div><label className="text-xs font-bold text-gray-500 mb-1 block">Nombre</label><input type="text" placeholder="Juan" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} className="w-full input-field font-semibold" /></div>
+                                        <div><label className="text-xs font-bold text-gray-500 mb-1 block">Apellido</label><input type="text" placeholder="Pérez" value={form.surname} onChange={e => setForm({ ...form, surname: e.target.value })} className="w-full input-field font-semibold" /></div>
                                     </div>
-                                    <div className="bg-gradient-to-br from-purple-50 via-cyan-50 to-green-50 p-4 rounded-2xl border-2 border-purple-100"><SignPad onSave={sig => setForm({ ...form, sig })} initial={form.sig}/></div>
-                                    <button onClick={register} disabled={syncing} className="w-full py-4 btn-gradient text-white rounded-2xl font-bold flex items-center justify-center gap-2 shadow-xl disabled:opacity-50">{syncing ? <><div className="loader w-5 h-5 border-2 animate-spin"></div> Registrando...</> : <>Registrarse <I.ArrowRight size={20}/></>}</button>
+                                    <div className="bg-gradient-to-br from-purple-50 via-cyan-50 to-green-50 p-4 rounded-2xl border-2 border-purple-100"><SignPad onSave={sig => setForm({ ...form, sig })} initial={form.sig} /></div>
+                                    <button onClick={register} disabled={syncing} className="w-full py-4 btn-gradient text-white rounded-2xl font-bold flex items-center justify-center gap-2 shadow-xl disabled:opacity-50">{syncing ? <><div className="loader w-5 h-5 border-2 animate-spin"></div> Registrando...</> : <>Registrarse <I.ArrowRight size={20} /></>}</button>
                                 </div>
                             </div>
                         )}
@@ -677,7 +916,7 @@
             if (view === 'dashboard') return (
                 <div className="min-h-screen pb-28">
                     <div className="p-5 pt-6">
-                        <div className="flex justify-between items-start"><Logo size="md"/><button onClick={refresh} disabled={syncing} className="p-3 bg-white rounded-xl shadow border-2 border-gray-100"><I.Refresh size={20} className={`text-cyan-500 ${syncing ? 'animate-spin' : ''}`}/></button></div>
+                        <div className="flex justify-between items-start"><Logo size="md" /><button onClick={refresh} disabled={syncing} className="p-3 bg-white rounded-xl shadow border-2 border-gray-100"><I.Refresh size={20} className={`text-cyan-500 ${syncing ? 'animate-spin' : ''}`} /></button></div>
                         <div className={`mt-5 card p-4 text-center ${devMode ? 'card-gradient' : user?.role === 'Administrativo' ? 'card-purple' : 'card-cyan'}`}>
                             <p className={`font-medium ${devMode ? 'text-white/90' : 'text-gray-600'}`}>Hola, <span className={`font-bold ${devMode ? 'text-white' : 'text-gray-800'}`}>{user?.fullName}</span> 👋</p>
                             <span className={`inline-block mt-2 px-4 py-1.5 rounded-full text-xs font-bold ${devMode ? 'bg-white/20 text-white' : user?.role === 'Administrativo' ? 'badge-purple' : 'badge-cyan'}`}>
@@ -690,69 +929,69 @@
                         {devMode && <>
                             <button onClick={() => setView('stats')} className="w-full card p-5 text-left border-3 border-purple-400 bg-gradient-to-r from-purple-50 to-cyan-50">
                                 <div className="flex items-center gap-4">
-                                    <div className="w-14 h-14 bg-gradient-to-br from-purple-500 to-cyan-500 rounded-2xl flex items-center justify-center shadow-lg"><I.BarChart size={28} className="text-white"/></div>
+                                    <div className="w-14 h-14 bg-gradient-to-br from-purple-500 to-cyan-500 rounded-2xl flex items-center justify-center shadow-lg"><I.BarChart size={28} className="text-white" /></div>
                                     <div className="flex-1"><h3 className="font-bold text-gray-800 text-lg">📊 Estadísticas</h3><p className="text-sm text-gray-500">Reportes y métricas exclusivas</p></div>
-                                    <I.ArrowRight size={24} className="text-purple-400"/>
+                                    <I.ArrowRight size={24} className="text-purple-400" />
                                 </div>
                             </button>
                             <div className="grid grid-cols-2 gap-4">
-                                <button onClick={() => setView('order')} className="card p-5 text-left card-green"><div className="w-12 h-12 bg-green-500 rounded-2xl flex items-center justify-center mb-3 shadow-lg"><I.Clipboard size={24} className="text-white"/></div><h3 className="font-bold text-gray-800">Mis Pedidos</h3><p className="text-xs text-gray-500">Como docente</p></button>
-                                <button onClick={() => setView('inventory')} className="card p-5 text-left card-purple"><div className="w-12 h-12 bg-purple-500 rounded-2xl flex items-center justify-center mb-3 shadow-lg"><I.Package size={24} className="text-white"/></div><h3 className="font-bold text-gray-800">Stock</h3><p className="text-xs text-gray-500">Gestionar</p></button>
+                                <button onClick={() => setView('order')} className="card p-5 text-left card-green"><div className="w-12 h-12 bg-green-500 rounded-2xl flex items-center justify-center mb-3 shadow-lg"><I.Clipboard size={24} className="text-white" /></div><h3 className="font-bold text-gray-800">Mis Pedidos</h3><p className="text-xs text-gray-500">Como docente</p></button>
+                                <button onClick={() => setView('inventory')} className="card p-5 text-left card-purple"><div className="w-12 h-12 bg-purple-500 rounded-2xl flex items-center justify-center mb-3 shadow-lg"><I.Package size={24} className="text-white" /></div><h3 className="font-bold text-gray-800">Stock</h3><p className="text-xs text-gray-500">Gestionar</p></button>
                             </div>
-                            <button onClick={() => setView('handover')} className="w-full card-gradient p-5 rounded-3xl text-left shadow-xl"><div className="flex items-center justify-between"><div className="flex items-center gap-4"><div className="w-14 h-14 bg-white/25 rounded-2xl flex items-center justify-center"><I.Book size={28} className="text-white"/></div><div><h3 className="font-bold text-white text-lg">Cuaderno Digital</h3><p className="text-sm text-white/80">Entregas y devoluciones</p></div></div>{ord.filter(o => o.status === 'Solicitado' || o.status === 'Devolución Pendiente').length > 0 && <span className="bg-white text-purple-600 text-sm font-bold px-3 py-1 rounded-full">{ord.filter(o => o.status === 'Solicitado' || o.status === 'Devolución Pendiente').length}</span>}</div></button>
+                            <button onClick={() => setView('handover')} className="w-full card-gradient p-5 rounded-3xl text-left shadow-xl"><div className="flex items-center justify-between"><div className="flex items-center gap-4"><div className="w-14 h-14 bg-white/25 rounded-2xl flex items-center justify-center"><I.Book size={28} className="text-white" /></div><div><h3 className="font-bold text-white text-lg">Cuaderno Digital</h3><p className="text-sm text-white/80">Entregas y devoluciones</p></div></div>{ord.filter(o => o.status === 'Solicitado' || o.status === 'Devolución Pendiente').length > 0 && <span className="bg-white text-purple-600 text-sm font-bold px-3 py-1 rounded-full">{ord.filter(o => o.status === 'Solicitado' || o.status === 'Devolución Pendiente').length}</span>}</div></button>
                             <div className="grid grid-cols-2 gap-3">
                                 <button onClick={() => setView('purchase')} className="card p-4 flex flex-col items-center gap-2 card-orange relative">
-                                    <div className="w-11 h-11 bg-orange-500 rounded-xl flex items-center justify-center shadow-lg"><I.ShoppingCart size={22} className="text-white"/></div>
+                                    <div className="w-11 h-11 bg-orange-500 rounded-xl flex items-center justify-center shadow-lg"><I.ShoppingCart size={22} className="text-white" /></div>
                                     <h3 className="font-bold text-gray-800 text-sm">Solicitar</h3>
                                 </button>
                                 <button onClick={() => setView('purchases')} className="card p-4 flex flex-col items-center gap-2 card-cyan relative">
-                                    <div className="w-11 h-11 bg-cyan-500 rounded-xl flex items-center justify-center shadow-lg"><I.FileText size={22} className="text-white"/></div>
+                                    <div className="w-11 h-11 bg-cyan-500 rounded-xl flex items-center justify-center shadow-lg"><I.FileText size={22} className="text-white" /></div>
                                     <h3 className="font-bold text-gray-800 text-sm">Expediente</h3>
-                                    {ord.filter(o => o.status === 'Pendiente Compra').length > 0 && <span className="absolute -top-2 -right-2 bg-orange-500 text-white text-xs font-bold w-6 h-6 rounded-full flex items-center justify-center">{ord.filter(o => o.status === 'Pendiente Compra').length}</span>}
+                                    {ord.filter(o => o.status === 'Pendiente Compra' || (o.career && o.career.startsWith('🛒'))).length > 0 && <span className="absolute -top-2 -right-2 bg-orange-500 text-white text-xs font-bold w-6 h-6 rounded-full flex items-center justify-center">{ord.filter(o => o.status === 'Pendiente Compra' || (o.career && o.career.startsWith('🛒'))).length}</span>}
                                 </button>
                             </div>
                             <div className="grid grid-cols-4 gap-3">
-                                <button onClick={() => setView('history')} className="card p-4 flex flex-col items-center gap-2 card-cyan"><div className="w-11 h-11 bg-cyan-500 rounded-xl flex items-center justify-center shadow-lg"><I.History size={22} className="text-white"/></div><h3 className="font-bold text-gray-800 text-[11px]">Historial</h3></button>
-                                <button onClick={() => setView('incidents')} className="card p-4 flex flex-col items-center gap-2 card-orange relative"><div className="w-11 h-11 bg-orange-500 rounded-xl flex items-center justify-center shadow-lg"><I.AlertTriangle size={22} className="text-white"/></div><h3 className="font-bold text-gray-800 text-[11px]">Bitácora</h3>{ord.filter(o => o.obs && !o.res).length > 0 && <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold w-6 h-6 rounded-full flex items-center justify-center">{ord.filter(o => o.obs && !o.res).length}</span>}</button>
-                                <button onClick={() => setView('courses')} className="card p-4 flex flex-col items-center gap-2 card-purple"><div className="w-11 h-11 bg-purple-500 rounded-xl flex items-center justify-center shadow-lg"><I.Book size={22} className="text-white"/></div><h3 className="font-bold text-gray-800 text-[11px]">Cursos</h3></button>
-                                <button onClick={() => setView('users')} className="card p-4 flex flex-col items-center gap-2 card-green"><div className="w-11 h-11 bg-green-500 rounded-xl flex items-center justify-center shadow-lg"><I.Users size={22} className="text-white"/></div><h3 className="font-bold text-gray-800 text-[11px]">Usuarios</h3></button>
+                                <button onClick={() => setView('history')} className="card p-4 flex flex-col items-center gap-2 card-cyan"><div className="w-11 h-11 bg-cyan-500 rounded-xl flex items-center justify-center shadow-lg"><I.History size={22} className="text-white" /></div><h3 className="font-bold text-gray-800 text-[11px]">Historial</h3></button>
+                                <button onClick={() => setView('incidents')} className="card p-4 flex flex-col items-center gap-2 card-orange relative"><div className="w-11 h-11 bg-orange-500 rounded-xl flex items-center justify-center shadow-lg"><I.AlertTriangle size={22} className="text-white" /></div><h3 className="font-bold text-gray-800 text-[11px]">Bitácora</h3>{ord.filter(o => o.obs && !o.res && (!o.career || !o.career.startsWith('🛒'))).length > 0 && <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold w-6 h-6 rounded-full flex items-center justify-center">{ord.filter(o => o.obs && !o.res && (!o.career || !o.career.startsWith('🛒'))).length}</span>}</button>
+                                <button onClick={() => setView('courses')} className="card p-4 flex flex-col items-center gap-2 card-purple"><div className="w-11 h-11 bg-purple-500 rounded-xl flex items-center justify-center shadow-lg"><I.Book size={22} className="text-white" /></div><h3 className="font-bold text-gray-800 text-[11px]">Cursos</h3></button>
+                                <button onClick={() => setView('users')} className="card p-4 flex flex-col items-center gap-2 card-green"><div className="w-11 h-11 bg-green-500 rounded-xl flex items-center justify-center shadow-lg"><I.Users size={22} className="text-white" /></div><h3 className="font-bold text-gray-800 text-[11px]">Usuarios</h3></button>
                             </div>
                         </>}
                         {/* DOCENTE normal */}
                         {!devMode && user?.role === 'Docente' && <>
                             <div className="grid grid-cols-2 gap-4">
-                                <button onClick={() => setView('inventory')} className="card p-5 text-left card-cyan"><div className="w-12 h-12 bg-cyan-500 rounded-2xl flex items-center justify-center mb-3 shadow-lg"><I.Package size={24} className="text-white"/></div><h3 className="font-bold text-gray-800">Stock</h3><p className="text-xs text-gray-500">Ver disponibilidad</p></button>
-                                <button onClick={() => setView('order')} className="card p-5 text-left card-green"><div className="w-12 h-12 bg-green-500 rounded-2xl flex items-center justify-center mb-3 shadow-lg"><I.Clipboard size={24} className="text-white"/></div><h3 className="font-bold text-gray-800">Pedidos</h3><p className="text-xs text-gray-500">Solicitar material</p></button>
+                                <button onClick={() => setView('inventory')} className="card p-5 text-left card-cyan"><div className="w-12 h-12 bg-cyan-500 rounded-2xl flex items-center justify-center mb-3 shadow-lg"><I.Package size={24} className="text-white" /></div><h3 className="font-bold text-gray-800">Stock</h3><p className="text-xs text-gray-500">Ver disponibilidad</p></button>
+                                <button onClick={() => setView('order')} className="card p-5 text-left card-green"><div className="w-12 h-12 bg-green-500 rounded-2xl flex items-center justify-center mb-3 shadow-lg"><I.Clipboard size={24} className="text-white" /></div><h3 className="font-bold text-gray-800">Pedidos</h3><p className="text-xs text-gray-500">Solicitar material</p></button>
                             </div>
-                            <button onClick={() => setView('handover')} className="w-full card-gradient p-5 rounded-3xl text-left shadow-xl"><div className="flex items-center justify-between"><div className="flex items-center gap-4"><div className="w-14 h-14 bg-white/25 rounded-2xl flex items-center justify-center"><I.Book size={28} className="text-white"/></div><div><h3 className="font-bold text-white text-lg">Cuaderno Digital</h3><p className="text-sm text-white/80">Mis entregas</p></div></div><I.ArrowRight size={24} className="text-white/80"/></div></button>
+                            <button onClick={() => setView('handover')} className="w-full card-gradient p-5 rounded-3xl text-left shadow-xl"><div className="flex items-center justify-between"><div className="flex items-center gap-4"><div className="w-14 h-14 bg-white/25 rounded-2xl flex items-center justify-center"><I.Book size={28} className="text-white" /></div><div><h3 className="font-bold text-white text-lg">Cuaderno Digital</h3><p className="text-sm text-white/80">Mis entregas</p></div></div><I.ArrowRight size={24} className="text-white/80" /></div></button>
                             <button onClick={() => setView('purchase')} className="w-full card p-4 text-left card-orange">
                                 <div className="flex items-center gap-4">
-                                    <div className="w-12 h-12 bg-orange-500 rounded-2xl flex items-center justify-center shadow-lg"><I.ShoppingCart size={24} className="text-white"/></div>
+                                    <div className="w-12 h-12 bg-orange-500 rounded-2xl flex items-center justify-center shadow-lg"><I.ShoppingCart size={24} className="text-white" /></div>
                                     <div className="flex-1"><h3 className="font-bold text-gray-800">Solicitar Compra</h3><p className="text-xs text-gray-500">Pedir material nuevo</p></div>
-                                    <I.ArrowRight size={20} className="text-orange-400"/>
+                                    <I.ArrowRight size={20} className="text-orange-400" />
                                 </div>
                             </button>
                         </>}
                         {/* ADMIN normal */}
                         {!devMode && user?.role === 'Administrativo' && <>
-                            <button onClick={() => setView('inventory')} className="w-full card p-5 text-left card-purple"><div className="flex items-center gap-4"><div className="w-14 h-14 bg-purple-500 rounded-2xl flex items-center justify-center shadow-lg"><I.Package size={28} className="text-white"/></div><div className="flex-1"><h3 className="font-bold text-gray-800 text-lg">Gestión de Stock</h3><p className="text-sm text-gray-500">Agregar, editar, controlar</p></div><I.ArrowRight size={24} className="text-purple-400"/></div></button>
-                            <button onClick={() => setView('handover')} className="w-full card-gradient p-5 rounded-3xl text-left shadow-xl"><div className="flex items-center justify-between"><div className="flex items-center gap-4"><div className="w-14 h-14 bg-white/25 rounded-2xl flex items-center justify-center"><I.Book size={28} className="text-white"/></div><div><h3 className="font-bold text-white text-lg">Cuaderno Digital</h3><p className="text-sm text-white/80">Entregas y devoluciones</p></div></div>{ord.filter(o => o.status === 'Solicitado' || o.status === 'Devolución Pendiente').length > 0 && <span className="bg-white text-purple-600 text-sm font-bold px-3 py-1 rounded-full">{ord.filter(o => o.status === 'Solicitado' || o.status === 'Devolución Pendiente').length}</span>}</div></button>
+                            <button onClick={() => setView('inventory')} className="w-full card p-5 text-left card-purple"><div className="flex items-center gap-4"><div className="w-14 h-14 bg-purple-500 rounded-2xl flex items-center justify-center shadow-lg"><I.Package size={28} className="text-white" /></div><div className="flex-1"><h3 className="font-bold text-gray-800 text-lg">Gestión de Stock</h3><p className="text-sm text-gray-500">Agregar, editar, controlar</p></div><I.ArrowRight size={24} className="text-purple-400" /></div></button>
+                            <button onClick={() => setView('handover')} className="w-full card-gradient p-5 rounded-3xl text-left shadow-xl"><div className="flex items-center justify-between"><div className="flex items-center gap-4"><div className="w-14 h-14 bg-white/25 rounded-2xl flex items-center justify-center"><I.Book size={28} className="text-white" /></div><div><h3 className="font-bold text-white text-lg">Cuaderno Digital</h3><p className="text-sm text-white/80">Entregas y devoluciones</p></div></div>{ord.filter(o => o.status === 'Solicitado' || o.status === 'Devolución Pendiente').length > 0 && <span className="bg-white text-purple-600 text-sm font-bold px-3 py-1 rounded-full">{ord.filter(o => o.status === 'Solicitado' || o.status === 'Devolución Pendiente').length}</span>}</div></button>
                             <button onClick={() => setView('purchases')} className="w-full card p-4 text-left card-orange">
                                 <div className="flex items-center gap-4">
-                                    <div className="w-12 h-12 bg-orange-500 rounded-2xl flex items-center justify-center shadow-lg"><I.FileText size={24} className="text-white"/></div>
+                                    <div className="w-12 h-12 bg-orange-500 rounded-2xl flex items-center justify-center shadow-lg"><I.FileText size={24} className="text-white" /></div>
                                     <div className="flex-1"><h3 className="font-bold text-gray-800">Expediente Compras</h3><p className="text-xs text-gray-500">Solicitudes de docentes</p></div>
-                                    {ord.filter(o => o.status === 'Pendiente Compra').length > 0 && <span className="bg-orange-500 text-white text-sm font-bold px-3 py-1 rounded-full">{ord.filter(o => o.status === 'Pendiente Compra').length}</span>}
+                                    {ord.filter(o => o.status === 'Pendiente Compra' || (o.career && o.career.startsWith('🛒'))).length > 0 && <span className="bg-orange-500 text-white text-sm font-bold px-3 py-1 rounded-full">{ord.filter(o => o.status === 'Pendiente Compra' || (o.career && o.career.startsWith('🛒'))).length}</span>}
                                 </div>
                             </button>
                             <div className="grid grid-cols-4 gap-3">
-                                <button onClick={() => setView('history')} className="card p-4 flex flex-col items-center gap-2 card-cyan"><div className="w-11 h-11 bg-cyan-500 rounded-xl flex items-center justify-center shadow-lg"><I.History size={22} className="text-white"/></div><h3 className="font-bold text-gray-800 text-[11px]">Historial</h3></button>
-                                <button onClick={() => setView('incidents')} className="card p-4 flex flex-col items-center gap-2 card-orange relative"><div className="w-11 h-11 bg-orange-500 rounded-xl flex items-center justify-center shadow-lg"><I.AlertTriangle size={22} className="text-white"/></div><h3 className="font-bold text-gray-800 text-[11px]">Bitácora</h3>{ord.filter(o => o.obs && !o.res).length > 0 && <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold w-6 h-6 rounded-full flex items-center justify-center">{ord.filter(o => o.obs && !o.res).length}</span>}</button>
-                                <button onClick={() => setView('courses')} className="card p-4 flex flex-col items-center gap-2 card-purple"><div className="w-11 h-11 bg-purple-500 rounded-xl flex items-center justify-center shadow-lg"><I.Book size={22} className="text-white"/></div><h3 className="font-bold text-gray-800 text-[11px]">Cursos</h3></button>
-                                <button onClick={() => setView('users')} className="card p-4 flex flex-col items-center gap-2 card-green"><div className="w-11 h-11 bg-green-500 rounded-xl flex items-center justify-center shadow-lg"><I.Users size={22} className="text-white"/></div><h3 className="font-bold text-gray-800 text-[11px]">Usuarios</h3></button>
+                                <button onClick={() => setView('history')} className="card p-4 flex flex-col items-center gap-2 card-cyan"><div className="w-11 h-11 bg-cyan-500 rounded-xl flex items-center justify-center shadow-lg"><I.History size={22} className="text-white" /></div><h3 className="font-bold text-gray-800 text-[11px]">Historial</h3></button>
+                                <button onClick={() => setView('incidents')} className="card p-4 flex flex-col items-center gap-2 card-orange relative"><div className="w-11 h-11 bg-orange-500 rounded-xl flex items-center justify-center shadow-lg"><I.AlertTriangle size={22} className="text-white" /></div><h3 className="font-bold text-gray-800 text-[11px]">Bitácora</h3>{ord.filter(o => o.obs && !o.res && (!o.career || !o.career.startsWith('🛒'))).length > 0 && <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold w-6 h-6 rounded-full flex items-center justify-center">{ord.filter(o => o.obs && !o.res && (!o.career || !o.career.startsWith('🛒'))).length}</span>}</button>
+                                <button onClick={() => setView('courses')} className="card p-4 flex flex-col items-center gap-2 card-purple"><div className="w-11 h-11 bg-purple-500 rounded-xl flex items-center justify-center shadow-lg"><I.Book size={22} className="text-white" /></div><h3 className="font-bold text-gray-800 text-[11px]">Cursos</h3></button>
+                                <button onClick={() => setView('users')} className="card p-4 flex flex-col items-center gap-2 card-green"><div className="w-11 h-11 bg-green-500 rounded-xl flex items-center justify-center shadow-lg"><I.Users size={22} className="text-white" /></div><h3 className="font-bold text-gray-800 text-[11px]">Usuarios</h3></button>
                             </div>
                         </>}
                     </div>
-                    <Nav current="dashboard" go={setView} role={devMode ? 'Administrativo' : user?.role}/>
+                    <Nav current="dashboard" go={setView} role={devMode ? 'Administrativo' : user?.role} />
                 </div>
             );
 
@@ -766,13 +1005,13 @@
                     const [note, setNote] = useState('');
                     const [editName, setEditName] = useState(item.name);
                     const st = catStyle(item.cat);
-                    
+
                     const submit = async () => { if (!reason) return alert('Selecciona motivo'); const ok = await stockMove(item.id, type, amt, reason, note); if (ok) { setAmt(''); setReason(''); setNote(''); setOpen(false); } };
 
                     return (
                         <div className={`card p-4 border-2 ${st.border}`}>
                             <div className="flex items-center gap-3">
-                                <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${st.bg} ${st.tx}`}><I.Package size={22}/></div>
+                                <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${st.bg} ${st.tx}`}><I.Package size={22} /></div>
                                 <div className="flex-1 min-w-0">
                                     <p className="font-bold text-gray-800 truncate">{item.name}</p>
                                     <div className="flex items-center gap-2 mt-1">
@@ -780,23 +1019,23 @@
                                         <span className={`text-sm font-black ${item.qty > 5 ? 'text-green-600' : item.qty > 0 ? 'text-orange-500' : 'text-red-500'}`}>Stock: {item.qty}</span>
                                     </div>
                                 </div>
-                                {(user?.role === 'Administrativo' || devMode) && <button onClick={() => setOpen(!open)} className={`p-2 rounded-xl ${open ? 'bg-purple-500 text-white' : 'bg-purple-100 text-purple-500'}`}><I.Edit size={18}/></button>}
+                                {(user?.role === 'Administrativo' || devMode) && <button onClick={() => setOpen(!open)} className={`p-2 rounded-xl ${open ? 'bg-purple-500 text-white' : 'bg-purple-100 text-purple-500'}`}><I.Edit size={18} /></button>}
                             </div>
                             {open && (user?.role === 'Administrativo' || devMode) && (
                                 <div className="mt-4 pt-4 border-t-2 border-dashed border-gray-200 space-y-3">
-                                    <div className="flex gap-2"><input type="text" value={editName} onChange={e => setEditName(e.target.value)} className="flex-1 input-field text-sm font-semibold"/><button onClick={() => updateItemName(item.id, editName)} className="px-4 btn-cyan text-white rounded-xl text-sm font-bold">Renombrar</button></div>
+                                    <div className="flex gap-2"><input type="text" value={editName} onChange={e => setEditName(e.target.value)} className="flex-1 input-field text-sm font-semibold" /><button onClick={() => updateItemName(item.id, editName)} className="px-4 btn-cyan text-white rounded-xl text-sm font-bold">Renombrar</button></div>
                                     <div className="flex gap-2">
                                         <button onClick={() => setType('in')} className={`flex-1 py-2.5 rounded-xl font-bold text-sm ${type === 'in' ? 'bg-green-500 text-white' : 'bg-gray-100 text-gray-500'}`}>+ Ingreso</button>
                                         <button onClick={() => setType('out')} className={`flex-1 py-2.5 rounded-xl font-bold text-sm ${type === 'out' ? 'bg-red-500 text-white' : 'bg-gray-100 text-gray-500'}`}>- Egreso</button>
                                     </div>
                                     <div className="flex gap-2">
-                                        <input type="number" placeholder="Cant." value={amt} onChange={e => setAmt(e.target.value)} className="w-20 input-field text-center font-bold"/>
+                                        <input type="number" placeholder="Cant." value={amt} onChange={e => setAmt(e.target.value)} className="w-20 input-field text-center font-bold" />
                                         <select value={reason} onChange={e => setReason(e.target.value)} className="flex-1 input-field font-semibold"><option value="">Motivo...</option>{MOTIVOS[type].map(m => <option key={m}>{m}</option>)}</select>
                                     </div>
-                                    <input type="text" placeholder="Nota (opcional)" value={note} onChange={e => setNote(e.target.value)} className="w-full input-field text-sm font-semibold"/>
+                                    <input type="text" placeholder="Nota (opcional)" value={note} onChange={e => setNote(e.target.value)} className="w-full input-field text-sm font-semibold" />
                                     <div className="flex gap-2">
                                         <button onClick={submit} disabled={syncing} className={`flex-1 py-3 rounded-xl text-sm font-bold text-white ${type === 'in' ? 'bg-green-500' : 'bg-red-500'} disabled:opacity-50`}>{syncing ? 'Guardando...' : (type === 'in' ? '+ Ingreso' : '- Egreso')}</button>
-                                        <button onClick={() => deleteItem(item.id)} className="px-4 py-3 bg-red-100 text-red-500 rounded-xl"><I.Trash size={18}/></button>
+                                        <button onClick={() => deleteItem(item.id)} className="px-4 py-3 bg-red-100 text-red-500 rounded-xl"><I.Trash size={18} /></button>
                                     </div>
                                 </div>
                             )}
@@ -807,23 +1046,23 @@
                 return (
                     <div className="min-h-screen pb-28">
                         <div className="sticky top-0 z-40 bg-white/95 backdrop-blur-sm border-b-2 border-purple-100 p-4">
-                            <div className="flex items-center gap-3 mb-3"><BackBtn onClick={() => setView('dashboard')}/><div className="flex-1"><h1 className="text-xl font-extrabold text-gray-800">📦 Stock</h1><p className="text-xs text-gray-500 font-semibold">{filtInv.length} materiales</p></div><button onClick={refresh} disabled={syncing} className="p-2 bg-cyan-100 rounded-xl"><I.Refresh size={18} className={`text-cyan-600 ${syncing ? 'animate-spin' : ''}`}/></button></div>
-                            <div className="relative"><I.Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-cyan-400"/><input type="text" placeholder="Buscar..." value={search} onChange={e => setSearch(e.target.value)} className="w-full pl-11 pr-4 py-3 bg-cyan-50 rounded-2xl text-sm font-semibold border-2 border-cyan-200"/></div>
+                            <div className="flex items-center gap-3 mb-3"><BackBtn onClick={() => setView('dashboard')} /><div className="flex-1"><h1 className="text-xl font-extrabold text-gray-800">📦 Stock</h1><p className="text-xs text-gray-500 font-semibold">{filtInv.length} materiales</p></div><button onClick={refresh} disabled={syncing} className="p-2 bg-cyan-100 rounded-xl"><I.Refresh size={18} className={`text-cyan-600 ${syncing ? 'animate-spin' : ''}`} /></button></div>
+                            <div className="relative"><I.Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-cyan-400" /><input type="text" placeholder="Buscar..." value={search} onChange={e => setSearch(e.target.value)} className="w-full pl-11 pr-4 py-3 bg-cyan-50 rounded-2xl text-sm font-semibold border-2 border-cyan-200" /></div>
                         </div>
                         <div className="p-4 space-y-3">
                             {(user?.role === 'Administrativo' || devMode) && (
                                 <div className="card p-4 card-green mb-4">
-                                    <h3 className="font-bold text-gray-800 mb-3 flex items-center gap-2"><I.Plus size={18}/> Agregar material</h3>
+                                    <h3 className="font-bold text-gray-800 mb-3 flex items-center gap-2"><I.Plus size={18} /> Agregar material</h3>
                                     <div className="space-y-2">
-                                        <input type="text" placeholder="Nombre" value={newItem.name} onChange={e => setNewItem({ ...newItem, name: e.target.value })} className="w-full input-field font-semibold"/>
-                                        <div className="flex gap-2"><input type="number" placeholder="Cant." value={newItem.qty} onChange={e => setNewItem({ ...newItem, qty: e.target.value })} className="w-24 input-field font-semibold"/><select value={newItem.cat} onChange={e => setNewItem({ ...newItem, cat: e.target.value })} className="flex-1 input-field font-semibold">{CATEGORIAS.map(c => <option key={c}>{c}</option>)}</select></div>
+                                        <input type="text" placeholder="Nombre" value={newItem.name} onChange={e => setNewItem({ ...newItem, name: e.target.value })} className="w-full input-field font-semibold" />
+                                        <div className="flex gap-2"><input type="number" placeholder="Cant." value={newItem.qty} onChange={e => setNewItem({ ...newItem, qty: e.target.value })} className="w-24 input-field font-semibold" /><select value={newItem.cat} onChange={e => setNewItem({ ...newItem, cat: e.target.value })} className="flex-1 input-field font-semibold">{CATEGORIAS.map(c => <option key={c}>{c}</option>)}</select></div>
                                         <button onClick={addNewItem} disabled={syncing} className="w-full py-3 btn-green text-white rounded-xl font-bold disabled:opacity-50">{syncing ? 'Agregando...' : '+ Agregar'}</button>
                                     </div>
                                 </div>
                             )}
-                            {filtInv.map(i => <StockItem key={i.id} item={i}/>)}
+                            {filtInv.map(i => <StockItem key={i.id} item={i} />)}
                         </div>
-                        <Nav current="inventory" go={setView} role={user?.role}/>
+                        <Nav current="inventory" go={setView} role={user?.role} />
                     </div>
                 );
             }
@@ -831,30 +1070,30 @@
             // ORDER
             if (view === 'order' && (user?.role === 'Docente' || devMode)) return (
                 <div className="min-h-screen pb-32">
-                    <div className="sticky top-0 z-40 bg-white/95 backdrop-blur-sm border-b-2 border-green-100 p-4"><div className="flex items-center gap-3"><BackBtn onClick={() => setView('dashboard')}/><h1 className="text-xl font-extrabold text-gray-800">📝 Nuevo pedido</h1></div></div>
+                    <div className="sticky top-0 z-40 bg-white/95 backdrop-blur-sm border-b-2 border-green-100 p-4"><div className="flex items-center gap-3"><BackBtn onClick={() => setView('dashboard')} /><h1 className="text-xl font-extrabold text-gray-800">📝 Nuevo pedido</h1></div></div>
                     <div className="p-4 space-y-4">
                         <div className="card p-4 card-green space-y-3">
-                            <div className="flex items-center justify-between"><label className="text-sm text-gray-600 font-bold">🎓 Curso</label><button onClick={() => setView('courses')} className="text-green-500"><I.Settings size={18}/></button></div>
+                            <div className="flex items-center justify-between"><label className="text-sm text-gray-600 font-bold">🎓 Curso</label><button onClick={() => setView('courses')} className="text-green-500"><I.Settings size={18} /></button></div>
                             <select value={meta.career} onChange={e => setMeta({ ...meta, career: e.target.value })} className="w-full input-field font-semibold"><option value="">Seleccionar...</option>{crs.map(c => <option key={c}>{c}</option>)}</select>
                             <div className="grid grid-cols-2 gap-2">
-                                <div><label className="text-xs text-gray-500 font-bold">📅 Fecha</label><input type="date" value={meta.date} onChange={e => setMeta({ ...meta, date: e.target.value })} className="w-full input-field mt-1 font-semibold text-sm"/></div>
-                                <div><label className="text-xs text-gray-500 font-bold">🕐 Hora</label><input type="time" value={meta.time} onChange={e => setMeta({ ...meta, time: e.target.value })} className="w-full input-field mt-1 font-semibold text-sm"/></div>
+                                <div><label className="text-xs text-gray-500 font-bold">📅 Fecha</label><input type="date" value={meta.date} onChange={e => setMeta({ ...meta, date: e.target.value })} className="w-full input-field mt-1 font-semibold text-sm" /></div>
+                                <div><label className="text-xs text-gray-500 font-bold">🕐 Hora</label><input type="time" value={meta.time} onChange={e => setMeta({ ...meta, time: e.target.value })} className="w-full input-field mt-1 font-semibold text-sm" /></div>
                             </div>
                         </div>
                         <div>
                             <h3 className="text-sm text-gray-600 font-bold mb-2">🛒 Mi pedido <span className="badge-cyan px-3 py-1 rounded-full">{cart.reduce((s, i) => s + i.q, 0)} items</span></h3>
-                            {cart.length === 0 ? <div className="card p-8 text-center border-3 border-dashed border-gray-200 bg-gray-50"><I.ShoppingBag size={40} className="mx-auto text-gray-300 mb-2"/><p className="text-gray-400 font-semibold">Carrito vacío</p></div>
-                            : <div className="space-y-2">{cart.map(i => (
-                                <div key={i.id} className="card p-3 flex items-center justify-between border-2 border-cyan-200">
-                                    <span className="text-sm font-bold text-gray-700 flex-1 truncate mr-2">{i.name}</span>
-                                    <div className="flex items-center gap-1">
-                                        <button onClick={() => setCartQty(i.id, i.q - 1)} className="w-8 h-8 rounded-lg bg-gray-100 text-gray-600 flex items-center justify-center font-bold">-</button>
-                                        <span className="w-8 text-center font-black text-cyan-600">{i.q}</span>
-                                        <button onClick={() => setCartQty(i.id, i.q + 1)} className="w-8 h-8 rounded-lg bg-cyan-500 text-white flex items-center justify-center font-bold">+</button>
-                                        <button onClick={() => remCart(i.id)} className="p-2 bg-red-100 text-red-500 rounded-lg ml-1"><I.Trash size={16}/></button>
+                            {cart.length === 0 ? <div className="card p-8 text-center border-3 border-dashed border-gray-200 bg-gray-50"><I.ShoppingBag size={40} className="mx-auto text-gray-300 mb-2" /><p className="text-gray-400 font-semibold">Carrito vacío</p></div>
+                                : <div className="space-y-2">{cart.map(i => (
+                                    <div key={i.id} className="card p-3 flex items-center justify-between border-2 border-cyan-200">
+                                        <span className="text-sm font-bold text-gray-700 flex-1 truncate mr-2">{i.name}</span>
+                                        <div className="flex items-center gap-1">
+                                            <button onClick={() => setCartQty(i.id, i.q - 1)} className="w-8 h-8 rounded-lg bg-gray-100 text-gray-600 flex items-center justify-center font-bold">-</button>
+                                            <input type="number" value={i.q} onChange={e => setCartQty(i.id, parseInt(e.target.value) || 0)} className="w-12 text-center font-black text-cyan-600 bg-cyan-50 rounded-lg border-2 border-cyan-200 py-1" min="1" />
+                                            <button onClick={() => setCartQty(i.id, i.q + 1)} className="w-8 h-8 rounded-lg bg-cyan-500 text-white flex items-center justify-center font-bold">+</button>
+                                            <button onClick={() => remCart(i.id)} className="p-2 bg-red-100 text-red-500 rounded-lg ml-1"><I.Trash size={16} /></button>
+                                        </div>
                                     </div>
-                                </div>
-                            ))}</div>}
+                                ))}</div>}
                         </div>
                         <div>
                             <h3 className="text-sm text-gray-600 font-bold mb-2">📋 Disponible</h3>
@@ -863,7 +1102,7 @@
                                     const st = catStyle(i.cat);
                                     return (
                                         <div key={i.id} className={`card p-3 flex items-center gap-2 border-2 ${st.border}`}>
-                                            <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${st.bg} ${st.tx} flex-shrink-0`}><I.Package size={18}/></div>
+                                            <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${st.bg} ${st.tx} flex-shrink-0`}><I.Package size={18} /></div>
                                             <div className="flex-1 min-w-0"><p className="text-sm font-bold text-gray-700 truncate">{i.name}</p><p className="text-xs text-green-600 font-bold">Stock: {i.qty}</p></div>
                                             <button onClick={() => addCart(i, 1)} className="px-3 py-2 rounded-xl bg-cyan-500 text-white font-bold text-xs shadow-lg flex-shrink-0">+ Agregar</button>
                                         </div>
@@ -871,9 +1110,9 @@
                                 })}
                             </div>
                         </div>
-                        <button onClick={sendOrd} disabled={!cart.length || syncing} className={`w-full py-4 rounded-2xl font-bold text-white flex items-center justify-center gap-2 ${cart.length && !syncing ? 'btn-gradient' : 'bg-gray-300'}`}>{syncing ? <><div className="loader w-5 h-5 border-2 animate-spin"></div> Enviando...</> : <><I.Send size={20}/> Enviar pedido</>}</button>
+                        <button onClick={sendOrd} disabled={!cart.length || syncing} className={`w-full py-4 rounded-2xl font-bold text-white flex items-center justify-center gap-2 ${cart.length && !syncing ? 'btn-gradient' : 'bg-gray-300'}`}>{syncing ? <><div className="loader w-5 h-5 border-2 animate-spin"></div> Enviando...</> : <><I.Send size={20} /> Enviar pedido</>}</button>
                     </div>
-                    <Nav current="order" go={setView} role={user?.role}/>
+                    <Nav current="order" go={setView} role={user?.role} />
                 </div>
             );
 
@@ -882,7 +1121,7 @@
                 <div className="min-h-screen pb-28">
                     <div className="sticky top-0 z-40 bg-white/95 backdrop-blur-sm border-b-2 border-purple-100 p-4">
                         <div className="flex items-center gap-3">
-                            <BackBtn onClick={() => setView('dashboard')}/>
+                            <BackBtn onClick={() => setView('dashboard')} />
                             <div className="flex-1">
                                 <h1 className="text-xl font-extrabold text-gray-800">🎓 Cursos / Carreras</h1>
                                 <p className="text-xs text-gray-500">{crs.length} registrados</p>
@@ -893,30 +1132,30 @@
                         <div className="card p-4 card-purple">
                             <p className="text-sm text-gray-600 mb-3">➕ Agregar nuevo curso o carrera</p>
                             <div className="flex gap-2">
-                                <input type="text" placeholder="Ej: Pastelería Profesional" value={newCrs} onChange={e => setNewCrs(e.target.value)} className="flex-1 input-field font-semibold"/>
-                                <button onClick={() => { addCourse(newCrs); setNewCrs(''); }} disabled={syncing || !newCrs.trim()} className="px-5 btn-gradient text-white rounded-2xl disabled:opacity-50"><I.Plus size={22}/></button>
+                                <input type="text" placeholder="Ej: Pastelería Profesional" value={newCrs} onChange={e => setNewCrs(e.target.value)} className="flex-1 input-field font-semibold" />
+                                <button onClick={() => { addCourse(newCrs); setNewCrs(''); }} disabled={syncing || !newCrs.trim()} className="px-5 btn-gradient text-white rounded-2xl disabled:opacity-50"><I.Plus size={22} /></button>
                             </div>
                         </div>
                         <div className="space-y-2">
                             {crs.length === 0 ? (
                                 <div className="text-center py-10">
-                                    <I.Book size={48} className="mx-auto text-gray-200 mb-3"/>
+                                    <I.Book size={48} className="mx-auto text-gray-200 mb-3" />
                                     <p className="text-gray-400 font-bold">No hay cursos</p>
                                 </div>
                             ) : crs.map(c => (
                                 <div key={c} className="card p-4 flex items-center justify-between border-2 border-purple-200">
                                     <div className="flex items-center gap-3">
                                         <div className="w-10 h-10 bg-purple-100 rounded-xl flex items-center justify-center">
-                                            <I.Book size={20} className="text-purple-600"/>
+                                            <I.Book size={20} className="text-purple-600" />
                                         </div>
                                         <span className="font-bold text-gray-700">{c}</span>
                                     </div>
-                                    <button onClick={() => deleteCourse(c)} disabled={syncing} className="p-2 bg-red-100 text-red-500 rounded-lg disabled:opacity-50"><I.Trash size={18}/></button>
+                                    <button onClick={() => deleteCourse(c)} disabled={syncing} className="p-2 bg-red-100 text-red-500 rounded-lg disabled:opacity-50"><I.Trash size={18} /></button>
                                 </div>
                             ))}
                         </div>
                     </div>
-                    <Nav current="dashboard" go={setView} role={user?.role}/>
+                    <Nav current="dashboard" go={setView} role={user?.role} />
                 </div>
             );
 
@@ -930,9 +1169,9 @@
 
                     return (
                         <div className={`card p-5 relative overflow-hidden border-2 ${stBorder[o.status]}`}>
-                            <div className={`absolute left-0 top-0 bottom-0 w-2 ${stCol[o.status]}`}/>
-                            <div className="flex justify-between items-start mb-3"><div><p className="text-xs text-gray-400 font-semibold">👨‍🏫 Docente</p><p className="font-bold text-gray-800 text-lg">{o.teacher}</p></div><span className={`px-3 py-1.5 rounded-full text-[10px] font-bold text-white ${stCol[o.status]}`}>{o.status.toUpperCase()}</span></div>
-                            <div className="flex flex-wrap gap-2 text-xs text-gray-500 font-semibold mb-3"><span className="truncate">🎓 {o.career}</span><span>📅 {o.date}</span><span>🕐 {o.time}</span></div>
+                            <div className={`absolute left-0 top-0 bottom-0 w-2 ${stCol[o.status]}`} />
+                            <div className="flex justify-between items-start mb-2"><div className="flex-1 min-w-0"><p className="text-xs text-gray-400 font-semibold">👨‍🏫 Docente</p><p className="font-bold text-gray-800 text-lg truncate">{o.teacher}</p></div><div className="flex items-center gap-2 ml-2">{(user?.role === 'Administrativo' || devMode) && <button onClick={() => deleteOrder(o.id)} className="p-1.5 bg-red-100 rounded-lg text-red-500 hover:bg-red-200"><I.Trash size={14} /></button>}<span className={`px-3 py-1.5 rounded-full text-[10px] font-bold text-white whitespace-nowrap ${stCol[o.status]}`}>{o.status.toUpperCase()}</span></div></div>
+                            <div className="space-y-1 text-xs text-gray-500 font-semibold mb-3"><div className="truncate">🎓 {o.career}</div><div className="flex gap-4"><span>📅 {o.date}</span><span>🕐 {o.time}</span></div></div>
                             <div className="bg-gray-50 rounded-2xl p-4 mb-3 border-2 border-gray-200">
                                 <p className="text-xs text-gray-400 font-bold mb-2">📦 MATERIAL ({items.length})</p>
                                 {items.length === 0 ? <p className="text-sm text-gray-400 italic">Sin items</p> : items.map(i => (
@@ -940,18 +1179,18 @@
                                         <span className="text-sm text-gray-700 font-semibold truncate flex-1 mr-2">{i.name}</span>
                                         {(user?.role === 'Administrativo' || devMode) && o.status === 'Solicitado' ? (
                                             <div className="flex items-center gap-1 bg-white rounded-xl px-2 py-1 border-2 border-gray-200">
-                                                <button onClick={() => setItems(items.map(x => x.id === i.id ? { ...x, q: Math.max(0, x.q - 1) } : x))} className="w-7 h-7 flex items-center justify-center text-red-500"><I.Minus size={14}/></button>
-                                                <span className="text-sm font-black w-6 text-center text-cyan-600">{i.q}</span>
-                                                <button onClick={() => setItems(items.map(x => x.id === i.id ? { ...x, q: x.q + 1 } : x))} className="w-7 h-7 flex items-center justify-center text-green-500"><I.Plus size={14}/></button>
+                                                <button onClick={() => setItems(items.map(x => x.id === i.id ? { ...x, q: Math.max(0, x.q - 1) } : x))} className="w-7 h-7 flex items-center justify-center text-red-500"><I.Minus size={14} /></button>
+                                                <input type="number" value={i.q} onChange={e => setItems(items.map(x => x.id === i.id ? { ...x, q: Math.max(0, parseInt(e.target.value) || 0) } : x))} className="w-10 text-center font-black text-cyan-600 bg-cyan-50 rounded border border-cyan-200 py-0.5 text-sm" min="0" />
+                                                <button onClick={() => setItems(items.map(x => x.id === i.id ? { ...x, q: x.q + 1 } : x))} className="w-7 h-7 flex items-center justify-center text-green-500"><I.Plus size={14} /></button>
                                             </div>
                                         ) : <span className="text-sm font-black text-cyan-600">×{i.q}</span>}
                                     </div>
                                 ))}
                             </div>
-                            {o.status === 'En Curso' && user?.role === 'Docente' && <textarea placeholder="⚠️ Observaciones..." value={obs} onChange={e => setObs(e.target.value)} className="w-full px-4 py-3 bg-orange-50 rounded-2xl text-sm border-2 border-orange-200 mb-3 font-semibold" rows={2}/>}
-                            {o.obs && <div className="bg-orange-50 rounded-2xl p-4 mb-3 border-2 border-orange-200"><p className="text-xs font-bold text-orange-600"><I.AlertTriangle size={14} className="inline mr-1"/> OBSERVACIONES</p><p className="text-sm text-gray-700 italic mt-1">"{o.obs}"</p></div>}
-                            {o.res && <div className="bg-green-50 rounded-2xl p-4 mb-3 border-2 border-green-200"><p className="text-xs font-bold text-green-600"><I.CheckCircle size={14} className="inline mr-1"/> RESOLUCIÓN</p><p className="text-sm text-gray-700 mt-1">{o.res}</p></div>}
-                            <div className="flex justify-between items-center pt-3 border-t-2 border-dashed border-gray-200"><span className="text-[10px] text-gray-400 font-bold">ID: #{String(o.id || '').slice(0,8)}</span>{o.sig && <img src={o.sig} className="h-6 opacity-50" alt=""/>}</div>
+                            {o.status === 'En Curso' && user?.role === 'Docente' && <textarea placeholder="⚠️ Observaciones..." value={obs} onChange={e => setObs(e.target.value)} className="w-full px-4 py-3 bg-orange-50 rounded-2xl text-sm border-2 border-orange-200 mb-3 font-semibold" rows={2} />}
+                            {o.obs && <div className="bg-orange-50 rounded-2xl p-4 mb-3 border-2 border-orange-200"><p className="text-xs font-bold text-orange-600"><I.AlertTriangle size={14} className="inline mr-1" /> OBSERVACIONES</p><p className="text-sm text-gray-700 italic mt-1">"{o.obs}"</p></div>}
+                            {o.res && <div className="bg-green-50 rounded-2xl p-4 mb-3 border-2 border-green-200"><p className="text-xs font-bold text-green-600"><I.CheckCircle size={14} className="inline mr-1" /> RESOLUCIÓN</p><p className="text-sm text-gray-700 mt-1">{o.res}</p></div>}
+                            <div className="flex justify-between items-center pt-3 border-t-2 border-dashed border-gray-200"><span className="text-[10px] text-gray-400 font-bold">ID: #{String(o.id || '').slice(0, 8)}</span>{o.sig && <img src={o.sig} className="h-6 opacity-50" alt="" />}</div>
                             {(user?.role === 'Administrativo' || devMode) && o.status === 'Solicitado' && <button onClick={() => confirmDel(o.id, items)} disabled={syncing} className="w-full mt-4 py-3 btn-cyan text-white rounded-2xl font-bold disabled:opacity-50">{syncing ? 'Procesando...' : '✓ Confirmar entrega'}</button>}
                             {user?.role === 'Docente' && o.status === 'En Curso' && <button onClick={() => returnMat(o.id, obs)} disabled={syncing} className="w-full mt-4 py-3 btn-orange text-white rounded-2xl font-bold disabled:opacity-50">{syncing ? 'Procesando...' : '↩ Devolver material'}</button>}
                             {(user?.role === 'Administrativo' || devMode) && o.status === 'Devolución Pendiente' && <button onClick={() => finRet(o.id)} disabled={syncing} className="w-full mt-4 py-3 btn-green text-white rounded-2xl font-bold disabled:opacity-50">{syncing ? 'Procesando...' : '✓ Confirmar reingreso'}</button>}
@@ -959,13 +1198,15 @@
                     );
                 };
 
-                const filteredOrders = user?.role === 'Docente' ? ord.filter(o => o.teacher === user.fullName) : ord;
+                // Filtrar por rol y EXCLUIR solicitudes de compra (career contiene COMPRA o empieza con 🛒)
+                const filteredOrders = (user?.role === 'Docente' ? ord.filter(o => o.teacher === user.fullName) : ord)
+                    .filter(o => !o.career || (!o.career.startsWith('🛒') && !o.career.includes('COMPRA')));
 
                 return (
                     <div className="min-h-screen pb-28">
-                        <div className="sticky top-0 z-40 bg-white/95 backdrop-blur-sm border-b-2 border-cyan-100 p-4"><div className="flex items-center gap-3"><BackBtn onClick={() => setView('dashboard')}/><h1 className="text-xl font-extrabold text-gray-800 flex-1">📖 Cuaderno</h1><button onClick={refresh} disabled={syncing} className="p-2 bg-cyan-100 rounded-xl"><I.Refresh size={18} className={`text-cyan-600 ${syncing ? 'animate-spin' : ''}`}/></button></div></div>
-                        <div className="p-4 space-y-4">{filteredOrders.length === 0 ? <div className="text-center py-16"><I.Book size={48} className="mx-auto text-gray-200 mb-3"/><p className="text-gray-400 font-bold">Sin novedades</p></div> : filteredOrders.map(o => <OrdCard key={o.id} o={o}/>)}</div>
-                        <Nav current="handover" go={setView} role={user?.role}/>
+                        <div className="sticky top-0 z-40 bg-white/95 backdrop-blur-sm border-b-2 border-cyan-100 p-4"><div className="flex items-center gap-3"><BackBtn onClick={() => setView('dashboard')} /><h1 className="text-xl font-extrabold text-gray-800 flex-1">📖 Cuaderno</h1><button onClick={refresh} disabled={syncing} className="p-2 bg-cyan-100 rounded-xl"><I.Refresh size={18} className={`text-cyan-600 ${syncing ? 'animate-spin' : ''}`} /></button></div></div>
+                        <div className="p-4 space-y-4">{filteredOrders.length === 0 ? <div className="text-center py-16"><I.Book size={48} className="mx-auto text-gray-200 mb-3" /><p className="text-gray-400 font-bold">Sin novedades</p></div> : filteredOrders.map(o => <OrdCard key={o.id} o={o} />)}</div>
+                        <Nav current="handover" go={setView} role={user?.role} />
                     </div>
                 );
             }
@@ -973,11 +1214,11 @@
             // HISTORY
             if (view === 'history') return (
                 <div className="min-h-screen pb-28">
-                    <div className="sticky top-0 z-40 bg-white/95 backdrop-blur-sm border-b-2 border-purple-100 p-4"><div className="flex items-center gap-3"><BackBtn onClick={() => setView('dashboard')}/><div className="flex-1"><h1 className="text-xl font-extrabold text-gray-800">📊 Historial</h1><p className="text-xs text-gray-500">{his.length} mov.</p></div><button onClick={refresh} disabled={syncing} className="p-2 bg-purple-100 rounded-xl"><I.Refresh size={18} className={`text-purple-600 ${syncing ? 'animate-spin' : ''}`}/></button></div></div>
-                    <div className="p-4 space-y-3">{his.length === 0 ? <div className="text-center py-16"><I.History size={48} className="mx-auto text-gray-200 mb-3"/><p className="text-gray-400 font-bold">Sin movimientos</p></div> : his.map(h => (
+                    <div className="sticky top-0 z-40 bg-white/95 backdrop-blur-sm border-b-2 border-purple-100 p-4"><div className="flex items-center gap-3"><BackBtn onClick={() => setView('dashboard')} /><div className="flex-1"><h1 className="text-xl font-extrabold text-gray-800">📊 Historial</h1><p className="text-xs text-gray-500">{his.length} mov.</p></div><button onClick={refresh} disabled={syncing} className="p-2 bg-purple-100 rounded-xl"><I.Refresh size={18} className={`text-purple-600 ${syncing ? 'animate-spin' : ''}`} /></button></div></div>
+                    <div className="p-4 space-y-3">{his.length === 0 ? <div className="text-center py-16"><I.History size={48} className="mx-auto text-gray-200 mb-3" /><p className="text-gray-400 font-bold">Sin movimientos</p></div> : his.map(h => (
                         <div key={h.id} className={`card p-4 border-2 ${h.type === 'in' ? 'border-green-300' : 'border-red-300'}`}>
                             <div className="flex items-start gap-3">
-                                <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${h.type === 'in' ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-500'}`}>{h.type === 'in' ? <I.TrendingUp size={20}/> : <I.TrendingDown size={20}/>}</div>
+                                <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${h.type === 'in' ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-500'}`}>{h.type === 'in' ? <I.TrendingUp size={20} /> : <I.TrendingDown size={20} />}</div>
                                 <div className="flex-1 min-w-0">
                                     <p className="font-bold text-gray-800 truncate">{h.name}</p>
                                     <p className="text-xs text-gray-400">{new Date(h.at).toLocaleString('es-AR')}</p>
@@ -987,40 +1228,85 @@
                             </div>
                         </div>
                     ))}</div>
-                    <Nav current="dashboard" go={setView} role={user?.role}/>
+                    <Nav current="dashboard" go={setView} role={user?.role} />
                 </div>
             );
 
             // INCIDENTS
             if (view === 'incidents') {
-                const incs = ord.filter(o => o.obs);
+                const markAsIrrecoverable = async (order) => {
+                    if (!confirm('¿Marcar como IRRECUPERABLE y agregar al expediente de compras para reposición?')) return;
+                    setSyncing(true);
+                    try {
+                        // Resolver el incidente con nota de irrecuperable
+                        await supabase.from('orders').update({ resolution: '❌ IRRECUPERABLE - Agregado a expediente de compras' }).eq('id', order.id);
+
+                        // Crear solicitud de compra automática
+                        const { data: purchaseOrder, error } = await supabase.from('orders').insert([{
+                            teacher_id: user.id,
+                            teacher_name: 'Sistema (Reposición)',
+                            teacher_email: user.email,
+                            career: order.career || 'General',
+                            date: new Date().toISOString().split('T')[0],
+                            time: new Date().toTimeString().split(' ')[0].slice(0, 5),
+                            status: 'Pendiente Compra',
+                            observations: `REPOSICIÓN por daño irreparable: ${order.obs} (Docente original: ${order.teacher})`
+                        }]).select().single();
+
+                        if (!error && purchaseOrder) {
+                            // Agregar items del pedido original al expediente
+                            for (const item of (order.items || [])) {
+                                await supabase.from('order_items').insert([{
+                                    order_id: purchaseOrder.id,
+                                    item_name: `${item.name} (REPOSICIÓN)`,
+                                    qty: item.q
+                                }]);
+                            }
+                        }
+                        await loadData();
+                        alert('✅ Marcado como irrecuperable y agregado al expediente de compras');
+                    } catch (e) { alert('Error: ' + e.message); }
+                    setSyncing(false);
+                };
+
+                const IncidentCard = ({ o }) => {
+                    const [res, setRes] = useState('');
+                    return (
+                        <div className="card p-5 border-3 border-red-200 relative overflow-hidden">
+                            <div className="absolute left-0 top-0 bottom-0 w-2 bg-red-500" />
+                            <div className="flex justify-between mb-2"><span className="text-xs text-gray-400 font-bold">{o.date ? new Date(o.date).toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: '2-digit' }) : ''}</span><span className="badge-red px-3 py-1 rounded-full font-bold">⚠️ INCIDENTE</span></div>
+                            <p className="font-bold text-gray-800 text-lg">{o.teacher}</p>
+                            <p className="text-xs text-gray-500 font-semibold mb-3">🎓 {o.career}</p>
+                            <div className="bg-red-50 rounded-2xl p-4 mb-3 border-2 border-red-200"><p className="text-sm text-red-800 italic">"{o.obs}"</p></div>
+                            {o.items && o.items.length > 0 && <div className="bg-gray-50 rounded-xl p-3 mb-3 border border-gray-200"><p className="text-xs text-gray-500 font-bold mb-1">📦 Material:</p>{o.items.map((it, idx) => <span key={idx} className="inline-block bg-gray-200 text-gray-700 text-xs px-2 py-1 rounded mr-1 mb-1">{it.name} x{it.q}</span>)}</div>}
+                            <div className="space-y-2">
+                                <div className="flex gap-2"><input type="text" placeholder="Resolución..." value={res} onChange={e => setRes(e.target.value)} className="flex-1 input-field font-semibold" /><button onClick={() => { if (res.trim()) resolve(o.id, res); }} disabled={syncing} className="px-5 btn-gradient text-white rounded-2xl"><I.Check size={20} /></button></div>
+                                {(user?.role === 'Administrativo' || devMode) && <button onClick={() => markAsIrrecoverable(o)} disabled={syncing} className="w-full py-3 bg-red-500 text-white rounded-2xl font-bold flex items-center justify-center gap-2"><I.X size={18} /> Marcar como IRRECUPERABLE</button>}
+                            </div>
+                        </div>
+                    );
+                };
+
+                // Filtramos SOLO incidentes (tienen obs, no tienen res y NO son compras con prefijo 🛒)
+                const incs = ord.filter(o => o.obs && !o.res && (!o.career || !o.career.startsWith('🛒')));
                 return (
                     <div className="min-h-screen pb-28">
-                        <div className="sticky top-0 z-40 bg-white/95 backdrop-blur-sm border-b-2 border-orange-100 p-4"><div className="flex items-center gap-3"><BackBtn onClick={() => setView('dashboard')}/><h1 className="text-xl font-extrabold text-gray-800">🔧 Bitácora</h1></div></div>
-                        <div className="p-4 space-y-4">{incs.length === 0 ? <div className="text-center py-16"><I.CheckCircle size={56} className="mx-auto text-green-400 mb-3"/><p className="text-gray-800 font-bold text-lg">¡Todo en orden!</p></div> : incs.map(o => {
-                            const [res, setRes] = useState('');
-                            return (
-                                <div key={o.id} className="card p-5 border-3 border-red-200 relative overflow-hidden">
-                                    <div className="absolute left-0 top-0 bottom-0 w-2 bg-red-500"/>
-                                    <div className="flex justify-between mb-2"><span className="text-xs text-gray-400 font-bold">{o.date}</span><span className="badge-red px-3 py-1 rounded-full font-bold">⚠️ INCIDENTE</span></div>
-                                    <p className="font-bold text-gray-800 text-lg">{o.teacher}</p>
-                                    <p className="text-xs text-gray-500 font-semibold mb-3">🎓 {o.career}</p>
-                                    <div className="bg-red-50 rounded-2xl p-4 mb-3 border-2 border-red-200"><p className="text-sm text-red-800 italic">"{o.obs}"</p></div>
-                                    {o.res ? <div className="bg-green-50 rounded-2xl p-4 border-2 border-green-200"><p className="text-xs font-bold text-green-600"><I.CheckCircle size={14} className="inline mr-1"/> RESUELTO</p><p className="text-sm text-gray-700 mt-1">{o.res}</p></div>
-                                    : <div className="flex gap-2"><input type="text" placeholder="Resolución..." value={res} onChange={e => setRes(e.target.value)} className="flex-1 input-field font-semibold"/><button onClick={() => { if (res.trim()) resolve(o.id, res); }} disabled={syncing} className="px-5 btn-gradient text-white rounded-2xl"><I.Check size={20}/></button></div>}
-                                </div>
-                            );
-                        })}</div>
-                        <Nav current="dashboard" go={setView} role={user?.role}/>
+                        <div className="sticky top-0 z-40 bg-white/95 backdrop-blur-sm border-b-2 border-orange-100 p-4"><div className="flex items-center gap-3"><BackBtn onClick={() => setView('dashboard')} /><h1 className="text-xl font-extrabold text-gray-800">🔧 Bitácora</h1></div></div>
+                        <div className="p-4 space-y-4">{incs.length === 0 ? <div className="text-center py-16"><I.CheckCircle size={56} className="mx-auto text-green-400 mb-3" /><p className="text-gray-800 font-bold text-lg">¡Todo en orden!</p></div> : incs.map(o => <IncidentCard key={o.id} o={o} />)}</div>
+                        <Nav current="dashboard" go={setView} role={user?.role} />
                     </div>
                 );
             }
+
+            // PURCHASES view moved to line ~1875 (unified version)
+
+            // PURCHASE view moved to line ~1751 (unified version)
 
             // PROFILE
             if (view === 'profile') {
                 return (
                     <div className="min-h-screen pb-28">
-                        <div className="sticky top-0 z-40 bg-white/95 backdrop-blur-sm border-b-2 border-orange-100 p-4"><div className="flex items-center gap-3"><BackBtn onClick={() => setView('dashboard')}/><h1 className="text-xl font-extrabold text-gray-800">👤 Mi perfil</h1></div></div>
+                        <div className="sticky top-0 z-40 bg-white/95 backdrop-blur-sm border-b-2 border-orange-100 p-4"><div className="flex items-center gap-3"><BackBtn onClick={() => setView('dashboard')} /><h1 className="text-xl font-extrabold text-gray-800">👤 Mi perfil</h1></div></div>
                         <div className="p-4 space-y-4">
                             <div className={`card p-6 text-center ${devMode ? 'card-gradient' : user?.role === 'Administrativo' ? 'card-purple' : 'card-cyan'}`}>
                                 <div className="w-24 h-24 mx-auto mb-4 rounded-full bg-gradient-to-br from-cyan-400 via-purple-500 to-pink-500 flex items-center justify-center text-white text-3xl font-black shadow-xl">{user?.name?.[0]}{user?.surname?.[0]}</div>
@@ -1034,7 +1320,7 @@
                                     <p className={`text-base font-bold mt-1 ${devMode ? 'text-white' : 'text-gray-700'}`}>{user?.email}</p>
                                 </div>
                             </div>
-                            
+
                             {/* Firma editable */}
                             <div className="card p-5 card-green">
                                 <div className="flex items-center justify-between mb-3">
@@ -1044,22 +1330,22 @@
                                     </button>
                                 </div>
                                 {editingSig ? (
-                                    <SignPad onSave={(sig) => { if(sig) { updateSignature(sig); setEditingSig(false); } }} initial={null}/>
+                                    <SignPad onSave={(sig) => { if (sig) { updateSignature(sig); setEditingSig(false); } }} initial={null} />
                                 ) : (
                                     user?.sig ? (
                                         <div className="bg-gradient-to-br from-green-50 to-cyan-50 rounded-2xl p-5 border-2 border-green-200">
-                                            <img src={user.sig} alt="Firma" className="h-14 mx-auto"/>
+                                            <img src={user.sig} alt="Firma" className="h-14 mx-auto" />
                                         </div>
                                     ) : (
                                         <p className="text-gray-400 text-sm text-center py-4">Sin firma registrada</p>
                                     )
                                 )}
                             </div>
-                            
-                            <button onClick={logout} className="w-full py-4 bg-red-100 text-red-600 rounded-2xl font-bold flex items-center justify-center gap-2 border-2 border-red-200"><I.LogOut size={20}/> Cerrar sesión</button>
-                            <p className="text-center text-xs text-gray-400 pt-4">Mise en App v7.0<br/><span className="font-bold text-gray-500">Rainero Culinaria 4.0</span><br/><span className="text-green-500">● Conectado</span>{devMode && <><br/><span className="text-purple-500">⚡ Developer Mode</span></>}</p>
+
+                            <button onClick={logout} className="w-full py-4 bg-red-100 text-red-600 rounded-2xl font-bold flex items-center justify-center gap-2 border-2 border-red-200"><I.LogOut size={20} /> Cerrar sesión</button>
+                            <p className="text-center text-xs text-gray-400 pt-4">Mise en App v7.0<br /><span className="font-bold text-gray-500">Rainero Culinaria 4.0</span><br /><span className="text-green-500">● Conectado</span>{devMode && <><br /><span className="text-purple-500">⚡ Developer Mode</span></>}</p>
                         </div>
-                        <Nav current="profile" go={setView} role={devMode ? 'Administrativo' : user?.role}/>
+                        <Nav current="profile" go={setView} role={devMode ? 'Administrativo' : user?.role} />
                     </div>
                 );
             }
@@ -1069,13 +1355,13 @@
                 <div className="min-h-screen pb-28">
                     <div className="sticky top-0 z-40 bg-white/95 backdrop-blur-sm border-b-2 border-green-100 p-4">
                         <div className="flex items-center gap-3">
-                            <BackBtn onClick={() => setView('dashboard')}/>
+                            <BackBtn onClick={() => setView('dashboard')} />
                             <div className="flex-1">
                                 <h1 className="text-xl font-extrabold text-gray-800">👥 Usuarios</h1>
                                 <p className="text-xs text-gray-500">{users.length} registrados</p>
                             </div>
                             <button onClick={refresh} disabled={syncing} className="p-2 bg-green-100 rounded-xl">
-                                <I.Refresh size={18} className={`text-green-600 ${syncing ? 'animate-spin' : ''}`}/>
+                                <I.Refresh size={18} className={`text-green-600 ${syncing ? 'animate-spin' : ''}`} />
                             </button>
                         </div>
                     </div>
@@ -1085,7 +1371,7 @@
                         </div>
                         {users.length === 0 ? (
                             <div className="text-center py-16">
-                                <I.Users size={48} className="mx-auto text-gray-200 mb-3"/>
+                                <I.Users size={48} className="mx-auto text-gray-200 mb-3" />
                                 <p className="text-gray-400 font-bold">No hay usuarios</p>
                             </div>
                         ) : users.map(u => (
@@ -1101,24 +1387,24 @@
                                             {u.role === 'Administrativo' ? '👑 ADMIN' : '👨‍🏫 DOCENTE'}
                                         </span>
                                     </div>
-                                    <button 
-                                        onClick={() => deleteUser(u.id, u.email)} 
+                                    <button
+                                        onClick={() => deleteUser(u.id, u.email)}
                                         disabled={syncing || user?.email === u.email}
                                         className={`p-3 rounded-xl ${user?.email === u.email ? 'bg-gray-100 text-gray-300' : 'bg-red-100 text-red-500'}`}
                                     >
-                                        <I.Trash size={18}/>
+                                        <I.Trash size={18} />
                                     </button>
                                 </div>
                                 {u.signature && (
                                     <div className="mt-3 pt-3 border-t border-gray-100">
                                         <p className="text-xs text-gray-400 mb-1">Firma:</p>
-                                        <img src={u.signature} alt="Firma" className="h-8 opacity-60"/>
+                                        <img src={u.signature} alt="Firma" className="h-8 opacity-60" />
                                     </div>
                                 )}
                             </div>
                         ))}
                     </div>
-                    <Nav current="dashboard" go={setView} role={user?.role}/>
+                    <Nav current="dashboard" go={setView} role={user?.role} />
                 </div>
             );
 
@@ -1129,7 +1415,7 @@
                 const ingresos = his.filter(h => h.type === 'in');
                 const ingresos2026 = ingresos.filter(h => new Date(h.at).getFullYear() === 2026);
                 const roturas2026 = roturas.filter(h => new Date(h.at).getFullYear() === 2026);
-                
+
                 // Items más pedidos
                 const itemCounts = {};
                 ord.forEach(o => {
@@ -1138,17 +1424,17 @@
                     });
                 });
                 const topItems = Object.entries(itemCounts).sort((a, b) => b[1] - a[1]).slice(0, 5);
-                
+
                 // Docentes más activos
                 const teacherCounts = {};
                 ord.forEach(o => {
                     teacherCounts[o.teacher] = (teacherCounts[o.teacher] || 0) + 1;
                 });
                 const topTeachers = Object.entries(teacherCounts).sort((a, b) => b[1] - a[1]).slice(0, 5);
-                
+
                 // Stock crítico
                 const lowStock = inv.filter(i => i.qty <= 3).sort((a, b) => a.qty - b.qty);
-                
+
                 // Pedidos por estado
                 const statusCounts = { 'Solicitado': 0, 'En Curso': 0, 'Devolución Pendiente': 0, 'Finalizado': 0 };
                 ord.forEach(o => { statusCounts[o.status] = (statusCounts[o.status] || 0) + 1; });
@@ -1157,13 +1443,13 @@
                     <div className="min-h-screen pb-28">
                         <div className="sticky top-0 z-40 bg-gradient-to-r from-purple-500 to-cyan-500 p-4">
                             <div className="flex items-center gap-3">
-                                <BackBtn onClick={() => setView('dashboard')}/>
+                                <BackBtn onClick={() => setView('dashboard')} />
                                 <div className="flex-1">
                                     <h1 className="text-xl font-extrabold text-white">📊 Estadísticas</h1>
                                     <p className="text-xs text-white/80">Panel exclusivo DEV</p>
                                 </div>
                                 <button onClick={refresh} disabled={syncing} className="p-2 bg-white/20 rounded-xl">
-                                    <I.Refresh size={18} className={`text-white ${syncing ? 'animate-spin' : ''}`}/>
+                                    <I.Refresh size={18} className={`text-white ${syncing ? 'animate-spin' : ''}`} />
                                 </button>
                             </div>
                         </div>
@@ -1299,22 +1585,20 @@
                                 )}
                             </div>
                         </div>
-                        <Nav current="dashboard" go={setView} role="Administrativo"/>
+                        <Nav current="dashboard" go={setView} role="Administrativo" />
                     </div>
                 );
             }
 
             // PURCHASE REQUEST - Docentes solicitan material nuevo
             if (view === 'purchase') {
-                const [purchaseItems, setPurchaseItems] = useState([]);
-                const [newPurchaseItem, setNewPurchaseItem] = useState({ name: '', qty: 1 });
-                const [justification, setJustification] = useState('');
-
                 const addPurchaseItem = () => {
                     if (!newPurchaseItem.name.trim()) return alert('Ingresá el nombre del material');
                     if (newPurchaseItem.qty < 1) return alert('Cantidad mínima: 1');
-                    setPurchaseItems([...purchaseItems, { ...newPurchaseItem, id: Date.now() }]);
-                    setNewPurchaseItem({ name: '', qty: 1 });
+                    if (!newPurchaseItem.purpose.trim()) return alert('Ingresá el propósito');
+                    if (!selectedCourse) return alert('Seleccioná un curso');
+                    setPurchaseItems([...purchaseItems, { ...newPurchaseItem, id: Date.now(), course: selectedCourse }]);
+                    setNewPurchaseItem({ name: '', qty: 1, purpose: '' });
                 };
 
                 const removePurchaseItem = (id) => {
@@ -1322,10 +1606,12 @@
                 };
 
                 const submitPurchase = async () => {
+                    // Crear justificación automática con los datos estructurados
+                    const justification = purchaseItems.map(i => `${i.name} (x${i.qty}) - Curso: ${i.course} - Propósito: ${i.purpose}`).join('\n');
                     const ok = await sendPurchaseRequest(purchaseItems, justification);
                     if (ok) {
                         setPurchaseItems([]);
-                        setJustification('');
+                        setSelectedCourse('');
                         setView('dashboard');
                     }
                 };
@@ -1334,72 +1620,112 @@
                     <div className="min-h-screen pb-32">
                         <div className="sticky top-0 z-40 bg-white/95 backdrop-blur-sm border-b-2 border-orange-100 p-4">
                             <div className="flex items-center gap-3">
-                                <BackBtn onClick={() => setView('dashboard')}/>
+                                <BackBtn onClick={() => setView('dashboard')} />
                                 <h1 className="text-xl font-extrabold text-gray-800">🛒 Solicitar Compra</h1>
                             </div>
                         </div>
                         <div className="p-4 space-y-4">
                             <div className="card p-4 card-orange">
-                                <p className="text-sm text-gray-600">💡 Solicitá material <strong>nuevo</strong> que no existe en el inventario actual. Estas solicitudes se agregan al expediente de compras de fin de año.</p>
+                                <p className="text-sm text-gray-600">💡 Solicitá material <strong>nuevo</strong> que no existe en el inventario. Estas solicitudes van al expediente de compras de fin de año.</p>
                             </div>
 
-                            {/* Agregar items */}
-                            <div className="card p-4 border-2 border-orange-200">
-                                <h3 className="font-bold text-gray-800 mb-3">📦 Material a solicitar</h3>
-                                <div className="space-y-2">
-                                    <input type="text" placeholder="Nombre del material (ej: Espátula de silicona)" value={newPurchaseItem.name} onChange={e => setNewPurchaseItem({ ...newPurchaseItem, name: e.target.value })} className="w-full input-field font-semibold"/>
-                                    <div className="flex gap-2">
-                                        <input type="number" min="1" placeholder="Cant." value={newPurchaseItem.qty} onChange={e => setNewPurchaseItem({ ...newPurchaseItem, qty: parseInt(e.target.value) || 1 })} className="w-24 input-field font-semibold"/>
-                                        <button onClick={addPurchaseItem} className="flex-1 py-3 btn-orange text-white rounded-xl font-bold">+ Agregar</button>
+                            {/* Info del docente */}
+                            <div className="card p-4 border-2 border-cyan-200">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-12 h-12 bg-cyan-500 rounded-xl flex items-center justify-center text-white font-bold text-lg">{user?.name?.[0]}{user?.surname?.[0]}</div>
+                                    <div>
+                                        <p className="text-xs text-gray-400 font-semibold">👨‍🏫 Docente solicitante</p>
+                                        <p className="font-bold text-gray-800">{user?.fullName}</p>
                                     </div>
                                 </div>
                             </div>
 
-                            {/* Lista de items */}
+                            {/* Formulario agregar item */}
+                            <div className="card p-4 border-2 border-orange-200">
+                                <h3 className="font-bold text-gray-800 mb-3">📦 Agregar material</h3>
+                                <div className="space-y-3">
+                                    <div>
+                                        <label className="text-xs text-gray-500 font-bold mb-1 block">🎓 Curso</label>
+                                        <select value={selectedCourse} onChange={e => setSelectedCourse(e.target.value)} className="w-full input-field font-semibold">
+                                            <option value="">Seleccionar curso...</option>
+                                            {crs.map(c => <option key={c}>{c}</option>)}
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label className="text-xs text-gray-500 font-bold mb-1 block">📦 Material</label>
+                                        <input type="text" placeholder="Nombre del material (ej: Espátula de silicona)" value={newPurchaseItem.name} onChange={e => setNewPurchaseItem({ ...newPurchaseItem, name: e.target.value })} className="w-full input-field font-semibold" />
+                                    </div>
+                                    <div className="grid grid-cols-3 gap-2">
+                                        <div>
+                                            <label className="text-xs text-gray-500 font-bold mb-1 block">🔢 Cantidad</label>
+                                            <input type="number" min="1" value={newPurchaseItem.qty} onChange={e => setNewPurchaseItem({ ...newPurchaseItem, qty: parseInt(e.target.value) || 1 })} className="w-full input-field font-semibold text-center" />
+                                        </div>
+                                        <div className="col-span-2">
+                                            <label className="text-xs text-gray-500 font-bold mb-1 block">🎯 Propósito</label>
+                                            <input type="text" placeholder="¿Para qué?" value={newPurchaseItem.purpose} onChange={e => setNewPurchaseItem({ ...newPurchaseItem, purpose: e.target.value })} className="w-full input-field font-semibold" />
+                                        </div>
+                                    </div>
+                                    <button onClick={addPurchaseItem} className="w-full py-3 btn-orange text-white rounded-xl font-bold">+ Agregar a la solicitud</button>
+                                </div>
+                            </div>
+
+                            {/* Tabla de solicitud */}
                             {purchaseItems.length > 0 && (
-                                <div className="card p-4 border-2 border-cyan-200">
-                                    <h3 className="font-bold text-gray-800 mb-3">📋 Mi solicitud ({purchaseItems.length})</h3>
-                                    <div className="space-y-2">
-                                        {purchaseItems.map(i => (
-                                            <div key={i.id} className="flex items-center gap-2 bg-cyan-50 p-3 rounded-xl">
-                                                <span className="flex-1 font-semibold text-gray-700">{i.name}</span>
-                                                <span className="badge-cyan px-3 py-1 rounded-full font-bold">{i.qty}</span>
-                                                <button onClick={() => removePurchaseItem(i.id)} className="p-2 bg-red-100 rounded-lg text-red-500"><I.Trash size={16}/></button>
-                                            </div>
-                                        ))}
+                                <div className="card p-4 border-2 border-green-200">
+                                    <h3 className="font-bold text-gray-800 mb-3">📋 Mi solicitud ({purchaseItems.length} items)</h3>
+                                    <div className="overflow-x-auto">
+                                        <table className="w-full text-sm">
+                                            <thead>
+                                                <tr className="bg-green-50 text-left">
+                                                    <th className="px-2 py-2 rounded-l-lg font-bold text-gray-600">Material</th>
+                                                    <th className="px-2 py-2 font-bold text-gray-600 text-center">Cant.</th>
+                                                    <th className="px-2 py-2 font-bold text-gray-600">Curso</th>
+                                                    <th className="px-2 py-2 font-bold text-gray-600">Propósito</th>
+                                                    <th className="px-2 py-2 rounded-r-lg"></th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {purchaseItems.map(i => (
+                                                    <tr key={i.id} className="border-b border-gray-100 last:border-0">
+                                                        <td className="px-2 py-3 font-semibold text-gray-800">{i.name}</td>
+                                                        <td className="px-2 py-3 text-center"><span className="badge-cyan px-2 py-1 rounded-full font-bold">{i.qty}</span></td>
+                                                        <td className="px-2 py-3 text-gray-600 text-xs">{i.course}</td>
+                                                        <td className="px-2 py-3 text-gray-500 text-xs italic">{i.purpose}</td>
+                                                        <td className="px-2 py-3"><button onClick={() => removePurchaseItem(i.id)} className="p-1.5 bg-red-100 rounded-lg text-red-500"><I.Trash size={14} /></button></td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
                                     </div>
                                 </div>
                             )}
-
-                            {/* Justificación */}
-                            <div className="card p-4 border-2 border-purple-200">
-                                <h3 className="font-bold text-gray-800 mb-3">📝 Justificación</h3>
-                                <textarea 
-                                    placeholder="Explicá por qué se necesita este material (para qué curso, qué actividad, etc.)" 
-                                    value={justification} 
-                                    onChange={e => setJustification(e.target.value)} 
-                                    className="w-full input-field font-semibold min-h-[100px] resize-none"
-                                />
-                            </div>
                         </div>
 
                         {/* Botón enviar */}
                         {purchaseItems.length > 0 && (
                             <div className="fixed bottom-20 inset-x-0 p-4 bg-gradient-to-t from-white via-white">
-                                <button onClick={submitPurchase} disabled={syncing || !justification.trim()} className="w-full py-4 btn-gradient text-white rounded-2xl font-bold flex items-center justify-center gap-2 shadow-xl disabled:opacity-50">
-                                    {syncing ? <><div className="loader w-5 h-5 border-2 animate-spin"></div> Enviando...</> : <>Enviar Solicitud <I.ArrowRight size={20}/></>}
+                                <button onClick={submitPurchase} disabled={syncing} className="w-full py-4 btn-gradient text-white rounded-2xl font-bold flex items-center justify-center gap-2 shadow-xl disabled:opacity-50">
+                                    {syncing ? <><div className="loader w-5 h-5 border-2 animate-spin"></div> Enviando...</> : <>Enviar Solicitud <I.ArrowRight size={20} /></>}
                                 </button>
                             </div>
                         )}
-                        <Nav current="dashboard" go={setView} role={user?.role}/>
+                        <Nav current="dashboard" go={setView} role={user?.role} />
                     </div>
                 );
             }
 
             // PURCHASES - Expediente de compras (Admin/Dev)
             if (view === 'purchases' && (user?.role === 'Administrativo' || devMode)) {
-                const purchaseOrders = ord.filter(o => o.status === 'Pendiente Compra' || o.status === 'Compra Aprobada' || o.status === 'Compra Rechazada');
-                const pending = purchaseOrders.filter(o => o.status === 'Pendiente Compra');
+
+                // Incluir 'Pendiente Compra' (sistema) y solicitudes manuales ('🛒' en career y status Solicitado)
+                const purchaseOrders = ord.filter(o =>
+                    o.status === 'Pendiente Compra' ||
+                    o.status === 'Compra Aprobada' ||
+                    o.status === 'Compra Rechazada' ||
+                    (o.career && (o.career.includes('COMPRA') || o.career.startsWith('🛒')))
+                );
+
+                const pending = purchaseOrders.filter(o => o.status === 'Pendiente Compra' || ((o.status === 'Solicitado' || !o.status) && (o.career?.includes('COMPRA') || o.career?.startsWith('🛒'))));
                 const approved = purchaseOrders.filter(o => o.status === 'Compra Aprobada');
                 const rejected = purchaseOrders.filter(o => o.status === 'Compra Rechazada');
 
@@ -1407,13 +1733,13 @@
                     <div className="min-h-screen pb-28">
                         <div className="sticky top-0 z-40 bg-white/95 backdrop-blur-sm border-b-2 border-orange-100 p-4">
                             <div className="flex items-center gap-3">
-                                <BackBtn onClick={() => setView('dashboard')}/>
+                                <BackBtn onClick={() => setView('dashboard')} />
                                 <div className="flex-1">
                                     <h1 className="text-xl font-extrabold text-gray-800">📋 Expediente Compras</h1>
                                     <p className="text-xs text-gray-500">{purchaseOrders.length} solicitudes</p>
                                 </div>
                                 <button onClick={refresh} disabled={syncing} className="p-2 bg-orange-100 rounded-xl">
-                                    <I.Refresh size={18} className={`text-orange-600 ${syncing ? 'animate-spin' : ''}`}/>
+                                    <I.Refresh size={18} className={`text-orange-600 ${syncing ? 'animate-spin' : ''}`} />
                                 </button>
                             </div>
                         </div>
@@ -1436,7 +1762,7 @@
 
                             {purchaseOrders.length === 0 ? (
                                 <div className="text-center py-16">
-                                    <I.FileText size={48} className="mx-auto text-gray-200 mb-3"/>
+                                    <I.FileText size={48} className="mx-auto text-gray-200 mb-3" />
                                     <p className="text-gray-400 font-bold">Sin solicitudes</p>
                                 </div>
                             ) : (
@@ -1450,7 +1776,7 @@
                                                     <div key={o.id} className="card p-4 border-2 border-orange-300">
                                                         <div className="flex items-start gap-3">
                                                             <div className="w-10 h-10 bg-orange-100 rounded-xl flex items-center justify-center text-orange-600 font-bold text-sm">
-                                                                {o.teacher?.split(' ').map(n => n[0]).join('').slice(0,2)}
+                                                                {o.teacher?.split(' ').map(n => n[0]).join('').slice(0, 2)}
                                                             </div>
                                                             <div className="flex-1">
                                                                 <p className="font-bold text-gray-800">{o.teacher}</p>
@@ -1530,10 +1856,13 @@
                                             </div>
                                         </div>
                                     )}
+
                                 </>
                             )}
+
+
                         </div>
-                        <Nav current="dashboard" go={setView} role={user?.role}/>
+                        <Nav current="dashboard" go={setView} role={user?.role} />
                     </div>
                 );
             }
@@ -1541,11 +1870,29 @@
             return null;
         };
 
-        ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+        ReactDOM.createRoot(document.getElementById('root')).render(<App />);
     </script>
-    
-    <!-- Service Worker Registration -->
+
+    <!-- Service Worker DESACTIVADO para evitar problemas en iOS/Safari -->
     <script>
+        // DESREGISTRAR cualquier Service Worker existente
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.getRegistrations().then(registrations => {
+                registrations.forEach(registration => {
+                    registration.unregister();
+                    console.log('SW desregistrado:', registration.scope);
+                });
+            });
+            // Limpiar caches
+            if ('caches' in window) {
+                caches.keys().then(names => {
+                    names.forEach(name => caches.delete(name));
+                });
+                console.log('Caches limpiados');
+            }
+        }
+
+        /* REGISTRO DE SW COMENTADO - Funcionalidad offline desactivada
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
                 navigator.serviceWorker.register('/sw.js')
@@ -1553,8 +1900,9 @@
                     .catch(err => console.log('SW error:', err));
             });
         }
-        
-        // Install prompt
+        */
+
+        // Install prompt (PWA install sigue disponible)
         let deferredPrompt;
         window.addEventListener('beforeinstallprompt', (e) => {
             e.preventDefault();
@@ -1563,4 +1911,5 @@
         });
     </script>
 </body>
+
 </html>
