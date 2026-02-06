@@ -1,0 +1,2441 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Mise en App - Santiago Rainero</title>
+
+    <!-- PWA Meta Tags -->
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Mise en App">
+    <meta name="application-name" content="Mise en App">
+    <meta name="theme-color" content="#00BCD4">
+    <meta name="msapplication-TileColor" content="#00BCD4">
+    <meta name="description" content="Sistema de control de stock - Santiago Rainero">
+
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="manifest.json">
+
+    <!-- Icons -->
+    <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+    <link rel="icon" type="image/png" sizes="512x512" href="icon-512.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="icon-180.png">
+    <link rel="apple-touch-icon" sizes="152x152" href="icon-152.png">
+    <link rel="apple-touch-icon" sizes="144x144" href="icon-144.png">
+    <link rel="apple-touch-icon" sizes="120x120" href="icon-120.png">
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="favicon.png">
+    <link rel="shortcut icon" href="favicon.png">
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800;900&display=swap"
+        rel="stylesheet">
+
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        html,
+        body,
+        #root {
+            height: 100%;
+            font-family: 'Nunito', sans-serif;
+        }
+
+        body {
+            background: linear-gradient(180deg, #e3f6f9 0%, #f0f7fa 100%);
+            min-height: 100vh;
+            overscroll-behavior-y: contain;
+        }
+
+        @keyframes float {
+
+            0%,
+            100% {
+                transform: translateY(0);
+            }
+
+            50% {
+                transform: translateY(-12px);
+            }
+        }
+
+        @keyframes fadeUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes glow {
+
+            0%,
+            100% {
+                box-shadow: 0 0 20px rgba(156, 39, 176, 0.3);
+            }
+
+            50% {
+                box-shadow: 0 0 40px rgba(156, 39, 176, 0.6);
+            }
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .animate-float {
+            animation: float 4s ease-in-out infinite;
+        }
+
+        .animate-fade {
+            animation: fadeUp 0.5s ease-out forwards;
+        }
+
+        .animate-glow {
+            animation: glow 2s ease-in-out infinite;
+        }
+
+        .animate-spin {
+            animation: spin 1s linear infinite;
+        }
+
+        .card {
+            background: white;
+            border-radius: 24px;
+            box-shadow: 0 4px 20px rgba(0, 188, 212, 0.1);
+            transition: all 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 12px 40px rgba(0, 188, 212, 0.2);
+        }
+
+        .card-cyan {
+            border: 3px solid #4dd0e1;
+            background: linear-gradient(135deg, #e0f7fa 0%, #fff 100%);
+        }
+
+        .card-purple {
+            border: 3px solid #ce93d8;
+            background: linear-gradient(135deg, #f3e5f5 0%, #fff 100%);
+        }
+
+        .card-green {
+            border: 3px solid #81c784;
+            background: linear-gradient(135deg, #e8f5e9 0%, #fff 100%);
+        }
+
+        .card-orange {
+            border: 3px solid #ffb74d;
+            background: linear-gradient(135deg, #fff3e0 0%, #fff 100%);
+        }
+
+        .card-red {
+            border: 3px solid #ef5350;
+            background: linear-gradient(135deg, #ffebee 0%, #fff 100%);
+        }
+
+        .card-gradient {
+            background: linear-gradient(135deg, #00bcd4 0%, #26c6da 30%, #4dd0e1 60%, #9c27b0 100%);
+        }
+
+        .btn-gradient {
+            background: linear-gradient(135deg, #9c27b0 0%, #ab47bc 50%, #ba68c8 100%);
+        }
+
+        .btn-cyan {
+            background: linear-gradient(135deg, #00bcd4 0%, #26c6da 100%);
+        }
+
+        .btn-green {
+            background: linear-gradient(135deg, #4caf50 0%, #66bb6a 100%);
+        }
+
+        .btn-orange {
+            background: linear-gradient(135deg, #ff9800 0%, #ffb74d 100%);
+        }
+
+        .input-field {
+            background: #f5f5f5;
+            border: 2px solid #e0e0e0;
+            border-radius: 16px;
+            padding: 14px 16px;
+            font-size: 14px;
+            transition: all 0.3s;
+            width: 100%;
+        }
+
+        .input-field:focus {
+            outline: none;
+            border-color: #00bcd4;
+            background: white;
+            box-shadow: 0 0 0 4px rgba(0, 188, 212, 0.15);
+        }
+
+        .badge-cyan {
+            background: #e0f7fa;
+            color: #00838f;
+        }
+
+        .badge-purple {
+            background: #f3e5f5;
+            color: #7b1fa2;
+        }
+
+        .badge-green {
+            background: #e8f5e9;
+            color: #2e7d32;
+        }
+
+        .badge-orange {
+            background: #fff3e0;
+            color: #e65100;
+        }
+
+        .badge-red {
+            background: #ffebee;
+            color: #c62828;
+        }
+
+        .back-btn {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 16px;
+            background: white;
+            border: 2px solid #e0e0e0;
+            border-radius: 14px;
+            font-weight: 700;
+            color: #666;
+            cursor: pointer;
+        }
+
+        .loader {
+            width: 40px;
+            height: 40px;
+            border: 4px solid #e0f7fa;
+            border-top-color: #00bcd4;
+            border-radius: 50%;
+        }
+
+        /* Mobile adjustments */
+        @media (max-width: 380px) {
+            .input-field {
+                padding: 12px 14px;
+                font-size: 13px;
+            }
+
+            .card {
+                border-radius: 20px;
+            }
+        }
+
+        /* Safe area for iPhone notch */
+        @supports (padding: max(0px)) {
+            .nav-safe {
+                padding-bottom: max(1.5rem, env(safe-area-inset-bottom));
+            }
+        }
+
+        /* Canvas táctil para firma */
+        .signature-canvas {
+            touch-action: none;
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            user-select: none;
+        }
+        /* Fix inputs fecha/hora en móvil */
+        input[type="date"], input[type="time"] {
+            min-width: 0;
+            -webkit-appearance: none;
+            font-size: 12px !important;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="root"></div>
+    <script type="text/babel">
+        const { useState, useEffect, useRef, useMemo, useCallback } = React;
+
+        // SUPABASE
+        const SUPABASE_URL = 'https://dukgjrhyhyxvdqzhthje.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR1a2dqcmh5aHl4dmRxemh0aGplIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc5MTQzNjIsImV4cCI6MjA4MzQ5MDM2Mn0.JYZWv2vYwMbTopyL-T8_kjbX2py5IL7Ap6ASZc2B4dM';
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        // ICONS
+        const Icon = ({ children, size = 24, sw = 2 }) => (
+            <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={sw} strokeLinecap="round" strokeLinejoin="round">{children}</svg>
+        );
+        const I = {
+            Home: (p) => <Icon {...p}><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" /><polyline points="9 22 9 12 15 12 15 22" /></Icon>,
+            Search: (p) => <Icon {...p}><circle cx="11" cy="11" r="8" /><path d="m21 21-4.3-4.3" /></Icon>,
+            Book: (p) => <Icon {...p}><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20" /></Icon>,
+            Clipboard: (p) => <Icon {...p}><rect width="8" height="4" x="8" y="2" rx="1" /><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" /></Icon>,
+            User: (p) => <Icon {...p}><circle cx="12" cy="8" r="5" /><path d="M20 21a8 8 0 1 0-16 0" /></Icon>,
+            LogOut: (p) => <Icon {...p}><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" /><polyline points="16 17 21 12 16 7" /><line x1="21" x2="9" y1="12" y2="12" /></Icon>,
+            Plus: (p) => <Icon {...p}><path d="M5 12h14" /><path d="M12 5v14" /></Icon>,
+            Minus: (p) => <Icon {...p}><path d="M5 12h14" /></Icon>,
+            Trash: (p) => <Icon {...p}><path d="M3 6h18" /><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" /><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" /></Icon>,
+            Check: (p) => <Icon {...p}><polyline points="20 6 9 17 4 12" /></Icon>,
+            CheckCircle: (p) => <Icon {...p}><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" /><polyline points="22 4 12 14.01 9 11.01" /></Icon>,
+            ArrowLeft: (p) => <Icon {...p}><path d="m12 19-7-7 7-7" /><path d="M19 12H5" /></Icon>,
+            ArrowRight: (p) => <Icon {...p}><path d="M5 12h14" /><path d="m12 5 7 7-7 7" /></Icon>,
+            AlertTriangle: (p) => <Icon {...p}><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z" /><path d="M12 9v4" /><path d="M12 17h.01" /></Icon>,
+            Package: (p) => <Icon {...p}><path d="m7.5 4.27 9 5.15" /><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z" /><path d="m3.3 7 8.7 5 8.7-5" /><path d="M12 22V12" /></Icon>,
+            Settings: (p) => <Icon {...p}><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z" /><circle cx="12" cy="12" r="3" /></Icon>,
+            X: (p) => <Icon {...p}><path d="M18 6 6 18" /><path d="m6 6 12 12" /></Icon>,
+            Send: (p) => <Icon {...p}><path d="m22 2-7 20-4-9-9-4Z" /><path d="M22 2 11 13" /></Icon>,
+            Edit: (p) => <Icon {...p}><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" /></Icon>,
+            History: (p) => <Icon {...p}><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" /><path d="M3 3v5h5" /><path d="M12 7v5l4 2" /></Icon>,
+            TrendingUp: (p) => <Icon {...p}><polyline points="22 7 13.5 15.5 8.5 10.5 2 17" /><polyline points="16 7 22 7 22 13" /></Icon>,
+            TrendingDown: (p) => <Icon {...p}><polyline points="22 17 13.5 8.5 8.5 13.5 2 7" /><polyline points="16 17 22 17 22 11" /></Icon>,
+            Mail: (p) => <Icon {...p}><rect width="20" height="16" x="2" y="4" rx="2" /><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" /></Icon>,
+            ShoppingBag: (p) => <Icon {...p}><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z" /><path d="M3 6h18" /><path d="M16 10a4 4 0 0 1-8 0" /></Icon>,
+            Refresh: (p) => <Icon {...p}><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8" /><path d="M21 3v5h-5" /><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16" /><path d="M3 21v-5h5" /></Icon>,
+            Users: (p) => <Icon {...p}><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M22 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" /></Icon>,
+            BarChart: (p) => <Icon {...p}><line x1="12" x2="12" y1="20" y2="10" /><line x1="18" x2="18" y1="20" y2="4" /><line x1="6" x2="6" y1="20" y2="16" /></Icon>,
+            Code: (p) => <Icon {...p}><polyline points="16 18 22 12 16 6" /><polyline points="8 6 2 12 8 18" /></Icon>,
+            ShoppingCart: (p) => <Icon {...p}><circle cx="8" cy="21" r="1" /><circle cx="19" cy="21" r="1" /><path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12" /></Icon>,
+            Download: (p) => <Icon {...p}><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" x2="12" y1="15" y2="3" /></Icon>,
+            FileText: (p) => <Icon {...p}><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z" /><polyline points="14 2 14 8 20 8" /><line x1="16" x2="8" y1="13" y2="13" /><line x1="16" x2="8" y1="17" y2="17" /><line x1="10" x2="8" y1="9" y2="9" /></Icon>,
+        };
+
+        const CATEGORIAS = ["Utensilios", "Batería", "Cubertería", "Pastelería", "Maquinaria", "Equipamiento", "Vajilla"];
+        const MOTIVOS = { in: ["Compra", "Donación", "Reposición", "Devolución", "Otro"], out: ["Rotura", "Pérdida", "Desgaste", "Préstamo", "Baja", "Otro"] };
+
+        const catStyle = (c) => {
+            const s = c?.toLowerCase() || '';
+            if (s.includes('maquinaria')) return { bg: 'bg-orange-100', tx: 'text-orange-600', border: 'border-orange-300' };
+            if (s.includes('cubertería') || s.includes('cuchillería')) return { bg: 'bg-red-100', tx: 'text-red-600', border: 'border-red-300' };
+            if (s.includes('pastelería')) return { bg: 'bg-pink-100', tx: 'text-pink-600', border: 'border-pink-300' };
+            if (s.includes('batería')) return { bg: 'bg-cyan-100', tx: 'text-cyan-600', border: 'border-cyan-300' };
+            if (s.includes('equipamiento')) return { bg: 'bg-purple-100', tx: 'text-purple-600', border: 'border-purple-300' };
+            if (s.includes('vajilla')) return { bg: 'bg-amber-100', tx: 'text-amber-600', border: 'border-amber-300' };
+            return { bg: 'bg-green-100', tx: 'text-green-600', border: 'border-green-300' };
+        };
+
+        // Íconos SVG específicos por categoría - claros y sin ambigüedad
+        const CatIcon = ({ cat, size = 24 }) => {
+            const s = cat?.toLowerCase() || '';
+            const props = { width: size, height: size, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: 1.8, strokeLinecap: "round", strokeLinejoin: "round" };
+
+            // 🥣 Batería → Olla con tapa
+            if (s.includes('batería')) return (
+                <svg {...props}><ellipse cx="12" cy="17" rx="8" ry="4" /><path d="M4 17V11c0-2.2 3.6-4 8-4s8 1.8 8 4v6" /><line x1="4" y1="11" x2="20" y2="11" /><path d="M8 7V5" /><path d="M16 7V5" /></svg>
+            );
+            // 🍴 Cubertería → Tenedor y cuchillo
+            if (s.includes('cubertería') || s.includes('cuchillería')) return (
+                <svg {...props}><path d="M7 3v5c0 1.1-.9 2-2 2H4v10" /><path d="M4 3v5c0 1.1.9 2 2 2h1" /><line x1="5.5" y1="3" x2="5.5" y2="8" /><path d="M18 3c0 0-2 1-2 5v2h2v10" /><path d="M18 3v7" /></svg>
+            );
+            // 🎂 Pastelería → Manga pastelera
+            if (s.includes('pastelería')) return (
+                <svg {...props}><path d="M12 3L6 19h12L12 3z" /><path d="M12 19v2" /><line x1="9" y1="11" x2="15" y2="11" /><circle cx="12" cy="22" r="1" /></svg>
+            );
+            // ⚙️ Maquinaria → Batidora/máquina
+            if (s.includes('maquinaria')) return (
+                <svg {...props}><rect x="6" y="3" width="12" height="8" rx="2" /><path d="M9 11v7a3 3 0 006 0v-7" /><circle cx="12" cy="7" r="2" /><line x1="6" y1="7" x2="4" y2="7" /><line x1="18" y1="7" x2="20" y2="7" /></svg>
+            );
+            // 🔧 Equipamiento → Llave/herramienta
+            if (s.includes('equipamiento')) return (
+                <svg {...props}><path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z" /></svg>
+            );
+            // 🍽️ Vajilla → Plato con cubiertos
+            if (s.includes('vajilla')) return (
+                <svg {...props}><circle cx="12" cy="12" r="8" /><circle cx="12" cy="12" r="5" /><circle cx="12" cy="12" r="1" /></svg>
+            );
+            // 🥄 Utensilios → Batidor de alambre (whisk)
+            return (
+                <svg {...props}><path d="M12 20v-8" /><path d="M8 12c0-5 1.5-9 4-9s4 4 4 9" /><path d="M9 12c0-4 1.2-7 3-7s3 3 3 7" /><path d="M10 12c0-3 .8-5 2-5s2 2 2 5" /><ellipse cx="12" cy="12" rx="4" ry="1.5" /></svg>
+            );
+        };
+
+        // COMPONENTS
+        const Logo = ({ size = "md" }) => {
+            const sizes = { sm: "w-32", md: "w-48", lg: "w-64", xl: "w-80" };
+            return <div className={`${sizes[size]} animate-float`}><img src="logo.png" alt="Mise en App" className="w-full h-auto drop-shadow-2xl" /></div>;
+        };
+
+        const Loader = ({ text = "Cargando..." }) => (
+            <div className="flex flex-col items-center justify-center py-12">
+                <div className="loader animate-spin mb-4"></div>
+                <p className="text-gray-500 font-semibold">{text}</p>
+            </div>
+        );
+
+        const BackBtn = ({ onClick }) => (
+            <button onClick={onClick} className="back-btn"><I.ArrowLeft size={20} /> Volver</button>
+        );
+
+        const Nav = ({ current, go, role }) => {
+            const items = role === 'Administrativo'
+                ? [{ id: 'dashboard', icon: I.Home, label: 'Inicio', c: 'cyan' }, { id: 'inventory', icon: I.Package, label: 'Stock', c: 'purple' }, { id: 'handover', icon: I.Book, label: 'Cuaderno', c: 'green' }, { id: 'profile', icon: I.User, label: 'Perfil', c: 'orange' }]
+                : [{ id: 'dashboard', icon: I.Home, label: 'Inicio', c: 'cyan' }, { id: 'order', icon: I.Clipboard, label: 'Pedidos', c: 'green' }, { id: 'handover', icon: I.Book, label: 'Cuaderno', c: 'orange' }, { id: 'profile', icon: I.User, label: 'Perfil', c: 'purple' }];
+
+            const colors = { cyan: 'bg-cyan-500 shadow-cyan-200', purple: 'bg-purple-500 shadow-purple-200', green: 'bg-green-500 shadow-green-200', orange: 'bg-orange-500 shadow-orange-200' };
+            const textColors = { cyan: 'text-cyan-600', purple: 'text-purple-600', green: 'text-green-600', orange: 'text-orange-600' };
+
+            return (
+                <nav className="fixed bottom-0 inset-x-0 bg-white border-t-2 border-cyan-100 px-4 py-2 nav-safe flex justify-around z-50 shadow-lg">
+                    {items.map(({ id, icon: Ic, label, c }) => (
+                        <button key={id} onClick={() => go(id)} className="flex flex-col items-center gap-1 min-w-[60px]">
+                            <div className={`p-2.5 rounded-2xl transition-all ${current === id ? `${colors[c]} text-white shadow-lg` : 'text-gray-400'}`}>
+                                <Ic size={22} sw={current === id ? 2.5 : 2} />
+                            </div>
+                            <span className={`text-[10px] font-bold ${current === id ? textColors[c] : 'text-gray-400'}`}>{label}</span>
+                        </button>
+                    ))}
+                </nav>
+            );
+        };
+
+        const SignPad = ({ onSave, initial }) => {
+            const ref = useRef(null);
+            const drawingRef = useRef(false);
+
+            useEffect(() => {
+                if (!ref.current || initial) return;
+                const canvas = ref.current;
+                const rect = canvas.getBoundingClientRect();
+                const dpr = window.devicePixelRatio || 1;
+                canvas.width = rect.width * dpr;
+                canvas.height = rect.height * dpr;
+                const ctx = canvas.getContext('2d');
+                ctx.scale(dpr, dpr);
+                ctx.lineCap = 'round';
+                ctx.lineJoin = 'round';
+                ctx.strokeStyle = '#1f2937';
+                ctx.lineWidth = 3;
+
+                const getPos = (e) => {
+                    const r = canvas.getBoundingClientRect();
+                    const touch = e.touches ? e.touches[0] : e;
+                    return { x: touch.clientX - r.left, y: touch.clientY - r.top };
+                };
+                const onStart = (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    drawingRef.current = true;
+                    const { x, y } = getPos(e);
+                    ctx.beginPath();
+                    ctx.moveTo(x, y);
+                };
+                const onMove = (e) => {
+                    if (!drawingRef.current) return;
+                    e.preventDefault();
+                    e.stopPropagation();
+                    const { x, y } = getPos(e);
+                    ctx.lineTo(x, y);
+                    ctx.stroke();
+                };
+                const onEnd = (e) => {
+                    if (e) { e.preventDefault(); e.stopPropagation(); }
+                    drawingRef.current = false;
+                };
+
+                // Native listeners con passive:false para iPad/iOS
+                canvas.addEventListener('touchstart', onStart, { passive: false });
+                canvas.addEventListener('touchmove', onMove, { passive: false });
+                canvas.addEventListener('touchend', onEnd, { passive: false });
+                canvas.addEventListener('touchcancel', onEnd, { passive: false });
+                canvas.addEventListener('mousedown', onStart);
+                canvas.addEventListener('mousemove', onMove);
+                canvas.addEventListener('mouseup', onEnd);
+                canvas.addEventListener('mouseleave', onEnd);
+
+                return () => {
+                    canvas.removeEventListener('touchstart', onStart);
+                    canvas.removeEventListener('touchmove', onMove);
+                    canvas.removeEventListener('touchend', onEnd);
+                    canvas.removeEventListener('touchcancel', onEnd);
+                    canvas.removeEventListener('mousedown', onStart);
+                    canvas.removeEventListener('mousemove', onMove);
+                    canvas.removeEventListener('mouseup', onEnd);
+                    canvas.removeEventListener('mouseleave', onEnd);
+                };
+            }, [initial]);
+
+            if (initial) return (
+                <div className="text-center">
+                    <div className="inline-flex items-center gap-1.5 text-green-600 text-sm font-bold mb-2"><I.CheckCircle size={16} /> Firma registrada</div>
+                    <div className="bg-gradient-to-br from-green-50 to-cyan-50 rounded-2xl p-4 border-2 border-green-200"><img src={initial} alt="Firma" className="h-12 mx-auto" /></div>
+                    <button onClick={() => onSave(null)} className="text-xs text-gray-400 mt-2 hover:text-purple-500 font-semibold">Cambiar</button>
+                </div>
+            );
+
+            const clear = () => {
+                const canvas = ref.current;
+                const dpr = window.devicePixelRatio || 1;
+                const ctx = canvas.getContext('2d');
+                ctx.clearRect(0, 0, canvas.width / dpr, canvas.height / dpr);
+            };
+            return (
+                <div>
+                    <p className="text-sm text-gray-600 mb-2 text-center font-semibold">✍️ Dibuja tu firma</p>
+                    <div className="relative bg-white rounded-2xl border-3 border-dashed border-purple-200 overflow-hidden">
+                        <canvas ref={ref} className="w-full h-24 cursor-crosshair signature-canvas" />
+                        <button onClick={clear} className="absolute top-2 right-2 p-1.5 bg-red-100 text-red-500 rounded-lg"><I.Trash size={14} /></button>
+                    </div>
+                    <button onClick={() => onSave(ref.current.toDataURL('image/png', 1.0))} className="w-full mt-3 py-3 btn-gradient text-white rounded-2xl font-bold shadow-lg">Guardar firma</button>
+                </div>
+            );
+        };
+
+        // APP
+        const App = () => {
+            const [loading, setLoading] = useState(true);
+            const [syncing, setSyncing] = useState(false);
+            const [view, setView] = useState('splash');
+            const [user, setUser] = useState(null);
+            const [selectedRole, setSelectedRole] = useState(null);
+            const [inv, setInv] = useState([]);
+            const [ord, setOrd] = useState([]);
+            const [crs, setCrs] = useState([]);
+            const [his, setHis] = useState([]);
+            const [users, setUsers] = useState([]);
+            const [form, setForm] = useState({ name: '', surname: '', email: '', sig: null, pin: '' });
+            const [loginEmail, setLoginEmail] = useState('');
+            const [loginMode, setLoginMode] = useState('check');
+            const [devMode, setDevMode] = useState(false);
+            const [editingSig, setEditingSig] = useState(false);
+            const [editingPin, setEditingPin] = useState(false);
+            const [pinInput, setPinInput] = useState('');
+            const [loginPin, setLoginPin] = useState('');
+            const [pendingUser, setPendingUser] = useState(null);
+            const [editingUser, setEditingUser] = useState(null);
+            const [editUserForm, setEditUserForm] = useState({ name: '', surname: '', role: '', pin: '' });
+            const [cart, setCart] = useState([]);
+            const [meta, setMeta] = useState({ career: '', date: new Date().toISOString().split('T')[0], time: '08:00' });
+            const [search, setSearch] = useState('');
+            const [newCrs, setNewCrs] = useState('');
+            const [newItem, setNewItem] = useState({ name: '', qty: '', cat: 'Utensilios' });
+            const [showBulkAdd, setShowBulkAdd] = useState(false);
+            const [bulkText, setBulkText] = useState('');
+            const [purchaseItems, setPurchaseItems] = useState([]);
+            const [newPurchaseItem, setNewPurchaseItem] = useState({ name: '', qty: 1, purpose: '', course: '' });
+            const [selectedCourse, setSelectedCourse] = useState('');
+
+            // LOAD DATA
+            // LOAD DATA
+            const loadData = useCallback(async () => {
+                try {
+                    // Cargar todo en paralelo (ahora order_items también se trae de golpe)
+                    const [{ data: invData }, { data: crsData }, { data: ordData }, { data: hisData }, { data: usersData }, { data: allItems }] = await Promise.all([
+                        supabase.from('inventory').select('*').order('name'),
+                        supabase.from('courses').select('*').order('name'),
+                        supabase.from('orders').select('*').order('created_at', { ascending: false }),
+                        supabase.from('stock_history').select('*').order('created_at', { ascending: false }).limit(200),
+                        supabase.from('users').select('*').order('created_at', { ascending: false }),
+                        supabase.from('order_items').select('*') // Traemos TODOS los items de una
+                    ]);
+
+                    if (invData) setInv(invData);
+                    if (crsData) setCrs(crsData.map(c => c.name));
+                    if (hisData) setHis(hisData.map(h => ({ ...h, name: h.item_name, amt: h.amount, before: h.before_qty, after: h.after_qty, by: h.user_name, at: h.created_at })));
+                    if (usersData) setUsers(usersData);
+
+                    if (ordData) {
+                        // Procesar ordenes cruzando con items en memoria (mucho más rápido)
+                        const ordersWithItems = ordData.map(o => {
+                            // Filtrar items para esta orden específica desde el array completo
+                            const items = allItems ? allItems.filter(i => i.order_id === o.id) : [];
+                            return {
+                                id: o.id,
+                                status: o.status || 'Solicitado',
+                                date: o.date || o.order_date || '',
+                                time: o.time || o.order_time || '',
+                                career: o.career || '',
+                                items: items.map(i => ({ id: i.item_id || i.inventory_id, name: i.item_name, q: i.qty || i.quantity })),
+                                teacher: o.teacher_name || 'Sin nombre',
+                                teacher_email: o.teacher_email,
+                                obs: o.observations || '',
+                                res: o.resolution || '',
+                                sig: o.signature || null
+                            };
+                        });
+                        setOrd(ordersWithItems);
+                    }
+                } catch (e) { console.error('Load error:', e); }
+            }, []);
+
+            useEffect(() => {
+                const init = async () => {
+                    const saved = localStorage.getItem('mise_user');
+                    const savedDev = localStorage.getItem('mise_dev');
+                    if (saved) {
+                        const u = JSON.parse(saved);
+                        const { data } = await supabase.from('users').select('*').eq('email', u.email).single();
+                        if (data) {
+                            setUser({ ...data, fullName: data.full_name, sig: data.signature });
+                            setDevMode(savedDev === 'true');
+                            setView('dashboard');
+                        }
+                    }
+                    await loadData();
+                    setLoading(false);
+                };
+                init();
+            }, [loadData]);
+
+            const refresh = async () => { setSyncing(true); await loadData(); setSyncing(false); };
+
+            // AUTH - Verificar email
+            const checkEmail = async () => {
+                let email = loginEmail.trim().toLowerCase();
+                if (!email) return alert('Ingresa tu correo');
+
+                // Detectar código secreto DEV
+                const isDevAccess = email.includes('0109');
+                if (isDevAccess) {
+                    email = email.replace('0109', ''); // Quitar código
+                }
+
+                const fullEmail = email.includes('@') ? email : email + '@mvl.edu.ar';
+                if (!fullEmail.endsWith('@mvl.edu.ar')) return alert('Usa tu correo @mvl.edu.ar');
+
+                setSyncing(true);
+                try {
+                    const { data: existing, error } = await supabase.from('users').select('*').eq('email', fullEmail).maybeSingle();
+
+                    if (existing) {
+                        if (existing.pin) {
+                            // Tiene PIN → pedir verificación
+                            setPendingUser({ ...existing, fullName: existing.full_name, sig: existing.signature });
+                            setDevMode(isDevAccess);
+                            setSyncing(false);
+                            setLoginMode('pin');
+                        } else {
+                            // Sin PIN → login directo
+                            const u = { ...existing, fullName: existing.full_name, sig: existing.signature };
+                            setUser(u);
+                            setDevMode(isDevAccess);
+                            localStorage.setItem('mise_user', JSON.stringify(u));
+                            localStorage.setItem('mise_dev', isDevAccess ? 'true' : 'false');
+                            setSyncing(false);
+                            setView('dashboard');
+                        }
+                    } else {
+                        setForm({ ...form, email: fullEmail });
+                        setDevMode(isDevAccess);
+                        setSyncing(false);
+                        setLoginMode('register');
+                    }
+                } catch (e) {
+                    console.error('Error verificando email:', e);
+                    setForm({ ...form, email: fullEmail });
+                    setDevMode(isDevAccess);
+                    setSyncing(false);
+                    setLoginMode('register');
+                }
+            };
+
+            const verifyPin = () => {
+                if (!pendingUser) return;
+                if (loginPin === pendingUser.pin) {
+                    setUser(pendingUser);
+                    localStorage.setItem('mise_user', JSON.stringify(pendingUser));
+                    localStorage.setItem('mise_dev', devMode ? 'true' : 'false');
+                    setPendingUser(null);
+                    setLoginPin('');
+                    setView('dashboard');
+                } else {
+                    alert('❌ PIN incorrecto');
+                    setLoginPin('');
+                }
+            };
+
+            // AUTH - Registro
+            const register = async () => {
+                if (!form.name || !form.surname) return alert('Completa nombre y apellido');
+                if (!form.sig) return alert('La firma es obligatoria');
+                if (form.pin && form.pin.length < 4) return alert('El PIN debe tener al menos 4 dígitos');
+
+                setSyncing(true);
+                try {
+                    const insertData = {
+                        email: form.email, name: form.name, surname: form.surname,
+                        full_name: `${form.name} ${form.surname}`, role: selectedRole, signature: form.sig
+                    };
+                    if (form.pin) insertData.pin = form.pin;
+                    const { data, error } = await supabase.from('users').insert([insertData]).select().single();
+
+                    if (error) throw error;
+                    const u = { ...data, fullName: data.full_name, sig: data.signature };
+                    setUser(u);
+                    localStorage.setItem('mise_user', JSON.stringify(u));
+                    localStorage.setItem('mise_dev', devMode ? 'true' : 'false');
+                    setView('dashboard');
+                } catch (e) { alert('Error: ' + e.message); }
+                setSyncing(false);
+            };
+
+            const logout = () => {
+                if (confirm('¿Cerrar sesión?')) {
+                    localStorage.removeItem('mise_user');
+                    localStorage.removeItem('mise_dev');
+                    setUser(null); setSelectedRole(null); setDevMode(false);
+                    setForm({ name: '', surname: '', email: '', sig: null, pin: '' });
+                    setLoginEmail(''); setLoginMode('check');
+                    setView('splash');
+                }
+            };
+
+            // CART
+            const addCart = (item, qty = 1) => {
+                if (item.qty <= 0) return alert('Sin stock');
+                const ex = cart.find(c => c.id === item.id);
+                const newQty = Math.min((ex?.q || 0) + qty, item.qty);
+                if (ex) setCart(cart.map(c => c.id === item.id ? { ...c, q: newQty } : c));
+                else setCart([...cart, { ...item, q: Math.min(qty, item.qty) }]);
+            };
+
+            const setCartQty = (id, qty) => {
+                const item = inv.find(i => i.id === id);
+                if (!item) return;
+                const nq = Math.max(0, Math.min(qty, item.qty));
+                if (nq === 0) setCart(cart.filter(c => c.id !== id));
+                else setCart(cart.map(c => c.id === id ? { ...c, q: nq } : c));
+            };
+
+            const remCart = (id) => setCart(cart.filter(c => c.id !== id));
+
+            // ORDERS
+            const sendOrd = async () => {
+                if (!cart.length) return alert('Carrito vacío');
+                if (!meta.career) return alert('Selecciona curso');
+
+                setSyncing(true);
+                try {
+                    const { data: order, error: orderError } = await supabase.from('orders').insert([{
+                        teacher_id: user.id, teacher_name: user.fullName, teacher_email: user.email,
+                        career: meta.career, date: meta.date, time: meta.time,
+                        signature: user.sig, status: 'Solicitado'
+                    }]).select().single();
+
+                    if (orderError) throw orderError;
+
+                    const itemsToInsert = cart.map(i => ({ order_id: order.id, item_id: i.id, item_name: i.name, qty: i.q }));
+                    const { error: itemsError } = await supabase.from('order_items').insert(itemsToInsert);
+                    if (itemsError) throw itemsError;
+
+                    for (const item of cart) {
+                        const invItem = inv.find(i => i.id === item.id);
+                        if (invItem) await supabase.from('inventory').update({ qty: Math.max(0, invItem.qty - item.q) }).eq('id', item.id);
+                    }
+
+                    setCart([]); await loadData();
+                    alert('✅ ¡Pedido enviado!');
+                    setView('handover');
+                } catch (e) { alert('Error: ' + (e.message || 'Intenta de nuevo')); }
+                setSyncing(false);
+            };
+
+            const confirmDel = async (orderId, items) => {
+                setSyncing(true);
+                try {
+                    const order = ord.find(o => o.id === orderId);
+                    if (!order) throw new Error('Pedido no encontrado');
+
+                    for (const old of order.items) {
+                        const newItem = items.find(i => i.id === old.id);
+                        if (newItem && newItem.q < old.q) {
+                            const invItem = inv.find(i => i.id === old.id);
+                            if (invItem) await supabase.from('inventory').update({ qty: invItem.qty + (old.q - newItem.q) }).eq('id', old.id);
+                        }
+                        if (newItem) await supabase.from('order_items').update({ qty: newItem.q }).eq('order_id', orderId).eq('item_id', old.id);
+                    }
+
+                    await supabase.from('orders').update({ status: 'En Curso' }).eq('id', orderId);
+                    await loadData();
+                } catch (e) { alert('Error: ' + (e.message || 'Intenta de nuevo')); }
+                setSyncing(false);
+            };
+
+            const returnMat = async (orderId, obs) => {
+                setSyncing(true);
+                await supabase.from('orders').update({ status: 'Devolución Pendiente', observations: obs || null }).eq('id', orderId);
+                await loadData();
+                setSyncing(false);
+            };
+
+            const finRet = async (orderId) => {
+                setSyncing(true);
+                const order = ord.find(o => o.id === orderId);
+                if (order) {
+                    for (const item of order.items) {
+                        const invItem = inv.find(i => i.id === item.id);
+                        if (invItem) await supabase.from('inventory').update({ qty: invItem.qty + item.q }).eq('id', item.id);
+                    }
+                }
+                await supabase.from('orders').update({ status: 'Finalizado' }).eq('id', orderId);
+                await loadData();
+                setSyncing(false);
+            };
+
+            const resolve = async (orderId, res) => { setSyncing(true); await supabase.from('orders').update({ resolution: res }).eq('id', orderId); await loadData(); setSyncing(false); };
+
+            // DELETE ORDER (Admin/Dev only)
+            const deleteOrder = async (orderId) => {
+                if (!confirm('¿Eliminar este pedido permanentemente?')) return;
+                setSyncing(true);
+                try {
+                    const { error: e1 } = await supabase.from('order_items').delete().eq('order_id', orderId);
+                    if (e1) throw e1;
+                    const { error: e2 } = await supabase.from('orders').delete().eq('id', orderId);
+                    if (e2) throw e2;
+                    await loadData();
+                    alert('✅ Pedido eliminado');
+                } catch (e) { alert('Error al eliminar: ' + (e.message || JSON.stringify(e))); }
+                setSyncing(false);
+            };
+
+            // STOCK
+            const stockMove = async (itemId, type, amt, reason, note = '') => {
+                const item = inv.find(i => i.id === itemId);
+                if (!item) return;
+                const a = parseInt(amt) || 0;
+                if (a <= 0) return alert('Cantidad inválida');
+                const nq = type === 'in' ? item.qty + a : item.qty - a;
+                if (nq < 0) return alert('Stock insuficiente');
+
+                setSyncing(true);
+                try {
+                    await supabase.from('inventory').update({ qty: nq }).eq('id', itemId);
+                    await supabase.from('stock_history').insert([{ item_id: itemId, item_name: item.name, type, amount: a, reason, note, before_qty: item.qty, after_qty: nq, user_name: user.fullName }]);
+                    await loadData(); return true;
+                } catch (e) { alert('Error: ' + e.message); }
+                setSyncing(false);
+            };
+
+            const addNewItem = async () => {
+                if (!newItem.name.trim()) return alert('Ingresa un nombre');
+                const qty = parseInt(newItem.qty) || 0;
+
+                setSyncing(true);
+                try {
+                    const { data, error } = await supabase.from('inventory').insert([{ name: newItem.name.trim(), qty, cat: newItem.cat }]).select().single();
+                    if (error) throw error;
+                    if (qty > 0) await supabase.from('stock_history').insert([{ item_id: data.id, item_name: data.name, type: 'in', amount: qty, reason: 'Inventario inicial', note: 'Nuevo material', before_qty: 0, after_qty: qty, user_name: user.fullName }]);
+                    setNewItem({ name: '', qty: '', cat: 'Utensilios' }); await loadData(); alert('✅ Material agregado');
+                } catch (e) { alert('Error: ' + e.message); }
+                setSyncing(false);
+            };
+
+            const bulkAddItems = async () => {
+                if (!bulkText.trim()) return alert('Pegá la lista de materiales');
+                const lines = bulkText.trim().split('\n').filter(l => l.trim());
+                if (lines.length === 0) return alert('No se encontraron materiales');
+
+                const items = [];
+                const errors = [];
+                lines.forEach((line, idx) => {
+                    const parts = line.split(/[,;\t]/).map(p => p.trim());
+                    const name = parts[0];
+                    if (!name) { errors.push(`Línea ${idx + 1}: sin nombre`); return; }
+                    const qty = parseInt(parts[1]) || 0;
+                    const cat = CATEGORIAS.find(c => c.toLowerCase() === (parts[2] || '').toLowerCase()) || 'Utensilios';
+                    items.push({ name, qty, cat });
+                });
+
+                if (errors.length > 0) { alert('⚠️ Errores:\n' + errors.join('\n')); return; }
+                if (!confirm(`¿Cargar ${items.length} materiales?`)) return;
+
+                setSyncing(true);
+                let ok = 0, fail = 0;
+                try {
+                    // Insertar en lotes de 50
+                    for (let i = 0; i < items.length; i += 50) {
+                        const batch = items.slice(i, i + 50);
+                        const { data, error } = await supabase.from('inventory').insert(batch).select();
+                        if (error) { fail += batch.length; console.error('Batch error:', error); continue; }
+                        ok += data.length;
+                        // Registrar historial para items con stock > 0
+                        const historyItems = data.filter(d => d.qty > 0).map(d => ({
+                            item_id: d.id, item_name: d.name, type: 'in', amount: d.qty,
+                            reason: 'Inventario inicial', note: 'Carga masiva',
+                            before_qty: 0, after_qty: d.qty, user_name: user.fullName
+                        }));
+                        if (historyItems.length > 0) await supabase.from('stock_history').insert(historyItems);
+                    }
+                    await loadData();
+                    setBulkText('');
+                    setShowBulkAdd(false);
+                    alert(`✅ Carga completa: ${ok} agregados` + (fail > 0 ? `, ${fail} con error` : ''));
+                } catch (e) { alert('Error: ' + e.message); }
+                setSyncing(false);
+            };
+
+            const updateItemName = async (id, newName) => { if (!newName.trim()) return; setSyncing(true); await supabase.from('inventory').update({ name: newName.trim() }).eq('id', id); await loadData(); setSyncing(false); };
+            const deleteItem = async (id) => { if (!confirm('¿Eliminar material?')) return; setSyncing(true); await supabase.from('inventory').delete().eq('id', id); await loadData(); setSyncing(false); };
+            const addCourse = async (name) => { if (!name.trim()) return; setSyncing(true); await supabase.from('courses').insert([{ name: name.trim() }]); await loadData(); setSyncing(false); };
+            const deleteCourse = async (name) => { if (!confirm(`¿Eliminar "${name}"?`)) return; setSyncing(true); await supabase.from('courses').delete().eq('name', name); await loadData(); setSyncing(false); };
+
+            // PURCHASE REQUESTS
+            const sendPurchaseRequest = async (items, justification) => {
+                if (!items.length) return alert('Agregá al menos un item');
+                setSyncing(true);
+                try {
+                    // Crear un pedido especial marcado como solicitud de compra
+                    const { data: order, error } = await supabase.from('orders').insert([{
+                        teacher_id: user.id,
+                        teacher_name: user.fullName,
+                        teacher_email: user.email,
+                        career: '🛒 COMPRA: ' + (items[0]?.course || 'General'),
+                        date: new Date().toISOString().split('T')[0],
+                        time: new Date().toTimeString().split(' ')[0].slice(0, 5),
+                        status: 'Pendiente Compra',
+                        observations: '📦 SOLICITUD DE COMPRA\n' + justification
+                    }]).select().single();
+                    if (error) throw error;
+
+                    // Guardar los items solicitados
+                    const orderItems = items.map(i => ({
+                        order_id: order.id,
+                        item_name: `${i.name} (${i.purpose})`,
+                        qty: i.qty
+                    }));
+                    await supabase.from('order_items').insert(orderItems);
+                    await loadData();
+                    alert('✅ Solicitud enviada al expediente de compras');
+                    return true;
+                } catch (e) { alert('Error: ' + e.message); }
+                setSyncing(false);
+                return false;
+            };
+
+            // UPDATE PURCHASE STATUS
+            const updatePurchaseStatus = async (orderId, newStatus) => {
+                setSyncing(true);
+                try {
+                    await supabase.from('orders').update({ status: newStatus }).eq('id', orderId);
+                    await loadData();
+                } catch (e) { alert('Error: ' + e.message); }
+                setSyncing(false);
+            };
+
+            // USERS
+            const deleteUser = async (id, email) => {
+                if (user?.email === email) return alert('No podés eliminarte a vos mismo');
+                if (!confirm(`¿Eliminar usuario ${email}? Podrá volver a registrarse.`)) return;
+                setSyncing(true);
+                try {
+                    const { error } = await supabase.from('users').delete().eq('id', id);
+                    if (error) throw error;
+                    await loadData();
+                    alert('✅ Usuario eliminado');
+                } catch (e) {
+                    console.error('Error eliminando usuario:', e);
+                    alert('Error al eliminar: ' + e.message);
+                }
+                setSyncing(false);
+            };
+
+            const saveUserEdit = async () => {
+                if (!editingUser) return;
+                if (!editUserForm.name.trim() || !editUserForm.surname.trim()) return alert('Nombre y apellido son obligatorios');
+                setSyncing(true);
+                try {
+                    const updates = {
+                        name: editUserForm.name.trim(),
+                        surname: editUserForm.surname.trim(),
+                        full_name: `${editUserForm.name.trim()} ${editUserForm.surname.trim()}`,
+                        role: editUserForm.role,
+                        pin: editUserForm.pin || null
+                    };
+                    const { error } = await supabase.from('users').update(updates).eq('id', editingUser);
+                    if (error) throw error;
+                    setEditingUser(null);
+                    await loadData();
+                    alert('✅ Perfil actualizado');
+                } catch (e) { alert('Error: ' + e.message); }
+                setSyncing(false);
+            };
+
+            const updateProfilePhoto = async (file, userId) => {
+                if (!file) return;
+                const targetId = userId || user?.id;
+                if (!targetId) return;
+                setSyncing(true);
+                try {
+                    // Comprimir imagen a max 200x200 y convertir a base64
+                    const base64 = await new Promise((resolve, reject) => {
+                        const reader = new FileReader();
+                        reader.onload = (e) => {
+                            const img = new Image();
+                            img.onload = () => {
+                                const canvas = document.createElement('canvas');
+                                const max = 200;
+                                let w = img.width, h = img.height;
+                                if (w > h) { h = Math.round(h * max / w); w = max; }
+                                else { w = Math.round(w * max / h); h = max; }
+                                canvas.width = w; canvas.height = h;
+                                canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+                                resolve(canvas.toDataURL('image/jpeg', 0.7));
+                            };
+                            img.onerror = reject;
+                            img.src = e.target.result;
+                        };
+                        reader.onerror = reject;
+                        reader.readAsDataURL(file);
+                    });
+                    const { error } = await supabase.from('users').update({ photo: base64 }).eq('id', targetId);
+                    if (error) throw error;
+                    if (targetId === user?.id) {
+                        const updated = { ...user, photo: base64 };
+                        setUser(updated);
+                        localStorage.setItem('mise_user', JSON.stringify(updated));
+                    }
+                    await loadData();
+                    alert('✅ Foto actualizada');
+                } catch (e) { alert('Error: ' + e.message); }
+                setSyncing(false);
+            };
+
+            const cleanAppData = async () => {
+                if (!confirm('⚠️ ATENCIÓN: Esto eliminará TODOS los pedidos, historial de stock y bitácora.\n\nEl INVENTARIO (stock) se mantiene.\n\n¿Continuar?')) return;
+                if (!confirm('⚠️ CONFIRMACIÓN FINAL: Esta acción NO se puede deshacer. ¿Estás seguro?')) return;
+                setSyncing(true);
+                try {
+                    // Eliminar en orden por dependencias
+                    const { error: e1 } = await supabase.from('order_items').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+                    if (e1) throw e1;
+                    const { error: e2 } = await supabase.from('orders').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+                    if (e2) throw e2;
+                    const { error: e3 } = await supabase.from('stock_history').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+                    if (e3) throw e3;
+                    await loadData();
+                    alert('✅ App limpiada. Stock intacto, pedidos e historial eliminados.');
+                } catch (e) { alert('Error: ' + (e.message || JSON.stringify(e))); }
+                setSyncing(false);
+            };
+
+            // Actualizar firma
+            const updateSignature = async (newSig) => {
+                if (!newSig) return;
+                setSyncing(true);
+                try {
+                    await supabase.from('users').update({ signature: newSig }).eq('id', user.id);
+                    setUser({ ...user, sig: newSig });
+                    localStorage.setItem('mise_user', JSON.stringify({ ...user, sig: newSig }));
+                    alert('✅ Firma actualizada');
+                } catch (e) { alert('Error: ' + e.message); }
+                setSyncing(false);
+            };
+
+            const updatePin = async () => {
+                if (pinInput && pinInput.length < 4) return alert('El PIN debe tener al menos 4 dígitos');
+                setSyncing(true);
+                try {
+                    const newPin = pinInput || null;
+                    const { error } = await supabase.from('users').update({ pin: newPin }).eq('id', user.id);
+                    if (error) throw error;
+                    const updated = { ...user, pin: newPin };
+                    setUser(updated);
+                    localStorage.setItem('mise_user', JSON.stringify(updated));
+                    setEditingPin(false);
+                    setPinInput('');
+                    alert(newPin ? '✅ PIN actualizado' : '✅ PIN eliminado');
+                } catch (e) { alert('Error: ' + e.message); }
+                setSyncing(false);
+            };
+
+            const filtInv = useMemo(() => inv.filter(i => i.name.toLowerCase().includes(search.toLowerCase())).sort((a, b) => a.name.localeCompare(b.name, 'es')), [inv, search]);
+
+            if (loading) return <div className="min-h-screen flex flex-col items-center justify-center"><Logo size="lg" /><Loader text="Conectando..." /></div>;
+
+            // SPLASH
+            if (view === 'splash') return (
+                <div className="min-h-screen flex flex-col items-center justify-center p-6 animate-fade">
+                    <Logo size="xl" />
+                    <button onClick={() => setView('login')} className="mt-8 px-12 py-4 btn-gradient text-white rounded-2xl font-bold text-lg shadow-xl animate-glow flex items-center gap-3">Ingresar <I.ArrowRight size={24} /></button>
+                    <p className="text-center text-xs text-gray-400 mt-8">Secretaría de Educación y Empleo<br /><span className="font-bold text-gray-500">Municipalidad de Vicente López</span></p>
+                </div>
+            );
+
+            // LOGIN
+            if (view === 'login' && loginMode === 'check') return (
+                <div className="min-h-screen p-6 animate-fade">
+                    <BackBtn onClick={() => setView('splash')} />
+                    <div className="max-w-sm mx-auto mt-8">
+                        <div className="text-center mb-8"><Logo size="md" /><h2 className="text-2xl font-extrabold text-gray-800 mt-4">¡Bienvenido!</h2><p className="text-gray-500 mt-2">Ingresá con tu correo institucional</p></div>
+                        <div className="card p-6 card-cyan">
+                            <div className="space-y-4">
+                                <div>
+                                    <label className="text-xs font-bold text-gray-500 mb-1 block">📧 Correo institucional</label>
+                                    <div className="flex items-center input-field p-0 overflow-hidden">
+                                        <I.Mail size={18} className="ml-4 text-cyan-400" />
+                                        <input type="text" placeholder="usuario" value={loginEmail.replace('@mvl.edu.ar', '')} onChange={e => setLoginEmail(e.target.value.replace(/@/g, ''))} onKeyPress={e => e.key === 'Enter' && checkEmail()} className="flex-1 px-3 py-3.5 bg-transparent text-sm font-semibold" />
+                                        <span className="pr-4 text-sm font-bold text-cyan-600">@mvl.edu.ar</span>
+                                    </div>
+                                </div>
+                                <button onClick={checkEmail} disabled={syncing} className="w-full py-4 btn-gradient text-white rounded-2xl font-bold flex items-center justify-center gap-2 shadow-xl disabled:opacity-50">{syncing ? <><div className="loader w-5 h-5 border-2 animate-spin"></div> Verificando...</> : <>Continuar <I.ArrowRight size={20} /></>}</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+
+            // REGISTER
+            if (view === 'login' && loginMode === 'pin') return (
+                <div className="min-h-screen p-6 animate-fade">
+                    <BackBtn onClick={() => { setLoginMode('check'); setPendingUser(null); setLoginPin(''); }} />
+                    <div className="max-w-sm mx-auto mt-8">
+                        <div className="text-center mb-8">
+                            <Logo size="md" />
+                            <h2 className="text-2xl font-extrabold text-gray-800 mt-4">Ingresá tu PIN</h2>
+                            <p className="text-gray-500 mt-2">{pendingUser?.fullName}</p>
+                        </div>
+                        <div className="card p-6 card-purple">
+                            <div className="space-y-4">
+                                <div>
+                                    <label className="text-xs font-bold text-gray-500 mb-1 block">🔒 PIN de acceso</label>
+                                    <input type="password" inputMode="numeric" maxLength={6} placeholder="••••" value={loginPin} onChange={e => setLoginPin(e.target.value.replace(/\D/g, ''))} onKeyPress={e => e.key === 'Enter' && verifyPin()} className="w-full input-field text-center text-2xl tracking-[0.5em] font-black" />
+                                </div>
+                                <button onClick={verifyPin} disabled={!loginPin} className="w-full py-4 btn-gradient text-white rounded-2xl font-bold flex items-center justify-center gap-2 shadow-xl disabled:opacity-50">Ingresar <I.ArrowRight size={20} /></button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+
+            // REGISTER
+            if (view === 'login' && loginMode === 'register') return (
+                <div className="min-h-screen p-6 animate-fade">
+                    <BackBtn onClick={() => setLoginMode('check')} />
+                    <div className="max-w-sm mx-auto mt-4">
+                        <div className="text-center mb-6">
+                            <h2 className="text-2xl font-extrabold text-gray-800">Registro</h2>
+                            <p className="text-gray-500 text-sm mt-1">Primera vez? Completá tus datos</p>
+                            <div className="mt-3 px-4 py-2 bg-cyan-50 rounded-xl inline-block"><span className="text-sm font-bold text-cyan-600">{form.email}</span></div>
+                        </div>
+
+                        {!selectedRole ? (
+                            <div className="space-y-4">
+                                <p className="text-center text-gray-600 font-semibold">¿Cómo ingresás?</p>
+                                <button onClick={() => setSelectedRole('Docente')} className="w-full card p-5 card-cyan text-left">
+                                    <div className="flex items-center gap-4">
+                                        <div className="w-14 h-14 bg-cyan-500 rounded-2xl flex items-center justify-center shadow-lg"><span className="text-2xl">👨‍🏫</span></div>
+                                        <div className="flex-1"><h3 className="text-lg font-bold text-gray-800">Docente</h3><p className="text-xs text-gray-500">Solicitar materiales</p></div>
+                                        <I.ArrowRight size={20} className="text-cyan-400" />
+                                    </div>
+                                </button>
+                                <button onClick={() => setSelectedRole('Administrativo')} className="w-full card p-5 card-purple text-left">
+                                    <div className="flex items-center gap-4">
+                                        <div className="w-14 h-14 bg-purple-500 rounded-2xl flex items-center justify-center shadow-lg"><span className="text-2xl">📋</span></div>
+                                        <div className="flex-1"><h3 className="text-lg font-bold text-gray-800">Administración</h3><p className="text-xs text-gray-500">Gestionar stock</p></div>
+                                        <I.ArrowRight size={20} className="text-purple-400" />
+                                    </div>
+                                </button>
+                            </div>
+                        ) : (
+                            <div className={`card p-6 ${selectedRole === 'Docente' ? 'card-cyan' : 'card-purple'}`}>
+                                <div className="flex items-center justify-between mb-4">
+                                    <span className={`px-3 py-1.5 rounded-full text-xs font-bold ${selectedRole === 'Docente' ? 'badge-cyan' : 'badge-purple'}`}>{selectedRole === 'Docente' ? '👨‍🏫 DOCENTE' : '📋 ADMIN'}</span>
+                                    <button onClick={() => setSelectedRole(null)} className="text-xs text-gray-400">Cambiar</button>
+                                </div>
+                                <div className="space-y-4">
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <div><label className="text-xs font-bold text-gray-500 mb-1 block">Nombre</label><input type="text" placeholder="Juan" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} className="w-full input-field font-semibold" /></div>
+                                        <div><label className="text-xs font-bold text-gray-500 mb-1 block">Apellido</label><input type="text" placeholder="Pérez" value={form.surname} onChange={e => setForm({ ...form, surname: e.target.value })} className="w-full input-field font-semibold" /></div>
+                                    </div>
+                                    <div>
+                                        <label className="text-xs font-bold text-gray-500 mb-1 block">🔒 PIN de acceso (4-6 dígitos, opcional)</label>
+                                        <input type="password" inputMode="numeric" maxLength={6} placeholder="Ej: 1234" value={form.pin || ''} onChange={e => setForm({ ...form, pin: e.target.value.replace(/\D/g, '') })} className="w-full input-field font-semibold text-center tracking-widest" />
+                                        <p className="text-[10px] text-gray-400 mt-1">Si lo configurás, te lo va a pedir cada vez que ingreses</p>
+                                    </div>
+                                    <div className="bg-gradient-to-br from-purple-50 via-cyan-50 to-green-50 p-4 rounded-2xl border-2 border-purple-100"><SignPad onSave={sig => setForm({ ...form, sig })} initial={form.sig} /></div>
+                                    <button onClick={register} disabled={syncing} className="w-full py-4 btn-gradient text-white rounded-2xl font-bold flex items-center justify-center gap-2 shadow-xl disabled:opacity-50">{syncing ? <><div className="loader w-5 h-5 border-2 animate-spin"></div> Registrando...</> : <>Registrarse <I.ArrowRight size={20} /></>}</button>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            );
+
+            // DASHBOARD
+            if (view === 'dashboard') return (
+                <div className="min-h-screen pb-28">
+                    <div className="p-5 pt-6">
+                        <div className="flex justify-between items-start"><Logo size="md" /><button onClick={refresh} disabled={syncing} className="p-3 bg-white rounded-xl shadow border-2 border-gray-100"><I.Refresh size={20} className={`text-cyan-500 ${syncing ? 'animate-spin' : ''}`} /></button></div>
+                        <div className={`mt-5 card p-4 text-center ${devMode ? 'card-gradient' : user?.role === 'Administrativo' ? 'card-purple' : 'card-cyan'}`}>
+                            <p className={`font-medium ${devMode ? 'text-white/90' : 'text-gray-600'}`}>Hola, <span className={`font-bold ${devMode ? 'text-white' : 'text-gray-800'}`}>{user?.fullName}</span> 👋</p>
+                            <span className={`inline-block mt-2 px-4 py-1.5 rounded-full text-xs font-bold ${devMode ? 'bg-white/20 text-white' : user?.role === 'Administrativo' ? 'badge-purple' : 'badge-cyan'}`}>
+                                {devMode ? '⚡ DEV MODE' : user?.role === 'Administrativo' ? '👑 ADMIN' : '👨‍🏫 DOCENTE'}
+                            </span>
+                        </div>
+                    </div>
+                    <div className="px-5 space-y-4">
+                        {/* DEV MODE - Acceso a todo */}
+                        {devMode && <>
+                            <button onClick={() => setView('stats')} className="w-full card p-5 text-left border-3 border-purple-400 bg-gradient-to-r from-purple-50 to-cyan-50">
+                                <div className="flex items-center gap-4">
+                                    <div className="w-14 h-14 bg-gradient-to-br from-purple-500 to-cyan-500 rounded-2xl flex items-center justify-center shadow-lg"><I.BarChart size={28} className="text-white" /></div>
+                                    <div className="flex-1"><h3 className="font-bold text-gray-800 text-lg">📊 Estadísticas</h3><p className="text-sm text-gray-500">Reportes y métricas exclusivas</p></div>
+                                    <I.ArrowRight size={24} className="text-purple-400" />
+                                </div>
+                            </button>
+                            <div className="grid grid-cols-2 gap-4">
+                                <button onClick={() => setView('order')} className="card p-5 text-left card-green"><div className="w-12 h-12 bg-green-500 rounded-2xl flex items-center justify-center mb-3 shadow-lg"><I.Clipboard size={24} className="text-white" /></div><h3 className="font-bold text-gray-800">Mis Pedidos</h3><p className="text-xs text-gray-500">Como docente</p></button>
+                                <button onClick={() => setView('inventory')} className="card p-5 text-left card-purple"><div className="w-12 h-12 bg-purple-500 rounded-2xl flex items-center justify-center mb-3 shadow-lg"><I.Package size={24} className="text-white" /></div><h3 className="font-bold text-gray-800">Stock</h3><p className="text-xs text-gray-500">Gestionar</p></button>
+                            </div>
+                            <button onClick={() => setView('handover')} className="w-full card-gradient p-5 rounded-3xl text-left shadow-xl"><div className="flex items-center justify-between"><div className="flex items-center gap-4"><div className="w-14 h-14 bg-white/25 rounded-2xl flex items-center justify-center"><I.Book size={28} className="text-white" /></div><div><h3 className="font-bold text-white text-lg">Cuaderno Digital</h3><p className="text-sm text-white/80">Entregas y devoluciones</p></div></div>{ord.filter(o => o.status === 'Solicitado' || o.status === 'Devolución Pendiente').length > 0 && <span className="bg-white text-purple-600 text-sm font-bold px-3 py-1 rounded-full">{ord.filter(o => o.status === 'Solicitado' || o.status === 'Devolución Pendiente').length}</span>}</div></button>
+                            <div className="grid grid-cols-2 gap-3">
+                                <button onClick={() => setView('purchase')} className="card p-4 flex flex-col items-center gap-2 card-orange relative">
+                                    <div className="w-11 h-11 bg-orange-500 rounded-xl flex items-center justify-center shadow-lg"><I.ShoppingCart size={22} className="text-white" /></div>
+                                    <h3 className="font-bold text-gray-800 text-sm">Solicitar</h3>
+                                </button>
+                                <button onClick={() => setView('purchases')} className="card p-4 flex flex-col items-center gap-2 card-cyan relative">
+                                    <div className="w-11 h-11 bg-cyan-500 rounded-xl flex items-center justify-center shadow-lg"><I.FileText size={22} className="text-white" /></div>
+                                    <h3 className="font-bold text-gray-800 text-sm">Expediente</h3>
+                                    {ord.filter(o => o.status === 'Pendiente Compra' || (o.career && o.career.startsWith('🛒'))).length > 0 && <span className="absolute -top-2 -right-2 bg-orange-500 text-white text-xs font-bold w-6 h-6 rounded-full flex items-center justify-center">{ord.filter(o => o.status === 'Pendiente Compra' || (o.career && o.career.startsWith('🛒'))).length}</span>}
+                                </button>
+                            </div>
+                            <div className="grid grid-cols-4 gap-3">
+                                <button onClick={() => setView('history')} className="card p-4 flex flex-col items-center gap-2 card-cyan"><div className="w-11 h-11 bg-cyan-500 rounded-xl flex items-center justify-center shadow-lg"><I.History size={22} className="text-white" /></div><h3 className="font-bold text-gray-800 text-[11px]">Historial</h3></button>
+                                <button onClick={() => setView('incidents')} className="card p-4 flex flex-col items-center gap-2 card-orange relative"><div className="w-11 h-11 bg-orange-500 rounded-xl flex items-center justify-center shadow-lg"><I.AlertTriangle size={22} className="text-white" /></div><h3 className="font-bold text-gray-800 text-[11px]">Bitácora</h3>{ord.filter(o => o.obs && !o.res && (!o.career || !o.career.startsWith('🛒'))).length > 0 && <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold w-6 h-6 rounded-full flex items-center justify-center">{ord.filter(o => o.obs && !o.res && (!o.career || !o.career.startsWith('🛒'))).length}</span>}</button>
+                                <button onClick={() => setView('courses')} className="card p-4 flex flex-col items-center gap-2 card-purple"><div className="w-11 h-11 bg-purple-500 rounded-xl flex items-center justify-center shadow-lg"><I.Book size={22} className="text-white" /></div><h3 className="font-bold text-gray-800 text-[11px]">Cursos</h3></button>
+                                <button onClick={() => setView('users')} className="card p-4 flex flex-col items-center gap-2 card-green"><div className="w-11 h-11 bg-green-500 rounded-xl flex items-center justify-center shadow-lg"><I.Users size={22} className="text-white" /></div><h3 className="font-bold text-gray-800 text-[11px]">Usuarios</h3></button>
+                            </div>
+                        </>}
+                        {/* DOCENTE normal */}
+                        {!devMode && user?.role === 'Docente' && <>
+                            <div className="grid grid-cols-2 gap-4">
+                                <button onClick={() => setView('inventory')} className="card p-5 text-left card-cyan"><div className="w-12 h-12 bg-cyan-500 rounded-2xl flex items-center justify-center mb-3 shadow-lg"><I.Package size={24} className="text-white" /></div><h3 className="font-bold text-gray-800">Stock</h3><p className="text-xs text-gray-500">Ver disponibilidad</p></button>
+                                <button onClick={() => setView('order')} className="card p-5 text-left card-green"><div className="w-12 h-12 bg-green-500 rounded-2xl flex items-center justify-center mb-3 shadow-lg"><I.Clipboard size={24} className="text-white" /></div><h3 className="font-bold text-gray-800">Pedidos</h3><p className="text-xs text-gray-500">Solicitar material</p></button>
+                            </div>
+                            <button onClick={() => setView('handover')} className="w-full card-gradient p-5 rounded-3xl text-left shadow-xl"><div className="flex items-center justify-between"><div className="flex items-center gap-4"><div className="w-14 h-14 bg-white/25 rounded-2xl flex items-center justify-center"><I.Book size={28} className="text-white" /></div><div><h3 className="font-bold text-white text-lg">Cuaderno Digital</h3><p className="text-sm text-white/80">Mis entregas</p></div></div><I.ArrowRight size={24} className="text-white/80" /></div></button>
+                            <button onClick={() => setView('purchase')} className="w-full card p-4 text-left card-orange">
+                                <div className="flex items-center gap-4">
+                                    <div className="w-12 h-12 bg-orange-500 rounded-2xl flex items-center justify-center shadow-lg"><I.ShoppingCart size={24} className="text-white" /></div>
+                                    <div className="flex-1"><h3 className="font-bold text-gray-800">Solicitar Compra</h3><p className="text-xs text-gray-500">Pedir material nuevo</p></div>
+                                    <I.ArrowRight size={20} className="text-orange-400" />
+                                </div>
+                            </button>
+                        </>}
+                        {/* ADMIN normal */}
+                        {!devMode && user?.role === 'Administrativo' && <>
+                            <button onClick={() => setView('inventory')} className="w-full card p-5 text-left card-purple"><div className="flex items-center gap-4"><div className="w-14 h-14 bg-purple-500 rounded-2xl flex items-center justify-center shadow-lg"><I.Package size={28} className="text-white" /></div><div className="flex-1"><h3 className="font-bold text-gray-800 text-lg">Gestión de Stock</h3><p className="text-sm text-gray-500">Agregar, editar, controlar</p></div><I.ArrowRight size={24} className="text-purple-400" /></div></button>
+                            <button onClick={() => setView('handover')} className="w-full card-gradient p-5 rounded-3xl text-left shadow-xl"><div className="flex items-center justify-between"><div className="flex items-center gap-4"><div className="w-14 h-14 bg-white/25 rounded-2xl flex items-center justify-center"><I.Book size={28} className="text-white" /></div><div><h3 className="font-bold text-white text-lg">Cuaderno Digital</h3><p className="text-sm text-white/80">Entregas y devoluciones</p></div></div>{ord.filter(o => o.status === 'Solicitado' || o.status === 'Devolución Pendiente').length > 0 && <span className="bg-white text-purple-600 text-sm font-bold px-3 py-1 rounded-full">{ord.filter(o => o.status === 'Solicitado' || o.status === 'Devolución Pendiente').length}</span>}</div></button>
+                            <button onClick={() => setView('purchases')} className="w-full card p-4 text-left card-orange">
+                                <div className="flex items-center gap-4">
+                                    <div className="w-12 h-12 bg-orange-500 rounded-2xl flex items-center justify-center shadow-lg"><I.FileText size={24} className="text-white" /></div>
+                                    <div className="flex-1"><h3 className="font-bold text-gray-800">Expediente Compras</h3><p className="text-xs text-gray-500">Solicitudes de docentes</p></div>
+                                    {ord.filter(o => o.status === 'Pendiente Compra' || (o.career && o.career.startsWith('🛒'))).length > 0 && <span className="bg-orange-500 text-white text-sm font-bold px-3 py-1 rounded-full">{ord.filter(o => o.status === 'Pendiente Compra' || (o.career && o.career.startsWith('🛒'))).length}</span>}
+                                </div>
+                            </button>
+                            <div className="grid grid-cols-4 gap-3">
+                                <button onClick={() => setView('history')} className="card p-4 flex flex-col items-center gap-2 card-cyan"><div className="w-11 h-11 bg-cyan-500 rounded-xl flex items-center justify-center shadow-lg"><I.History size={22} className="text-white" /></div><h3 className="font-bold text-gray-800 text-[11px]">Historial</h3></button>
+                                <button onClick={() => setView('incidents')} className="card p-4 flex flex-col items-center gap-2 card-orange relative"><div className="w-11 h-11 bg-orange-500 rounded-xl flex items-center justify-center shadow-lg"><I.AlertTriangle size={22} className="text-white" /></div><h3 className="font-bold text-gray-800 text-[11px]">Bitácora</h3>{ord.filter(o => o.obs && !o.res && (!o.career || !o.career.startsWith('🛒'))).length > 0 && <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold w-6 h-6 rounded-full flex items-center justify-center">{ord.filter(o => o.obs && !o.res && (!o.career || !o.career.startsWith('🛒'))).length}</span>}</button>
+                                <button onClick={() => setView('courses')} className="card p-4 flex flex-col items-center gap-2 card-purple"><div className="w-11 h-11 bg-purple-500 rounded-xl flex items-center justify-center shadow-lg"><I.Book size={22} className="text-white" /></div><h3 className="font-bold text-gray-800 text-[11px]">Cursos</h3></button>
+                                <button onClick={() => setView('users')} className="card p-4 flex flex-col items-center gap-2 card-green"><div className="w-11 h-11 bg-green-500 rounded-xl flex items-center justify-center shadow-lg"><I.Users size={22} className="text-white" /></div><h3 className="font-bold text-gray-800 text-[11px]">Usuarios</h3></button>
+                            </div>
+                        </>}
+                    </div>
+                    <Nav current="dashboard" go={setView} role={devMode ? 'Administrativo' : user?.role} />
+                </div>
+            );
+
+            // INVENTORY
+            if (view === 'inventory') {
+                const StockItem = ({ item }) => {
+                    const [open, setOpen] = useState(false);
+                    const [type, setType] = useState('in');
+                    const [amt, setAmt] = useState('');
+                    const [reason, setReason] = useState('');
+                    const [note, setNote] = useState('');
+                    const [editName, setEditName] = useState(item.name);
+                    const st = catStyle(item.cat);
+
+                    const submit = async () => { if (!reason) return alert('Selecciona motivo'); const ok = await stockMove(item.id, type, amt, reason, note); if (ok) { setAmt(''); setReason(''); setNote(''); setOpen(false); } };
+
+                    return (
+                        <div className={`card p-4 border-2 ${st.border}`}>
+                            <div className="flex items-center gap-3">
+                                <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${st.bg} ${st.tx}`}><CatIcon cat={item.cat} size={24} /></div>
+                                <div className="flex-1 min-w-0">
+                                    <p className="font-bold text-gray-800 truncate">{item.name}</p>
+                                    <div className="flex items-center gap-2 mt-1">
+                                        <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${st.bg} ${st.tx}`}>{item.cat}</span>
+                                        <span className={`text-sm font-black ${item.qty > 5 ? 'text-green-600' : item.qty > 0 ? 'text-orange-500' : 'text-red-500'}`}>Stock: {item.qty}</span>
+                                    </div>
+                                </div>
+                                {(user?.role === 'Administrativo' || devMode) && <button onClick={() => setOpen(!open)} className={`p-2 rounded-xl ${open ? 'bg-purple-500 text-white' : 'bg-purple-100 text-purple-500'}`}><I.Edit size={18} /></button>}
+                            </div>
+                            {open && (user?.role === 'Administrativo' || devMode) && (
+                                <div className="mt-4 pt-4 border-t-2 border-dashed border-gray-200 space-y-3">
+                                    <div className="flex gap-2"><input type="text" value={editName} onChange={e => setEditName(e.target.value)} className="flex-1 input-field text-sm font-semibold" /><button onClick={() => updateItemName(item.id, editName)} className="px-4 btn-cyan text-white rounded-xl text-sm font-bold">Renombrar</button></div>
+                                    <div className="flex gap-2">
+                                        <button onClick={() => setType('in')} className={`flex-1 py-2.5 rounded-xl font-bold text-sm ${type === 'in' ? 'bg-green-500 text-white' : 'bg-gray-100 text-gray-500'}`}>+ Ingreso</button>
+                                        <button onClick={() => setType('out')} className={`flex-1 py-2.5 rounded-xl font-bold text-sm ${type === 'out' ? 'bg-red-500 text-white' : 'bg-gray-100 text-gray-500'}`}>- Egreso</button>
+                                    </div>
+                                    <div className="flex gap-2">
+                                        <input type="number" placeholder="Cant." value={amt} onChange={e => setAmt(e.target.value)} className="w-20 input-field text-center font-bold" />
+                                        <select value={reason} onChange={e => setReason(e.target.value)} className="flex-1 input-field font-semibold"><option value="">Motivo...</option>{MOTIVOS[type].map(m => <option key={m}>{m}</option>)}</select>
+                                    </div>
+                                    <input type="text" placeholder="Nota (opcional)" value={note} onChange={e => setNote(e.target.value)} className="w-full input-field text-sm font-semibold" />
+                                    <div className="flex gap-2">
+                                        <button onClick={submit} disabled={syncing} className={`flex-1 py-3 rounded-xl text-sm font-bold text-white ${type === 'in' ? 'bg-green-500' : 'bg-red-500'} disabled:opacity-50`}>{syncing ? 'Guardando...' : (type === 'in' ? '+ Ingreso' : '- Egreso')}</button>
+                                        <button onClick={() => deleteItem(item.id)} className="px-4 py-3 bg-red-100 text-red-500 rounded-xl"><I.Trash size={18} /></button>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    );
+                };
+
+                return (
+                    <div className="min-h-screen pb-28">
+                        <div className="sticky top-0 z-40 bg-white/95 backdrop-blur-sm border-b-2 border-purple-100 p-4">
+                            <div className="flex items-center gap-3 mb-3"><BackBtn onClick={() => setView('dashboard')} /><div className="flex-1"><h1 className="text-xl font-extrabold text-gray-800">📦 Stock</h1><p className="text-xs text-gray-500 font-semibold">{filtInv.length} materiales</p></div><button onClick={refresh} disabled={syncing} className="p-2 bg-cyan-100 rounded-xl"><I.Refresh size={18} className={`text-cyan-600 ${syncing ? 'animate-spin' : ''}`} /></button></div>
+                            <div className="relative"><I.Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-cyan-400" /><input type="text" placeholder="Buscar..." value={search} onChange={e => setSearch(e.target.value)} className="w-full pl-11 pr-4 py-3 bg-cyan-50 rounded-2xl text-sm font-semibold border-2 border-cyan-200" /></div>
+                        </div>
+                        <div className="p-4 space-y-3">
+                            {(user?.role === 'Administrativo' || devMode) && (
+                                <div className="card p-4 card-green mb-4">
+                                    <div className="flex items-center justify-between mb-3">
+                                        <h3 className="font-bold text-gray-800 flex items-center gap-2"><I.Plus size={18} /> Agregar material</h3>
+                                        <button onClick={() => setShowBulkAdd(!showBulkAdd)} className={`px-3 py-1 rounded-lg text-xs font-bold ${showBulkAdd ? 'bg-gray-200 text-gray-600' : 'bg-purple-100 text-purple-600'}`}>
+                                            {showBulkAdd ? 'Individual' : '📋 Carga masiva'}
+                                        </button>
+                                    </div>
+                                    {showBulkAdd ? (
+                                        <div className="space-y-2">
+                                            <p className="text-xs text-gray-500">Pegá una lista con formato: <strong>Nombre, Cantidad, Categoría</strong> (una por línea)</p>
+                                            <p className="text-[10px] text-gray-400">Categorías: {CATEGORIAS.join(', ')}</p>
+                                            <textarea value={bulkText} onChange={e => setBulkText(e.target.value)} placeholder={"Olla de 20L, 5, Batería\nEspátula grande, 10, Utensilios\nHorno eléctrico, 2, Maquinaria"} className="w-full input-field font-mono text-xs" rows={6} />
+                                            <div className="flex items-center justify-between">
+                                                <span className="text-xs text-gray-400 font-bold">{bulkText.trim() ? bulkText.trim().split('\n').filter(l => l.trim()).length : 0} líneas</span>
+                                                <button onClick={bulkAddItems} disabled={syncing || !bulkText.trim()} className="px-6 py-3 btn-gradient text-white rounded-xl font-bold disabled:opacity-50">{syncing ? 'Cargando...' : '📦 Cargar todo'}</button>
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <div className="space-y-2">
+                                            <input type="text" placeholder="Nombre" value={newItem.name} onChange={e => setNewItem({ ...newItem, name: e.target.value })} className="w-full input-field font-semibold" />
+                                            <div className="flex gap-2"><input type="number" placeholder="Cant." value={newItem.qty} onChange={e => setNewItem({ ...newItem, qty: e.target.value })} className="w-24 input-field font-semibold" /><select value={newItem.cat} onChange={e => setNewItem({ ...newItem, cat: e.target.value })} className="flex-1 input-field font-semibold">{CATEGORIAS.map(c => <option key={c}>{c}</option>)}</select></div>
+                                            <button onClick={addNewItem} disabled={syncing} className="w-full py-3 btn-green text-white rounded-xl font-bold disabled:opacity-50">{syncing ? 'Agregando...' : '+ Agregar'}</button>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+                            {filtInv.map(i => <StockItem key={i.id} item={i} />)}
+                        </div>
+                        <Nav current="inventory" go={setView} role={user?.role} />
+                    </div>
+                );
+            }
+
+            // ORDER
+            if (view === 'order' && (user?.role === 'Docente' || devMode)) return (
+                <div className="min-h-screen pb-32">
+                    <div className="sticky top-0 z-40 bg-white/95 backdrop-blur-sm border-b-2 border-green-100 p-4"><div className="flex items-center gap-3"><BackBtn onClick={() => setView('dashboard')} /><h1 className="text-xl font-extrabold text-gray-800">📝 Nuevo pedido</h1></div></div>
+                    <div className="p-4 space-y-4">
+                        <div className="card p-4 card-green space-y-3">
+                            <div className="flex items-center justify-between"><label className="text-sm text-gray-600 font-bold">🎓 Curso</label><button onClick={() => setView('courses')} className="text-green-500"><I.Settings size={18} /></button></div>
+                            <select value={meta.career} onChange={e => setMeta({ ...meta, career: e.target.value })} className="w-full input-field font-semibold"><option value="">Seleccionar...</option>{crs.map(c => <option key={c}>{c}</option>)}</select>
+                            <div className="grid grid-cols-2 gap-2">
+                                <div><label className="text-xs text-gray-500 font-bold">📅 Fecha</label><input type="date" value={meta.date} onChange={e => setMeta({ ...meta, date: e.target.value })} className="w-full input-field mt-1 font-semibold text-xs" /></div>
+                                <div><label className="text-xs text-gray-500 font-bold">🕐 Hora</label><input type="time" value={meta.time} onChange={e => setMeta({ ...meta, time: e.target.value })} className="w-full input-field mt-1 font-semibold text-xs" /></div>
+                            </div>
+                        </div>
+                        <div>
+                            <h3 className="text-sm text-gray-600 font-bold mb-2">🛒 Mi pedido <span className="badge-cyan px-3 py-1 rounded-full">{cart.reduce((s, i) => s + i.q, 0)} items</span></h3>
+                            {cart.length === 0 ? <div className="card p-8 text-center border-3 border-dashed border-gray-200 bg-gray-50"><I.ShoppingBag size={40} className="mx-auto text-gray-300 mb-2" /><p className="text-gray-400 font-semibold">Carrito vacío</p></div>
+                                : <div className="space-y-2">{cart.map(i => (
+                                    <div key={i.id} className="card p-3 flex items-center justify-between border-2 border-cyan-200">
+                                        <span className="text-sm font-bold text-gray-700 flex-1 truncate mr-2">{i.name}</span>
+                                        <div className="flex items-center gap-1">
+                                            <button onClick={() => setCartQty(i.id, i.q - 1)} className="w-8 h-8 rounded-lg bg-gray-100 text-gray-600 flex items-center justify-center font-bold">-</button>
+                                            <input type="number" value={i.q} onChange={e => setCartQty(i.id, parseInt(e.target.value) || 0)} className="w-12 text-center font-black text-cyan-600 bg-cyan-50 rounded-lg border-2 border-cyan-200 py-1" min="1" />
+                                            <button onClick={() => setCartQty(i.id, i.q + 1)} className="w-8 h-8 rounded-lg bg-cyan-500 text-white flex items-center justify-center font-bold">+</button>
+                                            <button onClick={() => remCart(i.id)} className="p-2 bg-red-100 text-red-500 rounded-lg ml-1"><I.Trash size={16} /></button>
+                                        </div>
+                                    </div>
+                                ))}</div>}
+                        </div>
+                        <div>
+                            <h3 className="text-sm text-gray-600 font-bold mb-2">📋 Disponible</h3>
+                            <div className="space-y-2 max-h-52 overflow-y-auto">
+                                {inv.filter(i => i.qty > 0).map(i => {
+                                    const st = catStyle(i.cat);
+                                    return (
+                                        <div key={i.id} className={`card p-3 flex items-center gap-2 border-2 ${st.border}`}>
+                                            <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${st.bg} ${st.tx} flex-shrink-0`}><CatIcon cat={i.cat} size={20} /></div>
+                                            <div className="flex-1 min-w-0"><p className="text-sm font-bold text-gray-700 truncate">{i.name}</p><p className="text-xs text-green-600 font-bold">Stock: {i.qty}</p></div>
+                                            <button onClick={() => addCart(i, 1)} className="px-3 py-2 rounded-xl bg-cyan-500 text-white font-bold text-xs shadow-lg flex-shrink-0">+ Agregar</button>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                        <button onClick={sendOrd} disabled={!cart.length || syncing} className={`w-full py-4 rounded-2xl font-bold text-white flex items-center justify-center gap-2 ${cart.length && !syncing ? 'btn-gradient' : 'bg-gray-300'}`}>{syncing ? <><div className="loader w-5 h-5 border-2 animate-spin"></div> Enviando...</> : <><I.Send size={20} /> Enviar pedido</>}</button>
+                    </div>
+                    <Nav current="order" go={setView} role={user?.role} />
+                </div>
+            );
+
+            // COURSES
+            if (view === 'courses') return (
+                <div className="min-h-screen pb-28">
+                    <div className="sticky top-0 z-40 bg-white/95 backdrop-blur-sm border-b-2 border-purple-100 p-4">
+                        <div className="flex items-center gap-3">
+                            <BackBtn onClick={() => setView('dashboard')} />
+                            <div className="flex-1">
+                                <h1 className="text-xl font-extrabold text-gray-800">🎓 Cursos / Carreras</h1>
+                                <p className="text-xs text-gray-500">{crs.length} registrados</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div className="p-4 space-y-4">
+                        <div className="card p-4 card-purple">
+                            <p className="text-sm text-gray-600 mb-3">➕ Agregar nuevo curso o carrera</p>
+                            <div className="flex gap-2">
+                                <input type="text" placeholder="Ej: Pastelería Profesional" value={newCrs} onChange={e => setNewCrs(e.target.value)} className="flex-1 input-field font-semibold" />
+                                <button onClick={() => { addCourse(newCrs); setNewCrs(''); }} disabled={syncing || !newCrs.trim()} className="px-5 btn-gradient text-white rounded-2xl disabled:opacity-50"><I.Plus size={22} /></button>
+                            </div>
+                        </div>
+                        <div className="space-y-2">
+                            {crs.length === 0 ? (
+                                <div className="text-center py-10">
+                                    <I.Book size={48} className="mx-auto text-gray-200 mb-3" />
+                                    <p className="text-gray-400 font-bold">No hay cursos</p>
+                                </div>
+                            ) : crs.map(c => (
+                                <div key={c} className="card p-4 flex items-center justify-between border-2 border-purple-200">
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-10 h-10 bg-purple-100 rounded-xl flex items-center justify-center">
+                                            <I.Book size={20} className="text-purple-600" />
+                                        </div>
+                                        <span className="font-bold text-gray-700">{c}</span>
+                                    </div>
+                                    <button onClick={() => deleteCourse(c)} disabled={syncing} className="p-2 bg-red-100 text-red-500 rounded-lg disabled:opacity-50"><I.Trash size={18} /></button>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                    <Nav current="dashboard" go={setView} role={user?.role} />
+                </div>
+            );
+
+            // HANDOVER
+            if (view === 'handover') {
+                const downloadOrderPdf = (o) => {
+                    const dateFormatted = o.date ? new Date(o.date).toLocaleDateString('es-AR', { day: '2-digit', month: 'long', year: 'numeric' }) : 'S/F';
+                    const stLabel = { 'Solicitado': 'SOLICITADO', 'En Curso': 'EN CURSO (ENTREGADO)', 'Devolución Pendiente': 'DEVOLUCIÓN PENDIENTE', 'Finalizado': 'FINALIZADO' };
+                    const items = o.items || [];
+                    const html = `<!DOCTYPE html>
+<html lang="es"><head><meta charset="UTF-8"><title>Pedido #${String(o.id).slice(0,8)} - Santiago Rainero</title>
+<style>
+@media print { body { margin: 1.5cm 2cm; } .no-print { display:none!important; } }
+body { font-family: 'Times New Roman', serif; font-size: 12pt; line-height: 1.6; color: #000; max-width: 21cm; margin: 2cm auto; padding: 0 2cm; }
+h1 { text-align: center; font-size: 16pt; border-bottom: 2px solid #000; padding-bottom: 10px; }
+.header { text-align: center; margin-bottom: 25px; }
+.header p { margin: 2px 0; font-size: 11pt; }
+table { width: 100%; border-collapse: collapse; margin: 15px 0; }
+th, td { border: 1px solid #333; padding: 8px 12px; text-align: left; font-size: 11pt; }
+th { background: #f0f0f0; font-weight: bold; }
+.center { text-align: center; }
+.info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 15px 0; }
+.info-box { padding: 10px; border: 1px solid #ddd; border-radius: 4px; }
+.info-box label { font-size: 10pt; color: #666; display: block; }
+.info-box span { font-weight: bold; font-size: 12pt; }
+.status { display: inline-block; padding: 4px 12px; border: 2px solid #333; font-weight: bold; font-size: 11pt; margin: 10px 0; }
+.signatures { margin-top: 50px; display: flex; justify-content: space-between; }
+.sig-block { text-align: center; width: 35%; }
+.sig-line { border-top: 1px solid #000; margin-top: 10px; padding-top: 5px; font-size: 10pt; }
+.sig-img { height: 50px; margin: 0 auto 5px; display: block; }
+.obs-box { background: #f9f9f9; padding: 12px; border-left: 3px solid #e67e22; margin: 15px 0; }
+.res-box { background: #f0fff0; padding: 12px; border-left: 3px solid #27ae60; margin: 15px 0; }
+.btn-print { position: fixed; top: 20px; right: 20px; padding: 12px 24px; background: #7c3aed; color: white; border: none; border-radius: 8px; font-size: 14px; cursor: pointer; font-weight: bold; }
+</style></head><body>
+<button class="btn-print no-print" onclick="window.print()">🖨️ Imprimir / Guardar PDF</button>
+<div class="header">
+<p><strong>MUNICIPALIDAD DE VICENTE LÓPEZ</strong></p>
+<p>Secretaría de Educación y Empleo</p>
+<p><strong>Centro Municipal de Capacitación Laboral Santiago Rainero</strong></p>
+</div>
+<h1>CONSTANCIA DE PEDIDO DE MATERIAL</h1>
+<p class="center">Nº de Referencia: <strong>${String(o.id).slice(0,8).toUpperCase()}</strong></p>
+<div class="status center">${stLabel[o.status] || o.status}</div>
+<div class="info-grid">
+<div class="info-box"><label>Docente solicitante</label><span>${o.teacher}</span></div>
+<div class="info-box"><label>Curso / Carrera</label><span>${o.career}</span></div>
+<div class="info-box"><label>Fecha del pedido</label><span>${dateFormatted}</span></div>
+<div class="info-box"><label>Hora</label><span>${o.time || '--:--'}</span></div>
+</div>
+<h3>Material solicitado</h3>
+<table>
+<thead><tr><th class="center">N°</th><th>Material</th><th class="center">Cantidad</th></tr></thead>
+<tbody>${items.map((i, idx) => `<tr><td class="center">${idx+1}</td><td>${i.name}</td><td class="center">${i.q}</td></tr>`).join('')}
+<tr style="font-weight:bold;background:#f0f0f0"><td colspan="2" style="text-align:right">TOTAL ITEMS</td><td class="center">${items.reduce((s,i) => s + i.q, 0)}</td></tr>
+</tbody></table>
+${o.obs ? `<div class="obs-box"><strong>Observaciones:</strong><br/>${o.obs}</div>` : ''}
+${o.res ? `<div class="res-box"><strong>Resolución:</strong><br/>${o.res}</div>` : ''}
+<div class="signatures">
+<div class="sig-block">
+${o.sig ? `<img src="${o.sig}" class="sig-img" alt="Firma docente"/>` : '<div style="height:50px"></div>'}
+<div class="sig-line">${o.teacher}<br/>Docente</div>
+</div>
+<div class="sig-block"><div class="sig-line">Responsable de Pañol<br/>Santiago Rainero</div></div>
+<div class="sig-block"><div class="sig-line">Dirección<br/>CMCL Santiago Rainero</div></div>
+</div>
+<p style="text-align:center;font-size:9pt;color:#999;margin-top:40px">Documento generado por Mise en App — ${new Date().toLocaleString('es-AR')}</p>
+</body></html>`;
+                    const blob = new Blob([html], { type: 'text/html' });
+                    window.open(URL.createObjectURL(blob), '_blank');
+                };
+
+                const OrdCard = ({ o }) => {
+                    const [items, setItems] = useState(o.items || []);
+                    const [obs, setObs] = useState('');
+                    const stCol = { 'Solicitado': 'bg-yellow-400', 'En Curso': 'bg-cyan-500', 'Devolución Pendiente': 'bg-orange-500', 'Finalizado': 'bg-green-500' };
+                    const stBorder = { 'Solicitado': 'border-yellow-300', 'En Curso': 'border-cyan-300', 'Devolución Pendiente': 'border-orange-300', 'Finalizado': 'border-green-300' };
+
+                    return (
+                        <div className={`card p-5 relative overflow-hidden border-2 ${stBorder[o.status]}`}>
+                            <div className={`absolute left-0 top-0 bottom-0 w-2 ${stCol[o.status]}`} />
+                            <div className="flex justify-between items-start mb-2"><div className="flex-1 min-w-0"><p className="text-xs text-gray-400 font-semibold">👨‍🏫 Docente</p><p className="font-bold text-gray-800 text-lg truncate">{o.teacher}</p></div><div className="flex items-center gap-2 ml-2">{(user?.role === 'Administrativo' || devMode) && <button onClick={() => downloadOrderPdf(o)} className="p-1.5 bg-purple-100 rounded-lg text-purple-500 hover:bg-purple-200"><I.Download size={14} /></button>}{(user?.role === 'Administrativo' || devMode) && <button onClick={() => deleteOrder(o.id)} className="p-1.5 bg-red-100 rounded-lg text-red-500 hover:bg-red-200"><I.Trash size={14} /></button>}<span className={`px-3 py-1.5 rounded-full text-[10px] font-bold text-white whitespace-nowrap ${stCol[o.status]}`}>{o.status.toUpperCase()}</span></div></div>
+                            <div className="space-y-1 text-xs text-gray-500 font-semibold mb-3"><div className="truncate">🎓 {o.career}</div><div className="flex flex-wrap gap-x-4 gap-y-0"><span>📅 {o.date ? new Date(o.date).toLocaleDateString('es-AR') : ''}</span><span>🕐 {o.time?.slice(0,5)}</span></div></div>
+                            <div className="bg-gray-50 rounded-2xl p-4 mb-3 border-2 border-gray-200">
+                                <p className="text-xs text-gray-400 font-bold mb-2">📦 MATERIAL ({items.length})</p>
+                                {items.length === 0 ? <p className="text-sm text-gray-400 italic">Sin items</p> : items.map(i => (
+                                    <div key={i.id} className="flex justify-between items-center py-2 border-b border-gray-100 last:border-0">
+                                        <span className="text-sm text-gray-700 font-semibold truncate flex-1 mr-2">{i.name}</span>
+                                        {(user?.role === 'Administrativo' || devMode) && o.status === 'Solicitado' ? (
+                                            <div className="flex items-center gap-1 bg-white rounded-xl px-2 py-1 border-2 border-gray-200">
+                                                <button onClick={() => setItems(items.map(x => x.id === i.id ? { ...x, q: Math.max(0, x.q - 1) } : x))} className="w-7 h-7 flex items-center justify-center text-red-500"><I.Minus size={14} /></button>
+                                                <input type="number" value={i.q} onChange={e => setItems(items.map(x => x.id === i.id ? { ...x, q: Math.max(0, parseInt(e.target.value) || 0) } : x))} className="w-10 text-center font-black text-cyan-600 bg-cyan-50 rounded border border-cyan-200 py-0.5 text-sm" min="0" />
+                                                <button onClick={() => setItems(items.map(x => x.id === i.id ? { ...x, q: x.q + 1 } : x))} className="w-7 h-7 flex items-center justify-center text-green-500"><I.Plus size={14} /></button>
+                                            </div>
+                                        ) : <span className="text-sm font-black text-cyan-600">×{i.q}</span>}
+                                    </div>
+                                ))}
+                            </div>
+                            {o.status === 'En Curso' && user?.role === 'Docente' && <textarea placeholder="⚠️ Observaciones..." value={obs} onChange={e => setObs(e.target.value)} className="w-full px-4 py-3 bg-orange-50 rounded-2xl text-sm border-2 border-orange-200 mb-3 font-semibold" rows={2} />}
+                            {o.obs && <div className="bg-orange-50 rounded-2xl p-4 mb-3 border-2 border-orange-200"><p className="text-xs font-bold text-orange-600"><I.AlertTriangle size={14} className="inline mr-1" /> OBSERVACIONES</p><p className="text-sm text-gray-700 italic mt-1">"{o.obs}"</p></div>}
+                            {o.res && <div className="bg-green-50 rounded-2xl p-4 mb-3 border-2 border-green-200"><p className="text-xs font-bold text-green-600"><I.CheckCircle size={14} className="inline mr-1" /> RESOLUCIÓN</p><p className="text-sm text-gray-700 mt-1">{o.res}</p></div>}
+                            <div className="flex justify-between items-center pt-3 border-t-2 border-dashed border-gray-200"><span className="text-[10px] text-gray-400 font-bold">ID: #{String(o.id || '').slice(0, 8)}</span>{o.sig && <img src={o.sig} className="h-6 opacity-50" alt="" />}</div>
+                            {(user?.role === 'Administrativo' || devMode) && o.status === 'Solicitado' && <button onClick={() => confirmDel(o.id, items)} disabled={syncing} className="w-full mt-4 py-3 btn-cyan text-white rounded-2xl font-bold disabled:opacity-50">{syncing ? 'Procesando...' : '✓ Confirmar entrega'}</button>}
+                            {user?.role === 'Docente' && o.status === 'En Curso' && <button onClick={() => returnMat(o.id, obs)} disabled={syncing} className="w-full mt-4 py-3 btn-orange text-white rounded-2xl font-bold disabled:opacity-50">{syncing ? 'Procesando...' : '↩ Devolver material'}</button>}
+                            {(user?.role === 'Administrativo' || devMode) && o.status === 'Devolución Pendiente' && <button onClick={() => finRet(o.id)} disabled={syncing} className="w-full mt-4 py-3 btn-green text-white rounded-2xl font-bold disabled:opacity-50">{syncing ? 'Procesando...' : '✓ Confirmar reingreso'}</button>}
+                        </div>
+                    );
+                };
+
+                // Filtrar por rol y EXCLUIR solicitudes de compra (career contiene COMPRA o empieza con 🛒)
+                const filteredOrders = (user?.role === 'Docente' ? ord.filter(o => o.teacher === user.fullName) : ord)
+                    .filter(o => !o.career || (!o.career.startsWith('🛒') && !o.career.includes('COMPRA')));
+
+                return (
+                    <div className="min-h-screen pb-28">
+                        <div className="sticky top-0 z-40 bg-white/95 backdrop-blur-sm border-b-2 border-cyan-100 p-4"><div className="flex items-center gap-3"><BackBtn onClick={() => setView('dashboard')} /><h1 className="text-xl font-extrabold text-gray-800 flex-1">📖 Cuaderno</h1><button onClick={refresh} disabled={syncing} className="p-2 bg-cyan-100 rounded-xl"><I.Refresh size={18} className={`text-cyan-600 ${syncing ? 'animate-spin' : ''}`} /></button></div></div>
+                        <div className="p-4 space-y-4">{filteredOrders.length === 0 ? <div className="text-center py-16"><I.Book size={48} className="mx-auto text-gray-200 mb-3" /><p className="text-gray-400 font-bold">Sin novedades</p></div> : filteredOrders.map(o => <OrdCard key={o.id} o={o} />)}</div>
+                        <Nav current="handover" go={setView} role={user?.role} />
+                    </div>
+                );
+            }
+
+            // HISTORY
+            if (view === 'history') return (
+                <div className="min-h-screen pb-28">
+                    <div className="sticky top-0 z-40 bg-white/95 backdrop-blur-sm border-b-2 border-purple-100 p-4"><div className="flex items-center gap-3"><BackBtn onClick={() => setView('dashboard')} /><div className="flex-1"><h1 className="text-xl font-extrabold text-gray-800">📊 Historial</h1><p className="text-xs text-gray-500">{his.length} mov.</p></div><button onClick={refresh} disabled={syncing} className="p-2 bg-purple-100 rounded-xl"><I.Refresh size={18} className={`text-purple-600 ${syncing ? 'animate-spin' : ''}`} /></button></div></div>
+                    <div className="p-4 space-y-3">{his.length === 0 ? <div className="text-center py-16"><I.History size={48} className="mx-auto text-gray-200 mb-3" /><p className="text-gray-400 font-bold">Sin movimientos</p></div> : his.map(h => (
+                        <div key={h.id} className={`card p-4 border-2 ${h.type === 'in' ? 'border-green-300' : 'border-red-300'}`}>
+                            <div className="flex items-start gap-3">
+                                <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${h.type === 'in' ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-500'}`}>{h.type === 'in' ? <I.TrendingUp size={20} /> : <I.TrendingDown size={20} />}</div>
+                                <div className="flex-1 min-w-0">
+                                    <p className="font-bold text-gray-800 truncate">{h.name}</p>
+                                    <p className="text-xs text-gray-400">{new Date(h.at).toLocaleString('es-AR')}</p>
+                                    <div className="flex gap-2 mt-2 flex-wrap"><span className={`px-3 py-1 rounded-full text-xs font-bold ${h.type === 'in' ? 'badge-green' : 'badge-red'}`}>{h.type === 'in' ? '+' : '-'}{h.amt}</span><span className="badge-purple px-3 py-1 rounded-full text-xs font-bold">{h.reason}</span></div>
+                                    {h.note && <p className="text-xs text-gray-500 mt-2 italic">"{h.note}"</p>}
+                                </div>
+                            </div>
+                        </div>
+                    ))}</div>
+                    <Nav current="dashboard" go={setView} role={user?.role} />
+                </div>
+            );
+
+            // INCIDENTS
+            if (view === 'incidents') {
+                const markAsIrrecoverable = async (order) => {
+                    if (!confirm('¿Marcar como IRRECUPERABLE y agregar al expediente de compras para reposición?')) return;
+                    setSyncing(true);
+                    try {
+                        // Resolver el incidente con nota de irrecuperable
+                        await supabase.from('orders').update({ resolution: '❌ IRRECUPERABLE - Agregado a expediente de compras' }).eq('id', order.id);
+
+                        // Crear solicitud de compra automática
+                        const { data: purchaseOrder, error } = await supabase.from('orders').insert([{
+                            teacher_id: user.id,
+                            teacher_name: 'Sistema (Reposición)',
+                            teacher_email: user.email,
+                            career: order.career || 'General',
+                            date: new Date().toISOString().split('T')[0],
+                            time: new Date().toTimeString().split(' ')[0].slice(0, 5),
+                            status: 'Pendiente Compra',
+                            observations: `REPOSICIÓN por daño irreparable: ${order.obs} (Docente original: ${order.teacher})`
+                        }]).select().single();
+
+                        if (!error && purchaseOrder) {
+                            // Agregar items del pedido original al expediente
+                            for (const item of (order.items || [])) {
+                                await supabase.from('order_items').insert([{
+                                    order_id: purchaseOrder.id,
+                                    item_name: `${item.name} (REPOSICIÓN)`,
+                                    qty: item.q
+                                }]);
+                            }
+                        }
+                        await loadData();
+                        alert('✅ Marcado como irrecuperable y agregado al expediente de compras');
+                    } catch (e) { alert('Error: ' + e.message); }
+                    setSyncing(false);
+                };
+
+                const IncidentCard = ({ o }) => {
+                    const [res, setRes] = useState('');
+                    return (
+                        <div className="card p-5 border-3 border-red-200 relative overflow-hidden">
+                            <div className="absolute left-0 top-0 bottom-0 w-2 bg-red-500" />
+                            <div className="flex justify-between mb-2"><span className="text-xs text-gray-400 font-bold">{o.date ? new Date(o.date).toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: '2-digit' }) : ''}</span><span className="badge-red px-3 py-1 rounded-full font-bold">⚠️ INCIDENTE</span></div>
+                            <p className="font-bold text-gray-800 text-lg">{o.teacher}</p>
+                            <p className="text-xs text-gray-500 font-semibold mb-3">🎓 {o.career}</p>
+                            <div className="bg-red-50 rounded-2xl p-4 mb-3 border-2 border-red-200"><p className="text-sm text-red-800 italic">"{o.obs}"</p></div>
+                            {o.items && o.items.length > 0 && <div className="bg-gray-50 rounded-xl p-3 mb-3 border border-gray-200"><p className="text-xs text-gray-500 font-bold mb-1">📦 Material:</p>{o.items.map((it, idx) => <span key={idx} className="inline-block bg-gray-200 text-gray-700 text-xs px-2 py-1 rounded mr-1 mb-1">{it.name} x{it.q}</span>)}</div>}
+                            <div className="space-y-2">
+                                <div className="flex gap-2"><input type="text" placeholder="Resolución..." value={res} onChange={e => setRes(e.target.value)} className="flex-1 input-field font-semibold" /><button onClick={() => { if (res.trim()) resolve(o.id, res); }} disabled={syncing} className="px-5 btn-gradient text-white rounded-2xl"><I.Check size={20} /></button></div>
+                                {(user?.role === 'Administrativo' || devMode) && <button onClick={() => markAsIrrecoverable(o)} disabled={syncing} className="w-full py-3 bg-red-500 text-white rounded-2xl font-bold flex items-center justify-center gap-2"><I.X size={18} /> Marcar como IRRECUPERABLE</button>}
+                            </div>
+                        </div>
+                    );
+                };
+
+                // Filtramos SOLO incidentes (tienen obs, no tienen res y NO son compras con prefijo 🛒)
+                const incs = ord.filter(o => o.obs && !o.res && (!o.career || !o.career.startsWith('🛒')));
+                return (
+                    <div className="min-h-screen pb-28">
+                        <div className="sticky top-0 z-40 bg-white/95 backdrop-blur-sm border-b-2 border-orange-100 p-4"><div className="flex items-center gap-3"><BackBtn onClick={() => setView('dashboard')} /><h1 className="text-xl font-extrabold text-gray-800">🔧 Bitácora</h1></div></div>
+                        <div className="p-4 space-y-4">{incs.length === 0 ? <div className="text-center py-16"><I.CheckCircle size={56} className="mx-auto text-green-400 mb-3" /><p className="text-gray-800 font-bold text-lg">¡Todo en orden!</p></div> : incs.map(o => <IncidentCard key={o.id} o={o} />)}</div>
+                        <Nav current="dashboard" go={setView} role={user?.role} />
+                    </div>
+                );
+            }
+
+            // PURCHASES view moved to line ~1875 (unified version)
+
+            // PURCHASE view moved to line ~1751 (unified version)
+
+            // PROFILE
+            if (view === 'profile') {
+                return (
+                    <div className="min-h-screen pb-28">
+                        <div className="sticky top-0 z-40 bg-white/95 backdrop-blur-sm border-b-2 border-orange-100 p-4"><div className="flex items-center gap-3"><BackBtn onClick={() => setView('dashboard')} /><h1 className="text-xl font-extrabold text-gray-800">👤 Mi perfil</h1></div></div>
+                        <div className="p-4 space-y-4">
+                            <div className={`card p-6 text-center ${devMode ? 'card-gradient' : user?.role === 'Administrativo' ? 'card-purple' : 'card-cyan'}`}>
+                                <div className="relative mx-auto mb-4 w-24 h-24">
+                                    {user?.photo ? (
+                                        <img src={user.photo} className="w-24 h-24 rounded-full object-cover shadow-xl" alt="" />
+                                    ) : (
+                                        <div className="w-24 h-24 rounded-full bg-gradient-to-br from-cyan-400 via-purple-500 to-pink-500 flex items-center justify-center text-white text-3xl font-black shadow-xl">{user?.name?.[0]}{user?.surname?.[0]}</div>
+                                    )}
+                                    <label className="absolute -bottom-1 -right-1 w-8 h-8 bg-white rounded-full shadow-lg flex items-center justify-center cursor-pointer border-2 border-purple-200">
+                                        <I.Edit size={14} className="text-purple-500" />
+                                        <input type="file" accept="image/*" className="hidden" onChange={e => { if (e.target.files[0]) updateProfilePhoto(e.target.files[0]); }} />
+                                    </label>
+                                </div>
+                                <h2 className={`text-2xl font-extrabold ${devMode ? 'text-white' : 'text-gray-800'}`}>{user?.fullName}</h2>
+                                <span className={`inline-block mt-2 px-5 py-2 rounded-full font-bold text-sm ${devMode ? 'bg-white/20 text-white' : user?.role === 'Administrativo' ? 'badge-purple' : 'badge-cyan'}`}>
+                                    {devMode ? '⚡ DEV MODE' : user?.role === 'Administrativo' ? '👑 ADMIN' : '👨‍🏫 DOCENTE'}
+                                </span>
+                                {devMode && <p className="mt-2 text-white/70 text-xs">Acceso total al sistema</p>}
+                                <div className={`mt-5 rounded-2xl p-4 text-left border-2 ${devMode ? 'bg-white/10 border-white/20' : 'bg-gradient-to-br from-cyan-50 to-purple-50 border-purple-100'}`}>
+                                    <p className={`text-xs font-bold ${devMode ? 'text-white/60' : 'text-gray-400'}`}>📧 Correo</p>
+                                    <p className={`text-base font-bold mt-1 ${devMode ? 'text-white' : 'text-gray-700'}`}>{user?.email}</p>
+                                </div>
+                            </div>
+
+                            {/* Firma editable */}
+                            <div className="card p-5 card-green">
+                                <div className="flex items-center justify-between mb-3">
+                                    <h3 className="text-base font-bold text-gray-800">✍️ Mi firma</h3>
+                                    <button onClick={() => setEditingSig(!editingSig)} className={`px-3 py-1 rounded-lg text-xs font-bold ${editingSig ? 'bg-gray-200 text-gray-600' : 'bg-green-100 text-green-600'}`}>
+                                        {editingSig ? 'Cancelar' : 'Editar'}
+                                    </button>
+                                </div>
+                                {editingSig ? (
+                                    <SignPad onSave={(sig) => { if (sig) { updateSignature(sig); setEditingSig(false); } }} initial={null} />
+                                ) : (
+                                    user?.sig ? (
+                                        <div className="bg-gradient-to-br from-green-50 to-cyan-50 rounded-2xl p-5 border-2 border-green-200">
+                                            <img src={user.sig} alt="Firma" className="h-14 mx-auto" />
+                                        </div>
+                                    ) : (
+                                        <p className="text-gray-400 text-sm text-center py-4">Sin firma registrada</p>
+                                    )
+                                )}
+                            </div>
+
+                            {/* PIN de acceso */}
+                            <div className="card p-5 card-purple">
+                                <div className="flex items-center justify-between mb-3">
+                                    <h3 className="text-base font-bold text-gray-800">🔒 PIN de acceso</h3>
+                                    <button onClick={() => { setEditingPin(!editingPin); setPinInput(''); }} className={`px-3 py-1 rounded-lg text-xs font-bold ${editingPin ? 'bg-gray-200 text-gray-600' : 'bg-purple-100 text-purple-600'}`}>
+                                        {editingPin ? 'Cancelar' : user?.pin ? 'Cambiar' : 'Configurar'}
+                                    </button>
+                                </div>
+                                {editingPin ? (
+                                    <div className="space-y-3">
+                                        <input type="password" inputMode="numeric" maxLength={6} placeholder="Nuevo PIN (4-6 dígitos)" value={pinInput} onChange={e => setPinInput(e.target.value.replace(/\D/g, ''))} className="w-full input-field text-center text-xl tracking-[0.5em] font-black" />
+                                        <div className="flex gap-2">
+                                            {user?.pin && <button onClick={() => { setPinInput(''); updatePin(); }} disabled={syncing} className="flex-1 py-3 bg-red-100 text-red-600 rounded-xl font-bold text-sm">Quitar PIN</button>}
+                                            <button onClick={updatePin} disabled={syncing || !pinInput} className="flex-1 py-3 btn-gradient text-white rounded-xl font-bold text-sm disabled:opacity-50">{syncing ? 'Guardando...' : 'Guardar PIN'}</button>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <div className="text-center py-2">
+                                        {user?.pin ? (
+                                            <div className="inline-flex items-center gap-2 text-purple-600 text-sm font-bold"><I.CheckCircle size={16} /> PIN activo (••••)</div>
+                                        ) : (
+                                            <p className="text-gray-400 text-sm">Sin PIN configurado</p>
+                                        )}
+                                    </div>
+                                )}
+                            </div>
+
+                            <button onClick={logout} className="w-full py-4 bg-red-100 text-red-600 rounded-2xl font-bold flex items-center justify-center gap-2 border-2 border-red-200"><I.LogOut size={20} /> Cerrar sesión</button>
+                            <p className="text-center text-xs text-gray-400 pt-4">Mise en App v7.0<br /><span className="font-bold text-gray-500">Santiago Rainero</span><br /><span className="text-green-500">● Conectado</span>{devMode && <><br /><span className="text-purple-500">⚡ Developer Mode</span></>}</p>
+                        </div>
+                        <Nav current="profile" go={setView} role={devMode ? 'Administrativo' : user?.role} />
+                    </div>
+                );
+            }
+
+            // USERS MANAGEMENT
+            if (view === 'users' && (user?.role === 'Administrativo' || devMode)) return (
+                <div className="min-h-screen pb-28">
+                    <div className="sticky top-0 z-40 bg-white/95 backdrop-blur-sm border-b-2 border-green-100 p-4">
+                        <div className="flex items-center gap-3">
+                            <BackBtn onClick={() => setView('dashboard')} />
+                            <div className="flex-1">
+                                <h1 className="text-xl font-extrabold text-gray-800">👥 Usuarios</h1>
+                                <p className="text-xs text-gray-500">{users.length} registrados</p>
+                            </div>
+                            <button onClick={refresh} disabled={syncing} className="p-2 bg-green-100 rounded-xl">
+                                <I.Refresh size={18} className={`text-green-600 ${syncing ? 'animate-spin' : ''}`} />
+                            </button>
+                        </div>
+                    </div>
+                    <div className="p-4 space-y-3">
+                        {devMode && (
+                            <button onClick={cleanAppData} disabled={syncing} className="w-full card p-4 border-2 border-red-300 bg-red-50 text-left">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-10 h-10 bg-red-500 rounded-xl flex items-center justify-center"><I.Trash size={20} className="text-white" /></div>
+                                    <div className="flex-1">
+                                        <p className="font-bold text-red-600">🧹 Limpiar App</p>
+                                        <p className="text-[10px] text-gray-500">Elimina pedidos, historial y bitácora. Mantiene stock y usuarios.</p>
+                                    </div>
+                                </div>
+                            </button>
+                        )}
+                        {users.length === 0 ? (
+                            <div className="text-center py-16">
+                                <I.Users size={48} className="mx-auto text-gray-200 mb-3" />
+                                <p className="text-gray-400 font-bold">No hay usuarios</p>
+                            </div>
+                        ) : users.map(u => (
+                            <div key={u.id} className={`card p-4 border-2 ${u.role === 'Administrativo' ? 'border-purple-300' : 'border-cyan-300'}`}>
+                                {editingUser === u.id ? (
+                                    <div className="space-y-3">
+                                        <div className="flex items-center justify-between">
+                                            <span className="font-bold text-gray-800 text-sm">✏️ Editando perfil</span>
+                                            <button onClick={() => setEditingUser(null)} className="text-xs text-gray-400 font-bold">Cancelar</button>
+                                        </div>
+                                        <div className="grid grid-cols-2 gap-2">
+                                            <div><label className="text-[10px] font-bold text-gray-400">Nombre</label><input type="text" value={editUserForm.name} onChange={e => setEditUserForm({...editUserForm, name: e.target.value})} className="w-full input-field text-sm font-semibold" /></div>
+                                            <div><label className="text-[10px] font-bold text-gray-400">Apellido</label><input type="text" value={editUserForm.surname} onChange={e => setEditUserForm({...editUserForm, surname: e.target.value})} className="w-full input-field text-sm font-semibold" /></div>
+                                        </div>
+                                        <div className="grid grid-cols-2 gap-2">
+                                            <div><label className="text-[10px] font-bold text-gray-400">Rol</label><select value={editUserForm.role} onChange={e => setEditUserForm({...editUserForm, role: e.target.value})} className="w-full input-field text-sm font-semibold"><option value="Docente">Docente</option><option value="Administrativo">Administrativo</option></select></div>
+                                            <div><label className="text-[10px] font-bold text-gray-400">PIN</label><input type="text" inputMode="numeric" maxLength={6} placeholder="Sin PIN" value={editUserForm.pin} onChange={e => setEditUserForm({...editUserForm, pin: e.target.value.replace(/\D/g, '')})} className="w-full input-field text-sm font-semibold text-center" /></div>
+                                        </div>
+                                        <div>
+                                            <label className="text-[10px] font-bold text-gray-400">📷 Foto de perfil</label>
+                                            <input type="file" accept="image/*" onChange={e => { if (e.target.files[0]) updateProfilePhoto(e.target.files[0], u.id); }} className="w-full text-xs mt-1" />
+                                        </div>
+                                        <button onClick={saveUserEdit} disabled={syncing} className="w-full py-3 btn-gradient text-white rounded-xl font-bold disabled:opacity-50">{syncing ? 'Guardando...' : '💾 Guardar cambios'}</button>
+                                    </div>
+                                ) : (
+                                    <div className="flex items-center gap-3">
+                                        <div className="relative">
+                                            {u.photo ? (
+                                                <img src={u.photo} className="w-12 h-12 rounded-xl object-cover" alt="" />
+                                            ) : (
+                                                <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-white font-bold text-lg ${u.role === 'Administrativo' ? 'bg-purple-500' : 'bg-cyan-500'}`}>
+                                                    {u.name?.[0]}{u.surname?.[0]}
+                                                </div>
+                                            )}
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                            <p className="font-bold text-gray-800 truncate">{u.full_name || `${u.name} ${u.surname}`}</p>
+                                            <p className="text-xs text-gray-500 truncate">{u.email}</p>
+                                            <div className="flex items-center gap-2 mt-1">
+                                                <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${u.role === 'Administrativo' ? 'badge-purple' : 'badge-cyan'}`}>
+                                                    {u.role === 'Administrativo' ? '👑 ADMIN' : '👨‍🏫 DOCENTE'}
+                                                </span>
+                                                {u.pin && <span className="text-[10px] text-purple-400 font-bold">🔒 PIN</span>}
+                                            </div>
+                                        </div>
+                                        <div className="flex flex-col gap-1">
+                                            <button
+                                                onClick={() => { setEditingUser(u.id); setEditUserForm({ name: u.name, surname: u.surname, role: u.role, pin: u.pin || '' }); }}
+                                                className="p-2 bg-cyan-100 rounded-lg text-cyan-600"
+                                            ><I.Edit size={16} /></button>
+                                            <button
+                                                onClick={() => deleteUser(u.id, u.email)}
+                                                disabled={syncing || user?.email === u.email}
+                                                className={`p-2 rounded-lg ${user?.email === u.email ? 'bg-gray-100 text-gray-300' : 'bg-red-100 text-red-500'}`}
+                                            ><I.Trash size={16} /></button>
+                                        </div>
+                                    </div>
+                                )}
+                                {!editingUser && u.signature && (
+                                    <div className="mt-3 pt-3 border-t border-gray-100">
+                                        <p className="text-xs text-gray-400 mb-1">Firma:</p>
+                                        <img src={u.signature} alt="Firma" className="h-8 opacity-60" />
+                                    </div>
+                                )}
+                            </div>
+                        ))}
+                    </div>
+                    <Nav current="dashboard" go={setView} role={user?.role} />
+                </div>
+            );
+
+            // STATS - Solo DEV
+            if (view === 'stats' && devMode) {
+                // Calcular estadísticas
+                const roturas = his.filter(h => h.type === 'out' && (h.reason === 'Rotura' || h.reason === 'Pérdida'));
+                const ingresos = his.filter(h => h.type === 'in');
+                const ingresos2026 = ingresos.filter(h => new Date(h.at).getFullYear() === 2026);
+                const roturas2026 = roturas.filter(h => new Date(h.at).getFullYear() === 2026);
+
+                // Items más pedidos
+                const itemCounts = {};
+                ord.forEach(o => {
+                    o.items?.forEach(i => {
+                        itemCounts[i.name] = (itemCounts[i.name] || 0) + i.q;
+                    });
+                });
+                const topItems = Object.entries(itemCounts).sort((a, b) => b[1] - a[1]).slice(0, 5);
+
+                // Docentes más activos
+                const teacherCounts = {};
+                ord.forEach(o => {
+                    teacherCounts[o.teacher] = (teacherCounts[o.teacher] || 0) + 1;
+                });
+                const topTeachers = Object.entries(teacherCounts).sort((a, b) => b[1] - a[1]).slice(0, 5);
+
+                // Stock crítico
+                const lowStock = inv.filter(i => i.qty <= 3).sort((a, b) => a.qty - b.qty);
+
+                // Pedidos por estado
+                const statusCounts = { 'Solicitado': 0, 'En Curso': 0, 'Devolución Pendiente': 0, 'Finalizado': 0 };
+                ord.forEach(o => { statusCounts[o.status] = (statusCounts[o.status] || 0) + 1; });
+
+                return (
+                    <div className="min-h-screen pb-28">
+                        <div className="sticky top-0 z-40 bg-gradient-to-r from-purple-500 to-cyan-500 p-4">
+                            <div className="flex items-center gap-3">
+                                <BackBtn onClick={() => setView('dashboard')} />
+                                <div className="flex-1">
+                                    <h1 className="text-xl font-extrabold text-white">📊 Estadísticas</h1>
+                                    <p className="text-xs text-white/80">Panel exclusivo DEV</p>
+                                </div>
+                                <button onClick={refresh} disabled={syncing} className="p-2 bg-white/20 rounded-xl">
+                                    <I.Refresh size={18} className={`text-white ${syncing ? 'animate-spin' : ''}`} />
+                                </button>
+                            </div>
+                        </div>
+                        <div className="p-4 space-y-4">
+                            {/* Resumen general */}
+                            <div className="grid grid-cols-2 gap-3">
+                                <div className="card p-4 card-cyan text-center">
+                                    <p className="text-3xl font-black text-cyan-600">{inv.length}</p>
+                                    <p className="text-xs text-gray-500 font-bold">Materiales</p>
+                                </div>
+                                <div className="card p-4 card-green text-center">
+                                    <p className="text-3xl font-black text-green-600">{ord.length}</p>
+                                    <p className="text-xs text-gray-500 font-bold">Pedidos totales</p>
+                                </div>
+                                <div className="card p-4 card-purple text-center">
+                                    <p className="text-3xl font-black text-purple-600">{users.length}</p>
+                                    <p className="text-xs text-gray-500 font-bold">Usuarios</p>
+                                </div>
+                                <div className="card p-4 card-orange text-center">
+                                    <p className="text-3xl font-black text-orange-600">{his.length}</p>
+                                    <p className="text-xs text-gray-500 font-bold">Movimientos</p>
+                                </div>
+                            </div>
+
+                            {/* Estado de pedidos */}
+                            <div className="card p-4 border-2 border-cyan-200">
+                                <h3 className="font-bold text-gray-800 mb-3">📋 Estado de pedidos</h3>
+                                <div className="space-y-2">
+                                    <div className="flex justify-between items-center"><span className="text-sm">🟡 Solicitados</span><span className="font-bold text-yellow-600">{statusCounts['Solicitado']}</span></div>
+                                    <div className="flex justify-between items-center"><span className="text-sm">🔵 En Curso</span><span className="font-bold text-cyan-600">{statusCounts['En Curso']}</span></div>
+                                    <div className="flex justify-between items-center"><span className="text-sm">🟠 Dev. Pendiente</span><span className="font-bold text-orange-600">{statusCounts['Devolución Pendiente']}</span></div>
+                                    <div className="flex justify-between items-center"><span className="text-sm">🟢 Finalizados</span><span className="font-bold text-green-600">{statusCounts['Finalizado']}</span></div>
+                                </div>
+                            </div>
+
+                            {/* Solicitudes de compra */}
+                            <div className="card p-4 border-2 border-orange-200">
+                                <h3 className="font-bold text-gray-800 mb-3">🛒 Solicitudes de compra</h3>
+                                <div className="space-y-2">
+                                    <div className="flex justify-between items-center"><span className="text-sm">⏳ Pendientes</span><span className="font-bold text-orange-600">{ord.filter(o => o.status === 'Pendiente Compra').length}</span></div>
+                                    <div className="flex justify-between items-center"><span className="text-sm">✅ Aprobadas</span><span className="font-bold text-green-600">{ord.filter(o => o.status === 'Compra Aprobada').length}</span></div>
+                                    <div className="flex justify-between items-center"><span className="text-sm">❌ Rechazadas</span><span className="font-bold text-red-500">{ord.filter(o => o.status === 'Compra Rechazada').length}</span></div>
+                                </div>
+                                {ord.filter(o => o.status === 'Pendiente Compra').length > 0 && (
+                                    <button onClick={() => setView('purchases')} className="w-full mt-3 py-2 btn-orange text-white rounded-xl font-bold text-sm">Ver expediente →</button>
+                                )}
+                            </div>
+
+                            {/* 2026 */}
+                            <div className="card p-4 border-2 border-purple-200">
+                                <h3 className="font-bold text-gray-800 mb-3">📅 En 2026</h3>
+                                <div className="grid grid-cols-2 gap-3">
+                                    <div className="bg-green-50 p-3 rounded-xl text-center">
+                                        <p className="text-2xl font-black text-green-600">+{ingresos2026.reduce((s, h) => s + h.amt, 0)}</p>
+                                        <p className="text-xs text-gray-500">Ingresos</p>
+                                    </div>
+                                    <div className="bg-red-50 p-3 rounded-xl text-center">
+                                        <p className="text-2xl font-black text-red-600">-{roturas2026.reduce((s, h) => s + h.amt, 0)}</p>
+                                        <p className="text-xs text-gray-500">Roturas/Pérdidas</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Stock crítico */}
+                            <div className="card p-4 border-2 border-red-200">
+                                <h3 className="font-bold text-gray-800 mb-3">⚠️ Stock crítico (≤3)</h3>
+                                {lowStock.length === 0 ? (
+                                    <p className="text-sm text-green-600 font-semibold">✅ Todo el stock está bien</p>
+                                ) : (
+                                    <div className="space-y-2">
+                                        {lowStock.slice(0, 5).map(i => (
+                                            <div key={i.id} className="flex justify-between items-center">
+                                                <span className="text-sm truncate flex-1">{i.name}</span>
+                                                <span className={`font-bold ${i.qty === 0 ? 'text-red-600' : 'text-orange-500'}`}>{i.qty}</span>
+                                            </div>
+                                        ))}
+                                        {lowStock.length > 5 && <p className="text-xs text-gray-400">+{lowStock.length - 5} más</p>}
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Top items */}
+                            <div className="card p-4 border-2 border-cyan-200">
+                                <h3 className="font-bold text-gray-800 mb-3">🏆 Más pedidos</h3>
+                                {topItems.length === 0 ? (
+                                    <p className="text-sm text-gray-400">Sin datos</p>
+                                ) : (
+                                    <div className="space-y-2">
+                                        {topItems.map(([name, count], i) => (
+                                            <div key={name} className="flex items-center gap-2">
+                                                <span className={`w-6 h-6 rounded-full flex items-center justify-center text-white text-xs font-bold ${i === 0 ? 'bg-yellow-500' : i === 1 ? 'bg-gray-400' : i === 2 ? 'bg-orange-400' : 'bg-gray-300'}`}>{i + 1}</span>
+                                                <span className="text-sm truncate flex-1">{name}</span>
+                                                <span className="font-bold text-cyan-600">{count}</span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Top docentes */}
+                            <div className="card p-4 border-2 border-green-200">
+                                <h3 className="font-bold text-gray-800 mb-3">👨‍🏫 Docentes más activos</h3>
+                                {topTeachers.length === 0 ? (
+                                    <p className="text-sm text-gray-400">Sin datos</p>
+                                ) : (
+                                    <div className="space-y-2">
+                                        {topTeachers.map(([name, count], i) => (
+                                            <div key={name} className="flex items-center gap-2">
+                                                <span className={`w-6 h-6 rounded-full flex items-center justify-center text-white text-xs font-bold ${i === 0 ? 'bg-green-500' : 'bg-gray-300'}`}>{i + 1}</span>
+                                                <span className="text-sm truncate flex-1">{name}</span>
+                                                <span className="font-bold text-green-600">{count} pedidos</span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Roturas recientes */}
+                            <div className="card p-4 border-2 border-orange-200">
+                                <h3 className="font-bold text-gray-800 mb-3">🔧 Roturas/Pérdidas recientes</h3>
+                                {roturas.length === 0 ? (
+                                    <p className="text-sm text-green-600 font-semibold">✅ Sin incidentes</p>
+                                ) : (
+                                    <div className="space-y-2">
+                                        {roturas.slice(0, 5).map(h => (
+                                            <div key={h.id} className="flex items-center gap-2 text-sm">
+                                                <span className="badge-red px-2 py-0.5 rounded text-xs">{h.reason}</span>
+                                                <span className="truncate flex-1">{h.name}</span>
+                                                <span className="text-red-600 font-bold">-{h.amt}</span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                        <Nav current="dashboard" go={setView} role="Administrativo" />
+                    </div>
+                );
+            }
+
+            // PURCHASE REQUEST - Docentes solicitan material nuevo
+            if (view === 'purchase') {
+                const addPurchaseItem = () => {
+                    if (!newPurchaseItem.name.trim()) return alert('Ingresá el nombre del material');
+                    if (newPurchaseItem.qty < 1) return alert('Cantidad mínima: 1');
+                    if (!newPurchaseItem.purpose.trim()) return alert('Ingresá el propósito');
+                    if (!selectedCourse) return alert('Seleccioná un curso');
+                    setPurchaseItems([...purchaseItems, { ...newPurchaseItem, id: Date.now(), course: selectedCourse }]);
+                    setNewPurchaseItem({ name: '', qty: 1, purpose: '' });
+                };
+
+                const removePurchaseItem = (id) => {
+                    setPurchaseItems(purchaseItems.filter(i => i.id !== id));
+                };
+
+                const submitPurchase = async () => {
+                    // Crear justificación automática con los datos estructurados
+                    const justification = purchaseItems.map(i => `${i.name} (x${i.qty}) - Curso: ${i.course} - Propósito: ${i.purpose}`).join('\n');
+                    const ok = await sendPurchaseRequest(purchaseItems, justification);
+                    if (ok) {
+                        setPurchaseItems([]);
+                        setSelectedCourse('');
+                        setView('dashboard');
+                    }
+                };
+
+                return (
+                    <div className="min-h-screen pb-32">
+                        <div className="sticky top-0 z-40 bg-white/95 backdrop-blur-sm border-b-2 border-orange-100 p-4">
+                            <div className="flex items-center gap-3">
+                                <BackBtn onClick={() => setView('dashboard')} />
+                                <h1 className="text-xl font-extrabold text-gray-800">🛒 Solicitar Compra</h1>
+                            </div>
+                        </div>
+                        <div className="p-4 space-y-4">
+                            <div className="card p-4 card-orange">
+                                <p className="text-sm text-gray-600">💡 Solicitá material <strong>nuevo</strong> que no existe en el inventario. Estas solicitudes van al expediente de compras de fin de año.</p>
+                            </div>
+
+                            {/* Info del docente */}
+                            <div className="card p-4 border-2 border-cyan-200">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-12 h-12 bg-cyan-500 rounded-xl flex items-center justify-center text-white font-bold text-lg">{user?.name?.[0]}{user?.surname?.[0]}</div>
+                                    <div>
+                                        <p className="text-xs text-gray-400 font-semibold">👨‍🏫 Docente solicitante</p>
+                                        <p className="font-bold text-gray-800">{user?.fullName}</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Formulario agregar item */}
+                            <div className="card p-4 border-2 border-orange-200">
+                                <h3 className="font-bold text-gray-800 mb-3">📦 Agregar material</h3>
+                                <div className="space-y-3">
+                                    <div>
+                                        <label className="text-xs text-gray-500 font-bold mb-1 block">🎓 Curso</label>
+                                        <select value={selectedCourse} onChange={e => setSelectedCourse(e.target.value)} className="w-full input-field font-semibold">
+                                            <option value="">Seleccionar curso...</option>
+                                            {crs.map(c => <option key={c}>{c}</option>)}
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label className="text-xs text-gray-500 font-bold mb-1 block">📦 Material</label>
+                                        <input type="text" placeholder="Nombre del material (ej: Espátula de silicona)" value={newPurchaseItem.name} onChange={e => setNewPurchaseItem({ ...newPurchaseItem, name: e.target.value })} className="w-full input-field font-semibold" />
+                                    </div>
+                                    <div className="grid grid-cols-3 gap-2">
+                                        <div>
+                                            <label className="text-xs text-gray-500 font-bold mb-1 block">🔢 Cantidad</label>
+                                            <input type="number" min="1" value={newPurchaseItem.qty} onChange={e => setNewPurchaseItem({ ...newPurchaseItem, qty: parseInt(e.target.value) || 1 })} className="w-full input-field font-semibold text-center" />
+                                        </div>
+                                        <div className="col-span-2">
+                                            <label className="text-xs text-gray-500 font-bold mb-1 block">🎯 Propósito</label>
+                                            <input type="text" placeholder="¿Para qué?" value={newPurchaseItem.purpose} onChange={e => setNewPurchaseItem({ ...newPurchaseItem, purpose: e.target.value })} className="w-full input-field font-semibold" />
+                                        </div>
+                                    </div>
+                                    <button onClick={addPurchaseItem} className="w-full py-3 btn-orange text-white rounded-xl font-bold">+ Agregar a la solicitud</button>
+                                </div>
+                            </div>
+
+                            {/* Tabla de solicitud */}
+                            {purchaseItems.length > 0 && (
+                                <div className="card p-4 border-2 border-green-200">
+                                    <h3 className="font-bold text-gray-800 mb-3">📋 Mi solicitud ({purchaseItems.length} items)</h3>
+                                    <div className="overflow-x-auto">
+                                        <table className="w-full text-sm">
+                                            <thead>
+                                                <tr className="bg-green-50 text-left">
+                                                    <th className="px-2 py-2 rounded-l-lg font-bold text-gray-600">Material</th>
+                                                    <th className="px-2 py-2 font-bold text-gray-600 text-center">Cant.</th>
+                                                    <th className="px-2 py-2 font-bold text-gray-600">Curso</th>
+                                                    <th className="px-2 py-2 font-bold text-gray-600">Propósito</th>
+                                                    <th className="px-2 py-2 rounded-r-lg"></th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {purchaseItems.map(i => (
+                                                    <tr key={i.id} className="border-b border-gray-100 last:border-0">
+                                                        <td className="px-2 py-3 font-semibold text-gray-800">{i.name}</td>
+                                                        <td className="px-2 py-3 text-center"><span className="badge-cyan px-2 py-1 rounded-full font-bold">{i.qty}</span></td>
+                                                        <td className="px-2 py-3 text-gray-600 text-xs">{i.course}</td>
+                                                        <td className="px-2 py-3 text-gray-500 text-xs italic">{i.purpose}</td>
+                                                        <td className="px-2 py-3"><button onClick={() => removePurchaseItem(i.id)} className="p-1.5 bg-red-100 rounded-lg text-red-500"><I.Trash size={14} /></button></td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Botón enviar */}
+                        {purchaseItems.length > 0 && (
+                            <div className="fixed bottom-20 inset-x-0 p-4 bg-gradient-to-t from-white via-white">
+                                <button onClick={submitPurchase} disabled={syncing} className="w-full py-4 btn-gradient text-white rounded-2xl font-bold flex items-center justify-center gap-2 shadow-xl disabled:opacity-50">
+                                    {syncing ? <><div className="loader w-5 h-5 border-2 animate-spin"></div> Enviando...</> : <>Enviar Solicitud <I.ArrowRight size={20} /></>}
+                                </button>
+                            </div>
+                        )}
+                        <Nav current="dashboard" go={setView} role={user?.role} />
+                    </div>
+                );
+            }
+
+            // PURCHASES - Expediente de compras (Admin/Dev)
+            if (view === 'purchases' && (user?.role === 'Administrativo' || devMode)) {
+
+                // Incluir 'Pendiente Compra' (sistema) y solicitudes manuales ('🛒' en career y status Solicitado)
+                const purchaseOrders = ord.filter(o =>
+                    o.status === 'Pendiente Compra' ||
+                    o.status === 'Compra Aprobada' ||
+                    o.status === 'Compra Rechazada' ||
+                    (o.career && (o.career.includes('COMPRA') || o.career.startsWith('🛒')))
+                );
+
+                const pending = purchaseOrders.filter(o => o.status === 'Pendiente Compra' || ((o.status === 'Solicitado' || !o.status) && (o.career?.includes('COMPRA') || o.career?.startsWith('🛒'))));
+                const approved = purchaseOrders.filter(o => o.status === 'Compra Aprobada');
+                const rejected = purchaseOrders.filter(o => o.status === 'Compra Rechazada');
+
+                const downloadExpediente = () => {
+                    const year = new Date().getFullYear();
+                    const today = new Date().toLocaleDateString('es-AR', { day: '2-digit', month: 'long', year: 'numeric' });
+
+                    // Consolidar todos los items aprobados
+                    const allApprovedItems = {};
+                    approved.forEach(o => {
+                        (o.items || []).forEach(i => {
+                            const key = i.name?.toLowerCase().trim();
+                            if (key) {
+                                if (allApprovedItems[key]) allApprovedItems[key].qty += (i.q || 0);
+                                else allApprovedItems[key] = { name: i.name, qty: i.q || 0 };
+                            }
+                        });
+                    });
+                    const consolidatedItems = Object.values(allApprovedItems).sort((a, b) => a.name.localeCompare(b.name, 'es'));
+
+                    const html = `<!DOCTYPE html>
+<html lang="es">
+<head><meta charset="UTF-8"><title>Expediente de Compras ${year} - Santiago Rainero</title>
+<style>
+@media print { body { margin: 1.5cm 2cm; } .no-print { display: none !important; } }
+body { font-family: 'Times New Roman', serif; font-size: 12pt; line-height: 1.6; color: #000; max-width: 21cm; margin: 2cm auto; padding: 0 2cm; }
+h1 { text-align: center; font-size: 16pt; border-bottom: 2px solid #000; padding-bottom: 10px; margin-bottom: 5px; }
+h2 { font-size: 13pt; margin-top: 25px; border-bottom: 1px solid #666; padding-bottom: 5px; }
+.header { text-align: center; margin-bottom: 30px; }
+.header p { margin: 2px 0; font-size: 11pt; }
+table { width: 100%; border-collapse: collapse; margin: 15px 0; }
+th, td { border: 1px solid #333; padding: 8px 12px; text-align: left; font-size: 11pt; }
+th { background: #f0f0f0; font-weight: bold; }
+.right { text-align: right; }
+.center { text-align: center; }
+.summary { background: #f9f9f9; padding: 15px; border: 1px solid #ddd; margin: 20px 0; }
+.signatures { margin-top: 60px; display: flex; justify-content: space-between; }
+.sig-block { text-align: center; width: 40%; }
+.sig-line { border-top: 1px solid #000; margin-top: 60px; padding-top: 5px; font-size: 10pt; }
+.btn-print { position: fixed; top: 20px; right: 20px; padding: 12px 24px; background: #7c3aed; color: white; border: none; border-radius: 8px; font-size: 14px; cursor: pointer; font-weight: bold; }
+.btn-print:hover { background: #6d28d9; }
+.detail-section { margin: 10px 0; padding: 10px; border-left: 3px solid #ddd; }
+</style></head>
+<body>
+<button class="btn-print no-print" onclick="window.print()">🖨️ Imprimir / Guardar PDF</button>
+<div class="header">
+<p><strong>MUNICIPALIDAD DE VICENTE LÓPEZ</strong></p>
+<p>Secretaría de Educación y Empleo</p>
+<p><strong>Centro Municipal de Capacitación Laboral Santiago Rainero</strong></p>
+</div>
+<h1>EXPEDIENTE DE SOLICITUD DE COMPRAS</h1>
+<p class="center"><strong>Ciclo Lectivo ${year}</strong></p>
+<p>Fecha de emisión: ${today}</p>
+
+<div class="summary">
+<p><strong>Resumen:</strong></p>
+<p>Total de solicitudes: <strong>${purchaseOrders.length}</strong> | Aprobadas: <strong>${approved.length}</strong> | Pendientes: <strong>${pending.length}</strong> | Rechazadas: <strong>${rejected.length}</strong></p>
+</div>
+
+${consolidatedItems.length > 0 ? `
+<h2>LISTADO CONSOLIDADO DE MATERIALES APROBADOS</h2>
+<table>
+<thead><tr><th>N°</th><th>Material</th><th class="center">Cantidad</th></tr></thead>
+<tbody>
+${consolidatedItems.map((item, idx) => `<tr><td class="center">${idx + 1}</td><td>${item.name}</td><td class="center">${item.qty}</td></tr>`).join('')}
+</tbody>
+</table>` : '<p><em>No hay materiales aprobados para compra.</em></p>'}
+
+<h2>DETALLE DE SOLICITUDES APROBADAS</h2>
+${approved.length > 0 ? approved.map((o, idx) => `
+<div class="detail-section">
+<p><strong>${idx + 1}. ${o.teacher}</strong> — ${o.date ? new Date(o.date).toLocaleDateString('es-AR') : 'S/F'}</p>
+<table>
+<thead><tr><th>Material</th><th class="center">Cantidad</th></tr></thead>
+<tbody>${(o.items || []).map(i => `<tr><td>${i.name}</td><td class="center">${i.q}</td></tr>`).join('')}</tbody>
+</table>
+${o.obs ? `<p><em>Justificación: ${o.obs.replace('📦 SOLICITUD DE COMPRA\n', '')}</em></p>` : ''}
+</div>`).join('') : '<p><em>Sin solicitudes aprobadas.</em></p>'}
+
+${pending.length > 0 ? `
+<h2>SOLICITUDES PENDIENTES DE APROBACIÓN</h2>
+${pending.map((o, idx) => `
+<div class="detail-section">
+<p><strong>${idx + 1}. ${o.teacher}</strong> — ${o.date ? new Date(o.date).toLocaleDateString('es-AR') : 'S/F'}</p>
+<table>
+<thead><tr><th>Material</th><th class="center">Cantidad</th></tr></thead>
+<tbody>${(o.items || []).map(i => `<tr><td>${i.name}</td><td class="center">${i.q}</td></tr>`).join('')}</tbody>
+</table>
+${o.obs ? `<p><em>Justificación: ${o.obs.replace('📦 SOLICITUD DE COMPRA\n', '')}</em></p>` : ''}
+</div>`).join('')}` : ''}
+
+<div class="signatures">
+<div class="sig-block"><div class="sig-line">Responsable de Pañol<br/>Santiago Rainero</div></div>
+<div class="sig-block"><div class="sig-line">Dirección<br/>CMCL Santiago Rainero</div></div>
+</div>
+</body></html>`;
+
+                    const blob = new Blob([html], { type: 'text/html' });
+                    const url = URL.createObjectURL(blob);
+                    window.open(url, '_blank');
+                };
+
+                return (
+                    <div className="min-h-screen pb-28">
+                        <div className="sticky top-0 z-40 bg-white/95 backdrop-blur-sm border-b-2 border-orange-100 p-4">
+                            <div className="flex items-center gap-3">
+                                <BackBtn onClick={() => setView('dashboard')} />
+                                <div className="flex-1">
+                                    <h1 className="text-xl font-extrabold text-gray-800">📋 Expediente Compras</h1>
+                                    <p className="text-xs text-gray-500">{purchaseOrders.length} solicitudes</p>
+                                </div>
+                                <button onClick={refresh} disabled={syncing} className="p-2 bg-orange-100 rounded-xl">
+                                    <I.Refresh size={18} className={`text-orange-600 ${syncing ? 'animate-spin' : ''}`} />
+                                </button>
+                                <button onClick={downloadExpediente} className="p-2 bg-purple-100 rounded-xl">
+                                    <I.Download size={18} className="text-purple-600" />
+                                </button>
+                            </div>
+                        </div>
+                        <div className="p-4 space-y-4">
+                            {/* Resumen */}
+                            <div className="grid grid-cols-3 gap-3">
+                                <div className="card p-3 card-orange text-center">
+                                    <p className="text-2xl font-black text-orange-600">{pending.length}</p>
+                                    <p className="text-[10px] text-gray-500 font-bold">Pendientes</p>
+                                </div>
+                                <div className="card p-3 card-green text-center">
+                                    <p className="text-2xl font-black text-green-600">{approved.length}</p>
+                                    <p className="text-[10px] text-gray-500 font-bold">Aprobadas</p>
+                                </div>
+                                <div className="card p-3 card-red text-center">
+                                    <p className="text-2xl font-black text-red-500">{rejected.length}</p>
+                                    <p className="text-[10px] text-gray-500 font-bold">Rechazadas</p>
+                                </div>
+                            </div>
+
+                            {purchaseOrders.length === 0 ? (
+                                <div className="text-center py-16">
+                                    <I.FileText size={48} className="mx-auto text-gray-200 mb-3" />
+                                    <p className="text-gray-400 font-bold">Sin solicitudes</p>
+                                </div>
+                            ) : (
+                                <>
+                                    {/* Pendientes */}
+                                    {pending.length > 0 && (
+                                        <div>
+                                            <h3 className="font-bold text-orange-600 mb-2">⏳ Pendientes de aprobación</h3>
+                                            <div className="space-y-3">
+                                                {pending.map(o => (
+                                                    <div key={o.id} className="card p-4 border-2 border-orange-300">
+                                                        <div className="flex items-start gap-3">
+                                                            <div className="w-10 h-10 bg-orange-100 rounded-xl flex items-center justify-center text-orange-600 font-bold text-sm">
+                                                                {o.teacher?.split(' ').map(n => n[0]).join('').slice(0, 2)}
+                                                            </div>
+                                                            <div className="flex-1">
+                                                                <p className="font-bold text-gray-800">{o.teacher}</p>
+                                                                <p className="text-xs text-gray-400">{new Date(o.date).toLocaleDateString('es-AR')}</p>
+                                                            </div>
+                                                        </div>
+                                                        <div className="mt-3 space-y-1">
+                                                            {o.items?.map((i, idx) => (
+                                                                <div key={idx} className="flex justify-between text-sm">
+                                                                    <span className="text-gray-600">{i.name}</span>
+                                                                    <span className="font-bold text-orange-600">x{i.q}</span>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                        {o.obs && (
+                                                            <div className="mt-3 p-3 bg-orange-50 rounded-xl">
+                                                                <p className="text-xs text-gray-500 font-bold mb-1">Justificación:</p>
+                                                                <p className="text-sm text-gray-700">{o.obs}</p>
+                                                            </div>
+                                                        )}
+                                                        <div className="mt-4 grid grid-cols-2 gap-2">
+                                                            <button onClick={() => updatePurchaseStatus(o.id, 'Compra Aprobada')} disabled={syncing} className="py-2 btn-green text-white rounded-xl font-bold text-sm disabled:opacity-50">✓ Aprobar</button>
+                                                            <button onClick={() => updatePurchaseStatus(o.id, 'Compra Rechazada')} disabled={syncing} className="py-2 bg-red-100 text-red-600 rounded-xl font-bold text-sm disabled:opacity-50">✗ Rechazar</button>
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* Aprobadas */}
+                                    {approved.length > 0 && (
+                                        <div>
+                                            <h3 className="font-bold text-green-600 mb-2">✓ Aprobadas para compra</h3>
+                                            <div className="space-y-3">
+                                                {approved.map(o => (
+                                                    <div key={o.id} className="card p-4 border-2 border-green-300">
+                                                        <div className="flex items-center gap-2 mb-2">
+                                                            <span className="badge-green px-2 py-1 rounded text-xs font-bold">APROBADA</span>
+                                                            <span className="text-xs text-gray-400">{o.teacher}</span>
+                                                        </div>
+                                                        <div className="space-y-1">
+                                                            {o.items?.map((i, idx) => (
+                                                                <div key={idx} className="flex justify-between text-sm">
+                                                                    <span className="text-gray-600">{i.name}</span>
+                                                                    <span className="font-bold text-green-600">x{i.q}</span>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* Rechazadas */}
+                                    {rejected.length > 0 && (
+                                        <div>
+                                            <h3 className="font-bold text-red-500 mb-2">✗ Rechazadas</h3>
+                                            <div className="space-y-3">
+                                                {rejected.map(o => (
+                                                    <div key={o.id} className="card p-4 border-2 border-red-200 opacity-60">
+                                                        <div className="flex items-center gap-2 mb-2">
+                                                            <span className="badge-red px-2 py-1 rounded text-xs font-bold">RECHAZADA</span>
+                                                            <span className="text-xs text-gray-400">{o.teacher}</span>
+                                                        </div>
+                                                        <div className="space-y-1">
+                                                            {o.items?.map((i, idx) => (
+                                                                <div key={idx} className="flex justify-between text-sm line-through">
+                                                                    <span className="text-gray-400">{i.name}</span>
+                                                                    <span className="text-gray-400">x{i.q}</span>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+
+                                </>
+                            )}
+
+
+                        </div>
+                        <Nav current="dashboard" go={setView} role={user?.role} />
+                    </div>
+                );
+            }
+
+            return null;
+        };
+
+        ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+    </script>
+
+    <!-- Service Worker DESACTIVADO para evitar problemas en iOS/Safari -->
+    <script>
+        // DESREGISTRAR cualquier Service Worker existente
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.getRegistrations().then(registrations => {
+                registrations.forEach(registration => {
+                    registration.unregister();
+                    console.log('SW desregistrado:', registration.scope);
+                });
+            });
+            // Limpiar caches
+            if ('caches' in window) {
+                caches.keys().then(names => {
+                    names.forEach(name => caches.delete(name));
+                });
+                console.log('Caches limpiados');
+            }
+        }
+
+        /* REGISTRO DE SW COMENTADO - Funcionalidad offline desactivada
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js')
+                    .then(reg => console.log('SW registrado:', reg.scope))
+                    .catch(err => console.log('SW error:', err));
+            });
+        }
+        */
+
+        // Install prompt (PWA install sigue disponible)
+        let deferredPrompt;
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            console.log('PWA install disponible');
+        });
+    </script>
+</body>
+
+</html>
