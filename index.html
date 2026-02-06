@@ -315,17 +315,19 @@
             FileText: (p) => <Icon {...p}><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z" /><polyline points="14 2 14 8 20 8" /><line x1="16" x2="8" y1="13" y2="13" /><line x1="16" x2="8" y1="17" y2="17" /><line x1="10" x2="8" y1="9" y2="9" /></Icon>,
         };
 
-        const CATEGORIAS = ["Utensilios", "Batería", "Cuchillería", "Pastelería", "Maquinaria", "Equipamiento"];
+        const CATEGORIAS = ["Utensilios", "Batería", "Cubertería", "Pastelería", "Maquinaria", "Equipamiento", "Vajilla"];
         const MOTIVOS = { in: ["Compra", "Donación", "Reposición", "Devolución", "Otro"], out: ["Rotura", "Pérdida", "Desgaste", "Préstamo", "Baja", "Otro"] };
 
         const catStyle = (c) => {
             const s = c?.toLowerCase() || '';
-            if (s.includes('maquinaria')) return { bg: 'bg-orange-100', tx: 'text-orange-600', border: 'border-orange-300' };
-            if (s.includes('cuchillería')) return { bg: 'bg-red-100', tx: 'text-red-600', border: 'border-red-300' };
-            if (s.includes('pastelería')) return { bg: 'bg-pink-100', tx: 'text-pink-600', border: 'border-pink-300' };
-            if (s.includes('batería')) return { bg: 'bg-cyan-100', tx: 'text-cyan-600', border: 'border-cyan-300' };
-            if (s.includes('equipamiento')) return { bg: 'bg-purple-100', tx: 'text-purple-600', border: 'border-purple-300' };
-            return { bg: 'bg-green-100', tx: 'text-green-600', border: 'border-green-300' };
+            if (s.includes('maquinaria')) return { bg: 'bg-orange-100', tx: 'text-orange-600', border: 'border-orange-300', icon: '⚙️' };
+            if (s.includes('cubertería')) return { bg: 'bg-red-100', tx: 'text-red-600', border: 'border-red-300', icon: '🍴' };
+            if (s.includes('cuchillería')) return { bg: 'bg-red-100', tx: 'text-red-600', border: 'border-red-300', icon: '🍴' };
+            if (s.includes('pastelería')) return { bg: 'bg-pink-100', tx: 'text-pink-600', border: 'border-pink-300', icon: '🎂' };
+            if (s.includes('batería')) return { bg: 'bg-cyan-100', tx: 'text-cyan-600', border: 'border-cyan-300', icon: '🍳' };
+            if (s.includes('equipamiento')) return { bg: 'bg-purple-100', tx: 'text-purple-600', border: 'border-purple-300', icon: '🔧' };
+            if (s.includes('vajilla')) return { bg: 'bg-amber-100', tx: 'text-amber-600', border: 'border-amber-300', icon: '🍽️' };
+            return { bg: 'bg-green-100', tx: 'text-green-600', border: 'border-green-300', icon: '🥄' };
         };
 
         // COMPONENTS
@@ -729,12 +731,13 @@
                 if (!confirm('¿Eliminar este pedido permanentemente?')) return;
                 setSyncing(true);
                 try {
-                    // Primero eliminar order_items (por el ON DELETE CASCADE debería ser automático, pero por las dudas)
-                    await supabase.from('order_items').delete().eq('order_id', orderId);
-                    // Luego eliminar el pedido
-                    await supabase.from('orders').delete().eq('id', orderId);
+                    const { error: e1 } = await supabase.from('order_items').delete().eq('order_id', orderId);
+                    if (e1) throw e1;
+                    const { error: e2 } = await supabase.from('orders').delete().eq('id', orderId);
+                    if (e2) throw e2;
                     await loadData();
-                } catch (e) { alert('Error: ' + (e.message || 'No se pudo eliminar')); }
+                    alert('✅ Pedido eliminado');
+                } catch (e) { alert('Error al eliminar: ' + (e.message || JSON.stringify(e))); }
                 setSyncing(false);
             };
 
@@ -1076,7 +1079,7 @@
                     return (
                         <div className={`card p-4 border-2 ${st.border}`}>
                             <div className="flex items-center gap-3">
-                                <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${st.bg} ${st.tx}`}><I.Package size={22} /></div>
+                                <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${st.bg}`}><span className="text-xl">{st.icon}</span></div>
                                 <div className="flex-1 min-w-0">
                                     <p className="font-bold text-gray-800 truncate">{item.name}</p>
                                     <div className="flex items-center gap-2 mt-1">
@@ -1184,7 +1187,7 @@
                                     const st = catStyle(i.cat);
                                     return (
                                         <div key={i.id} className={`card p-3 flex items-center gap-2 border-2 ${st.border}`}>
-                                            <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${st.bg} ${st.tx} flex-shrink-0`}><I.Package size={18} /></div>
+                                            <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${st.bg} flex-shrink-0`}><span className="text-lg">{st.icon}</span></div>
                                             <div className="flex-1 min-w-0"><p className="text-sm font-bold text-gray-700 truncate">{i.name}</p><p className="text-xs text-green-600 font-bold">Stock: {i.qty}</p></div>
                                             <button onClick={() => addCart(i, 1)} className="px-3 py-2 rounded-xl bg-cyan-500 text-white font-bold text-xs shadow-lg flex-shrink-0">+ Agregar</button>
                                         </div>
