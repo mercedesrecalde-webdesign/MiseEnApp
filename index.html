@@ -312,6 +312,7 @@
             BarChart: (p) => <Icon {...p}><line x1="12" x2="12" y1="20" y2="10" /><line x1="18" x2="18" y1="20" y2="4" /><line x1="6" x2="6" y1="20" y2="16" /></Icon>,
             Code: (p) => <Icon {...p}><polyline points="16 18 22 12 16 6" /><polyline points="8 6 2 12 8 18" /></Icon>,
             ShoppingCart: (p) => <Icon {...p}><circle cx="8" cy="21" r="1" /><circle cx="19" cy="21" r="1" /><path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12" /></Icon>,
+            Download: (p) => <Icon {...p}><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" x2="12" y1="15" y2="3" /></Icon>,
             FileText: (p) => <Icon {...p}><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z" /><polyline points="14 2 14 8 20 8" /><line x1="16" x2="8" y1="13" y2="13" /><line x1="16" x2="8" y1="17" y2="17" /><line x1="10" x2="8" y1="9" y2="9" /></Icon>,
         };
 
@@ -473,11 +474,15 @@
             const [crs, setCrs] = useState([]);
             const [his, setHis] = useState([]);
             const [users, setUsers] = useState([]);
-            const [form, setForm] = useState({ name: '', surname: '', email: '', sig: null });
+            const [form, setForm] = useState({ name: '', surname: '', email: '', sig: null, pin: '' });
             const [loginEmail, setLoginEmail] = useState('');
             const [loginMode, setLoginMode] = useState('check');
             const [devMode, setDevMode] = useState(false);
             const [editingSig, setEditingSig] = useState(false);
+            const [editingPin, setEditingPin] = useState(false);
+            const [pinInput, setPinInput] = useState('');
+            const [loginPin, setLoginPin] = useState('');
+            const [pendingUser, setPendingUser] = useState(null);
             const [cart, setCart] = useState([]);
             const [meta, setMeta] = useState({ career: '', date: new Date().toISOString().split('T')[0], time: '08:00' });
             const [search, setSearch] = useState('');
@@ -567,23 +572,28 @@
                 const fullEmail = email.includes('@') ? email : email + '@mvl.edu.ar';
                 if (!fullEmail.endsWith('@mvl.edu.ar')) return alert('Usa tu correo @mvl.edu.ar');
 
-                console.log('Buscando:', fullEmail, '| Dev:', isDevAccess);
-
                 setSyncing(true);
                 try {
                     const { data: existing, error } = await supabase.from('users').select('*').eq('email', fullEmail).maybeSingle();
 
                     if (existing) {
-                        // Usuario encontrado - login directo
-                        const u = { ...existing, fullName: existing.full_name, sig: existing.signature };
-                        setUser(u);
-                        setDevMode(isDevAccess);
-                        localStorage.setItem('mise_user', JSON.stringify(u));
-                        localStorage.setItem('mise_dev', isDevAccess ? 'true' : 'false');
-                        setSyncing(false);
-                        setView('dashboard');
+                        if (existing.pin) {
+                            // Tiene PIN → pedir verificación
+                            setPendingUser({ ...existing, fullName: existing.full_name, sig: existing.signature });
+                            setDevMode(isDevAccess);
+                            setSyncing(false);
+                            setLoginMode('pin');
+                        } else {
+                            // Sin PIN → login directo
+                            const u = { ...existing, fullName: existing.full_name, sig: existing.signature };
+                            setUser(u);
+                            setDevMode(isDevAccess);
+                            localStorage.setItem('mise_user', JSON.stringify(u));
+                            localStorage.setItem('mise_dev', isDevAccess ? 'true' : 'false');
+                            setSyncing(false);
+                            setView('dashboard');
+                        }
                     } else {
-                        // Usuario nuevo - ir a registro
                         setForm({ ...form, email: fullEmail });
                         setDevMode(isDevAccess);
                         setSyncing(false);
@@ -591,7 +601,6 @@
                     }
                 } catch (e) {
                     console.error('Error verificando email:', e);
-                    // Error de conexión - permitir registro igual
                     setForm({ ...form, email: fullEmail });
                     setDevMode(isDevAccess);
                     setSyncing(false);
@@ -599,17 +608,35 @@
                 }
             };
 
+            const verifyPin = () => {
+                if (!pendingUser) return;
+                if (loginPin === pendingUser.pin) {
+                    setUser(pendingUser);
+                    localStorage.setItem('mise_user', JSON.stringify(pendingUser));
+                    localStorage.setItem('mise_dev', devMode ? 'true' : 'false');
+                    setPendingUser(null);
+                    setLoginPin('');
+                    setView('dashboard');
+                } else {
+                    alert('❌ PIN incorrecto');
+                    setLoginPin('');
+                }
+            };
+
             // AUTH - Registro
             const register = async () => {
                 if (!form.name || !form.surname) return alert('Completa nombre y apellido');
                 if (!form.sig) return alert('La firma es obligatoria');
+                if (form.pin && form.pin.length < 4) return alert('El PIN debe tener al menos 4 dígitos');
 
                 setSyncing(true);
                 try {
-                    const { data, error } = await supabase.from('users').insert([{
+                    const insertData = {
                         email: form.email, name: form.name, surname: form.surname,
                         full_name: `${form.name} ${form.surname}`, role: selectedRole, signature: form.sig
-                    }]).select().single();
+                    };
+                    if (form.pin) insertData.pin = form.pin;
+                    const { data, error } = await supabase.from('users').insert([insertData]).select().single();
 
                     if (error) throw error;
                     const u = { ...data, fullName: data.full_name, sig: data.signature };
@@ -626,7 +653,7 @@
                     localStorage.removeItem('mise_user');
                     localStorage.removeItem('mise_dev');
                     setUser(null); setSelectedRole(null); setDevMode(false);
-                    setForm({ name: '', surname: '', email: '', sig: null });
+                    setForm({ name: '', surname: '', email: '', sig: null, pin: '' });
                     setLoginEmail(''); setLoginMode('check');
                     setView('splash');
                 }
@@ -895,6 +922,23 @@
                 setSyncing(false);
             };
 
+            const updatePin = async () => {
+                if (pinInput && pinInput.length < 4) return alert('El PIN debe tener al menos 4 dígitos');
+                setSyncing(true);
+                try {
+                    const newPin = pinInput || null;
+                    const { error } = await supabase.from('users').update({ pin: newPin }).eq('id', user.id);
+                    if (error) throw error;
+                    const updated = { ...user, pin: newPin };
+                    setUser(updated);
+                    localStorage.setItem('mise_user', JSON.stringify(updated));
+                    setEditingPin(false);
+                    setPinInput('');
+                    alert(newPin ? '✅ PIN actualizado' : '✅ PIN eliminado');
+                } catch (e) { alert('Error: ' + e.message); }
+                setSyncing(false);
+            };
+
             const filtInv = useMemo(() => inv.filter(i => i.name.toLowerCase().includes(search.toLowerCase())).sort((a, b) => a.name.localeCompare(b.name, 'es')), [inv, search]);
 
             if (loading) return <div className="min-h-screen flex flex-col items-center justify-center"><Logo size="lg" /><Loader text="Conectando..." /></div>;
@@ -925,6 +969,29 @@
                                     </div>
                                 </div>
                                 <button onClick={checkEmail} disabled={syncing} className="w-full py-4 btn-gradient text-white rounded-2xl font-bold flex items-center justify-center gap-2 shadow-xl disabled:opacity-50">{syncing ? <><div className="loader w-5 h-5 border-2 animate-spin"></div> Verificando...</> : <>Continuar <I.ArrowRight size={20} /></>}</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+
+            // REGISTER
+            if (view === 'login' && loginMode === 'pin') return (
+                <div className="min-h-screen p-6 animate-fade">
+                    <BackBtn onClick={() => { setLoginMode('check'); setPendingUser(null); setLoginPin(''); }} />
+                    <div className="max-w-sm mx-auto mt-8">
+                        <div className="text-center mb-8">
+                            <Logo size="md" />
+                            <h2 className="text-2xl font-extrabold text-gray-800 mt-4">Ingresá tu PIN</h2>
+                            <p className="text-gray-500 mt-2">{pendingUser?.fullName}</p>
+                        </div>
+                        <div className="card p-6 card-purple">
+                            <div className="space-y-4">
+                                <div>
+                                    <label className="text-xs font-bold text-gray-500 mb-1 block">🔒 PIN de acceso</label>
+                                    <input type="password" inputMode="numeric" maxLength={6} placeholder="••••" value={loginPin} onChange={e => setLoginPin(e.target.value.replace(/\D/g, ''))} onKeyPress={e => e.key === 'Enter' && verifyPin()} className="w-full input-field text-center text-2xl tracking-[0.5em] font-black" />
+                                </div>
+                                <button onClick={verifyPin} disabled={!loginPin} className="w-full py-4 btn-gradient text-white rounded-2xl font-bold flex items-center justify-center gap-2 shadow-xl disabled:opacity-50">Ingresar <I.ArrowRight size={20} /></button>
                             </div>
                         </div>
                     </div>
@@ -970,6 +1037,11 @@
                                     <div className="grid grid-cols-2 gap-3">
                                         <div><label className="text-xs font-bold text-gray-500 mb-1 block">Nombre</label><input type="text" placeholder="Juan" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} className="w-full input-field font-semibold" /></div>
                                         <div><label className="text-xs font-bold text-gray-500 mb-1 block">Apellido</label><input type="text" placeholder="Pérez" value={form.surname} onChange={e => setForm({ ...form, surname: e.target.value })} className="w-full input-field font-semibold" /></div>
+                                    </div>
+                                    <div>
+                                        <label className="text-xs font-bold text-gray-500 mb-1 block">🔒 PIN de acceso (4-6 dígitos, opcional)</label>
+                                        <input type="password" inputMode="numeric" maxLength={6} placeholder="Ej: 1234" value={form.pin || ''} onChange={e => setForm({ ...form, pin: e.target.value.replace(/\D/g, '') })} className="w-full input-field font-semibold text-center tracking-widest" />
+                                        <p className="text-[10px] text-gray-400 mt-1">Si lo configurás, te lo va a pedir cada vez que ingreses</p>
                                     </div>
                                     <div className="bg-gradient-to-br from-purple-50 via-cyan-50 to-green-50 p-4 rounded-2xl border-2 border-purple-100"><SignPad onSave={sig => setForm({ ...form, sig })} initial={form.sig} /></div>
                                     <button onClick={register} disabled={syncing} className="w-full py-4 btn-gradient text-white rounded-2xl font-bold flex items-center justify-center gap-2 shadow-xl disabled:opacity-50">{syncing ? <><div className="loader w-5 h-5 border-2 animate-spin"></div> Registrando...</> : <>Registrarse <I.ArrowRight size={20} /></>}</button>
@@ -1427,6 +1499,33 @@
                                 )}
                             </div>
 
+                            {/* PIN de acceso */}
+                            <div className="card p-5 card-purple">
+                                <div className="flex items-center justify-between mb-3">
+                                    <h3 className="text-base font-bold text-gray-800">🔒 PIN de acceso</h3>
+                                    <button onClick={() => { setEditingPin(!editingPin); setPinInput(''); }} className={`px-3 py-1 rounded-lg text-xs font-bold ${editingPin ? 'bg-gray-200 text-gray-600' : 'bg-purple-100 text-purple-600'}`}>
+                                        {editingPin ? 'Cancelar' : user?.pin ? 'Cambiar' : 'Configurar'}
+                                    </button>
+                                </div>
+                                {editingPin ? (
+                                    <div className="space-y-3">
+                                        <input type="password" inputMode="numeric" maxLength={6} placeholder="Nuevo PIN (4-6 dígitos)" value={pinInput} onChange={e => setPinInput(e.target.value.replace(/\D/g, ''))} className="w-full input-field text-center text-xl tracking-[0.5em] font-black" />
+                                        <div className="flex gap-2">
+                                            {user?.pin && <button onClick={() => { setPinInput(''); updatePin(); }} disabled={syncing} className="flex-1 py-3 bg-red-100 text-red-600 rounded-xl font-bold text-sm">Quitar PIN</button>}
+                                            <button onClick={updatePin} disabled={syncing || !pinInput} className="flex-1 py-3 btn-gradient text-white rounded-xl font-bold text-sm disabled:opacity-50">{syncing ? 'Guardando...' : 'Guardar PIN'}</button>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <div className="text-center py-2">
+                                        {user?.pin ? (
+                                            <div className="inline-flex items-center gap-2 text-purple-600 text-sm font-bold"><I.CheckCircle size={16} /> PIN activo (••••)</div>
+                                        ) : (
+                                            <p className="text-gray-400 text-sm">Sin PIN configurado</p>
+                                        )}
+                                    </div>
+                                )}
+                            </div>
+
                             <button onClick={logout} className="w-full py-4 bg-red-100 text-red-600 rounded-2xl font-bold flex items-center justify-center gap-2 border-2 border-red-200"><I.LogOut size={20} /> Cerrar sesión</button>
                             <p className="text-center text-xs text-gray-400 pt-4">Mise en App v7.0<br /><span className="font-bold text-gray-500">Rainero Culinaria 4.0</span><br /><span className="text-green-500">● Conectado</span>{devMode && <><br /><span className="text-purple-500">⚡ Developer Mode</span></>}</p>
                         </div>
@@ -1814,6 +1913,105 @@
                 const approved = purchaseOrders.filter(o => o.status === 'Compra Aprobada');
                 const rejected = purchaseOrders.filter(o => o.status === 'Compra Rechazada');
 
+                const downloadExpediente = () => {
+                    const year = new Date().getFullYear();
+                    const today = new Date().toLocaleDateString('es-AR', { day: '2-digit', month: 'long', year: 'numeric' });
+
+                    // Consolidar todos los items aprobados
+                    const allApprovedItems = {};
+                    approved.forEach(o => {
+                        (o.items || []).forEach(i => {
+                            const key = i.name?.toLowerCase().trim();
+                            if (key) {
+                                if (allApprovedItems[key]) allApprovedItems[key].qty += (i.q || 0);
+                                else allApprovedItems[key] = { name: i.name, qty: i.q || 0 };
+                            }
+                        });
+                    });
+                    const consolidatedItems = Object.values(allApprovedItems).sort((a, b) => a.name.localeCompare(b.name, 'es'));
+
+                    const html = `<!DOCTYPE html>
+<html lang="es">
+<head><meta charset="UTF-8"><title>Expediente de Compras ${year} - Rainero Culinaria</title>
+<style>
+@media print { body { margin: 1.5cm 2cm; } .no-print { display: none !important; } }
+body { font-family: 'Times New Roman', serif; font-size: 12pt; line-height: 1.6; color: #000; max-width: 21cm; margin: 2cm auto; padding: 0 2cm; }
+h1 { text-align: center; font-size: 16pt; border-bottom: 2px solid #000; padding-bottom: 10px; margin-bottom: 5px; }
+h2 { font-size: 13pt; margin-top: 25px; border-bottom: 1px solid #666; padding-bottom: 5px; }
+.header { text-align: center; margin-bottom: 30px; }
+.header p { margin: 2px 0; font-size: 11pt; }
+table { width: 100%; border-collapse: collapse; margin: 15px 0; }
+th, td { border: 1px solid #333; padding: 8px 12px; text-align: left; font-size: 11pt; }
+th { background: #f0f0f0; font-weight: bold; }
+.right { text-align: right; }
+.center { text-align: center; }
+.summary { background: #f9f9f9; padding: 15px; border: 1px solid #ddd; margin: 20px 0; }
+.signatures { margin-top: 60px; display: flex; justify-content: space-between; }
+.sig-block { text-align: center; width: 40%; }
+.sig-line { border-top: 1px solid #000; margin-top: 60px; padding-top: 5px; font-size: 10pt; }
+.btn-print { position: fixed; top: 20px; right: 20px; padding: 12px 24px; background: #7c3aed; color: white; border: none; border-radius: 8px; font-size: 14px; cursor: pointer; font-weight: bold; }
+.btn-print:hover { background: #6d28d9; }
+.detail-section { margin: 10px 0; padding: 10px; border-left: 3px solid #ddd; }
+</style></head>
+<body>
+<button class="btn-print no-print" onclick="window.print()">🖨️ Imprimir / Guardar PDF</button>
+<div class="header">
+<p><strong>MUNICIPALIDAD DE VICENTE LÓPEZ</strong></p>
+<p>Secretaría de Educación y Empleo</p>
+<p><strong>Centro de Formación Profesional N° 401 "Rainero Culinaria"</strong></p>
+</div>
+<h1>EXPEDIENTE DE SOLICITUD DE COMPRAS</h1>
+<p class="center"><strong>Ciclo Lectivo ${year}</strong></p>
+<p>Fecha de emisión: ${today}</p>
+
+<div class="summary">
+<p><strong>Resumen:</strong></p>
+<p>Total de solicitudes: <strong>${purchaseOrders.length}</strong> | Aprobadas: <strong>${approved.length}</strong> | Pendientes: <strong>${pending.length}</strong> | Rechazadas: <strong>${rejected.length}</strong></p>
+</div>
+
+${consolidatedItems.length > 0 ? `
+<h2>LISTADO CONSOLIDADO DE MATERIALES APROBADOS</h2>
+<table>
+<thead><tr><th>N°</th><th>Material</th><th class="center">Cantidad</th></tr></thead>
+<tbody>
+${consolidatedItems.map((item, idx) => `<tr><td class="center">${idx + 1}</td><td>${item.name}</td><td class="center">${item.qty}</td></tr>`).join('')}
+</tbody>
+</table>` : '<p><em>No hay materiales aprobados para compra.</em></p>'}
+
+<h2>DETALLE DE SOLICITUDES APROBADAS</h2>
+${approved.length > 0 ? approved.map((o, idx) => `
+<div class="detail-section">
+<p><strong>${idx + 1}. ${o.teacher}</strong> — ${o.date ? new Date(o.date).toLocaleDateString('es-AR') : 'S/F'}</p>
+<table>
+<thead><tr><th>Material</th><th class="center">Cantidad</th></tr></thead>
+<tbody>${(o.items || []).map(i => `<tr><td>${i.name}</td><td class="center">${i.q}</td></tr>`).join('')}</tbody>
+</table>
+${o.obs ? `<p><em>Justificación: ${o.obs.replace('📦 SOLICITUD DE COMPRA\n', '')}</em></p>` : ''}
+</div>`).join('') : '<p><em>Sin solicitudes aprobadas.</em></p>'}
+
+${pending.length > 0 ? `
+<h2>SOLICITUDES PENDIENTES DE APROBACIÓN</h2>
+${pending.map((o, idx) => `
+<div class="detail-section">
+<p><strong>${idx + 1}. ${o.teacher}</strong> — ${o.date ? new Date(o.date).toLocaleDateString('es-AR') : 'S/F'}</p>
+<table>
+<thead><tr><th>Material</th><th class="center">Cantidad</th></tr></thead>
+<tbody>${(o.items || []).map(i => `<tr><td>${i.name}</td><td class="center">${i.q}</td></tr>`).join('')}</tbody>
+</table>
+${o.obs ? `<p><em>Justificación: ${o.obs.replace('📦 SOLICITUD DE COMPRA\n', '')}</em></p>` : ''}
+</div>`).join('')}` : ''}
+
+<div class="signatures">
+<div class="sig-block"><div class="sig-line">Responsable de Pañol<br/>Rainero Culinaria 4.0</div></div>
+<div class="sig-block"><div class="sig-line">Dirección<br/>CFP N° 401</div></div>
+</div>
+</body></html>`;
+
+                    const blob = new Blob([html], { type: 'text/html' });
+                    const url = URL.createObjectURL(blob);
+                    window.open(url, '_blank');
+                };
+
                 return (
                     <div className="min-h-screen pb-28">
                         <div className="sticky top-0 z-40 bg-white/95 backdrop-blur-sm border-b-2 border-orange-100 p-4">
@@ -1825,6 +2023,9 @@
                                 </div>
                                 <button onClick={refresh} disabled={syncing} className="p-2 bg-orange-100 rounded-xl">
                                     <I.Refresh size={18} className={`text-orange-600 ${syncing ? 'animate-spin' : ''}`} />
+                                </button>
+                                <button onClick={downloadExpediente} className="p-2 bg-purple-100 rounded-xl">
+                                    <I.Download size={18} className="text-purple-600" />
                                 </button>
                             </div>
                         </div>
