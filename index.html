@@ -369,20 +369,68 @@
 
         const SignPad = ({ onSave, initial }) => {
             const ref = useRef(null);
-            const [drawing, setDrawing] = useState(false);
+            const drawingRef = useRef(false);
 
             useEffect(() => {
                 if (!ref.current || initial) return;
                 const canvas = ref.current;
                 const rect = canvas.getBoundingClientRect();
-                // Establecer el tamaño interno igual al visual para evitar desfases
-                canvas.width = rect.width;
-                canvas.height = rect.height;
+                const dpr = window.devicePixelRatio || 1;
+                canvas.width = rect.width * dpr;
+                canvas.height = rect.height * dpr;
                 const ctx = canvas.getContext('2d');
+                ctx.scale(dpr, dpr);
                 ctx.lineCap = 'round';
                 ctx.lineJoin = 'round';
                 ctx.strokeStyle = '#1f2937';
                 ctx.lineWidth = 3;
+
+                const getPos = (e) => {
+                    const r = canvas.getBoundingClientRect();
+                    const touch = e.touches ? e.touches[0] : e;
+                    return { x: touch.clientX - r.left, y: touch.clientY - r.top };
+                };
+                const onStart = (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    drawingRef.current = true;
+                    const { x, y } = getPos(e);
+                    ctx.beginPath();
+                    ctx.moveTo(x, y);
+                };
+                const onMove = (e) => {
+                    if (!drawingRef.current) return;
+                    e.preventDefault();
+                    e.stopPropagation();
+                    const { x, y } = getPos(e);
+                    ctx.lineTo(x, y);
+                    ctx.stroke();
+                };
+                const onEnd = (e) => {
+                    if (e) { e.preventDefault(); e.stopPropagation(); }
+                    drawingRef.current = false;
+                };
+
+                // Native listeners con passive:false para iPad/iOS
+                canvas.addEventListener('touchstart', onStart, { passive: false });
+                canvas.addEventListener('touchmove', onMove, { passive: false });
+                canvas.addEventListener('touchend', onEnd, { passive: false });
+                canvas.addEventListener('touchcancel', onEnd, { passive: false });
+                canvas.addEventListener('mousedown', onStart);
+                canvas.addEventListener('mousemove', onMove);
+                canvas.addEventListener('mouseup', onEnd);
+                canvas.addEventListener('mouseleave', onEnd);
+
+                return () => {
+                    canvas.removeEventListener('touchstart', onStart);
+                    canvas.removeEventListener('touchmove', onMove);
+                    canvas.removeEventListener('touchend', onEnd);
+                    canvas.removeEventListener('touchcancel', onEnd);
+                    canvas.removeEventListener('mousedown', onStart);
+                    canvas.removeEventListener('mousemove', onMove);
+                    canvas.removeEventListener('mouseup', onEnd);
+                    canvas.removeEventListener('mouseleave', onEnd);
+                };
             }, [initial]);
 
             if (initial) return (
@@ -393,46 +441,17 @@
                 </div>
             );
 
-            const pos = (e) => {
-                const canvas = ref.current;
-                const rect = canvas.getBoundingClientRect();
-                const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-                const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-                // Calcular posición relativa al canvas
-                const scaleX = canvas.width / rect.width;
-                const scaleY = canvas.height / rect.height;
-                return {
-                    x: (clientX - rect.left) * scaleX,
-                    y: (clientY - rect.top) * scaleY
-                };
-            };
-            const start = (e) => {
-                e.preventDefault();
-                setDrawing(true);
-                const ctx = ref.current.getContext('2d');
-                const { x, y } = pos(e);
-                ctx.beginPath();
-                ctx.moveTo(x, y);
-            };
-            const draw = (e) => {
-                if (!drawing) return;
-                e.preventDefault();
-                const ctx = ref.current.getContext('2d');
-                const { x, y } = pos(e);
-                ctx.lineTo(x, y);
-                ctx.stroke();
-            };
-            const end = () => setDrawing(false);
             const clear = () => {
                 const canvas = ref.current;
+                const dpr = window.devicePixelRatio || 1;
                 const ctx = canvas.getContext('2d');
-                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                ctx.clearRect(0, 0, canvas.width / dpr, canvas.height / dpr);
             };
             return (
                 <div>
                     <p className="text-sm text-gray-600 mb-2 text-center font-semibold">✍️ Dibuja tu firma</p>
                     <div className="relative bg-white rounded-2xl border-3 border-dashed border-purple-200 overflow-hidden">
-                        <canvas ref={ref} className="w-full h-24 cursor-crosshair signature-canvas" onMouseDown={start} onMouseMove={draw} onMouseUp={end} onMouseLeave={end} onTouchStart={start} onTouchMove={draw} onTouchEnd={end} />
+                        <canvas ref={ref} className="w-full h-24 cursor-crosshair signature-canvas" />
                         <button onClick={clear} className="absolute top-2 right-2 p-1.5 bg-red-100 text-red-500 rounded-lg"><I.Trash size={14} /></button>
                     </div>
                     <button onClick={() => onSave(ref.current.toDataURL('image/png', 1.0))} className="w-full mt-3 py-3 btn-gradient text-white rounded-2xl font-bold shadow-lg">Guardar firma</button>
@@ -462,6 +481,8 @@
             const [search, setSearch] = useState('');
             const [newCrs, setNewCrs] = useState('');
             const [newItem, setNewItem] = useState({ name: '', qty: '', cat: 'Utensilios' });
+            const [showBulkAdd, setShowBulkAdd] = useState(false);
+            const [bulkText, setBulkText] = useState('');
             const [purchaseItems, setPurchaseItems] = useState([]);
             const [newPurchaseItem, setNewPurchaseItem] = useState({ name: '', qty: 1, purpose: '', course: '' });
             const [selectedCourse, setSelectedCourse] = useState('');
@@ -475,7 +496,7 @@
                         supabase.from('inventory').select('*').order('name'),
                         supabase.from('courses').select('*').order('name'),
                         supabase.from('orders').select('*').order('created_at', { ascending: false }),
-                        supabase.from('stock_history').select('*').order('created_at', { ascending: false }),
+                        supabase.from('stock_history').select('*').order('created_at', { ascending: false }).limit(200),
                         supabase.from('users').select('*').order('created_at', { ascending: false }),
                         supabase.from('order_items').select('*') // Traemos TODOS los items de una
                     ]);
@@ -745,6 +766,50 @@
                     if (error) throw error;
                     if (qty > 0) await supabase.from('stock_history').insert([{ item_id: data.id, item_name: data.name, type: 'in', amount: qty, reason: 'Inventario inicial', note: 'Nuevo material', before_qty: 0, after_qty: qty, user_name: user.fullName }]);
                     setNewItem({ name: '', qty: '', cat: 'Utensilios' }); await loadData(); alert('✅ Material agregado');
+                } catch (e) { alert('Error: ' + e.message); }
+                setSyncing(false);
+            };
+
+            const bulkAddItems = async () => {
+                if (!bulkText.trim()) return alert('Pegá la lista de materiales');
+                const lines = bulkText.trim().split('\n').filter(l => l.trim());
+                if (lines.length === 0) return alert('No se encontraron materiales');
+
+                const items = [];
+                const errors = [];
+                lines.forEach((line, idx) => {
+                    const parts = line.split(/[,;\t]/).map(p => p.trim());
+                    const name = parts[0];
+                    if (!name) { errors.push(`Línea ${idx + 1}: sin nombre`); return; }
+                    const qty = parseInt(parts[1]) || 0;
+                    const cat = CATEGORIAS.find(c => c.toLowerCase() === (parts[2] || '').toLowerCase()) || 'Utensilios';
+                    items.push({ name, qty, cat });
+                });
+
+                if (errors.length > 0) { alert('⚠️ Errores:\n' + errors.join('\n')); return; }
+                if (!confirm(`¿Cargar ${items.length} materiales?`)) return;
+
+                setSyncing(true);
+                let ok = 0, fail = 0;
+                try {
+                    // Insertar en lotes de 50
+                    for (let i = 0; i < items.length; i += 50) {
+                        const batch = items.slice(i, i + 50);
+                        const { data, error } = await supabase.from('inventory').insert(batch).select();
+                        if (error) { fail += batch.length; console.error('Batch error:', error); continue; }
+                        ok += data.length;
+                        // Registrar historial para items con stock > 0
+                        const historyItems = data.filter(d => d.qty > 0).map(d => ({
+                            item_id: d.id, item_name: d.name, type: 'in', amount: d.qty,
+                            reason: 'Inventario inicial', note: 'Carga masiva',
+                            before_qty: 0, after_qty: d.qty, user_name: user.fullName
+                        }));
+                        if (historyItems.length > 0) await supabase.from('stock_history').insert(historyItems);
+                    }
+                    await loadData();
+                    setBulkText('');
+                    setShowBulkAdd(false);
+                    alert(`✅ Carga completa: ${ok} agregados` + (fail > 0 ? `, ${fail} con error` : ''));
                 } catch (e) { alert('Error: ' + e.message); }
                 setSyncing(false);
             };
@@ -1052,12 +1117,29 @@
                         <div className="p-4 space-y-3">
                             {(user?.role === 'Administrativo' || devMode) && (
                                 <div className="card p-4 card-green mb-4">
-                                    <h3 className="font-bold text-gray-800 mb-3 flex items-center gap-2"><I.Plus size={18} /> Agregar material</h3>
-                                    <div className="space-y-2">
-                                        <input type="text" placeholder="Nombre" value={newItem.name} onChange={e => setNewItem({ ...newItem, name: e.target.value })} className="w-full input-field font-semibold" />
-                                        <div className="flex gap-2"><input type="number" placeholder="Cant." value={newItem.qty} onChange={e => setNewItem({ ...newItem, qty: e.target.value })} className="w-24 input-field font-semibold" /><select value={newItem.cat} onChange={e => setNewItem({ ...newItem, cat: e.target.value })} className="flex-1 input-field font-semibold">{CATEGORIAS.map(c => <option key={c}>{c}</option>)}</select></div>
-                                        <button onClick={addNewItem} disabled={syncing} className="w-full py-3 btn-green text-white rounded-xl font-bold disabled:opacity-50">{syncing ? 'Agregando...' : '+ Agregar'}</button>
+                                    <div className="flex items-center justify-between mb-3">
+                                        <h3 className="font-bold text-gray-800 flex items-center gap-2"><I.Plus size={18} /> Agregar material</h3>
+                                        <button onClick={() => setShowBulkAdd(!showBulkAdd)} className={`px-3 py-1 rounded-lg text-xs font-bold ${showBulkAdd ? 'bg-gray-200 text-gray-600' : 'bg-purple-100 text-purple-600'}`}>
+                                            {showBulkAdd ? 'Individual' : '📋 Carga masiva'}
+                                        </button>
                                     </div>
+                                    {showBulkAdd ? (
+                                        <div className="space-y-2">
+                                            <p className="text-xs text-gray-500">Pegá una lista con formato: <strong>Nombre, Cantidad, Categoría</strong> (una por línea)</p>
+                                            <p className="text-[10px] text-gray-400">Categorías: {CATEGORIAS.join(', ')}</p>
+                                            <textarea value={bulkText} onChange={e => setBulkText(e.target.value)} placeholder={"Olla de 20L, 5, Batería\nEspátula grande, 10, Utensilios\nHorno eléctrico, 2, Maquinaria"} className="w-full input-field font-mono text-xs" rows={6} />
+                                            <div className="flex items-center justify-between">
+                                                <span className="text-xs text-gray-400 font-bold">{bulkText.trim() ? bulkText.trim().split('\n').filter(l => l.trim()).length : 0} líneas</span>
+                                                <button onClick={bulkAddItems} disabled={syncing || !bulkText.trim()} className="px-6 py-3 btn-gradient text-white rounded-xl font-bold disabled:opacity-50">{syncing ? 'Cargando...' : '📦 Cargar todo'}</button>
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <div className="space-y-2">
+                                            <input type="text" placeholder="Nombre" value={newItem.name} onChange={e => setNewItem({ ...newItem, name: e.target.value })} className="w-full input-field font-semibold" />
+                                            <div className="flex gap-2"><input type="number" placeholder="Cant." value={newItem.qty} onChange={e => setNewItem({ ...newItem, qty: e.target.value })} className="w-24 input-field font-semibold" /><select value={newItem.cat} onChange={e => setNewItem({ ...newItem, cat: e.target.value })} className="flex-1 input-field font-semibold">{CATEGORIAS.map(c => <option key={c}>{c}</option>)}</select></div>
+                                            <button onClick={addNewItem} disabled={syncing} className="w-full py-3 btn-green text-white rounded-xl font-bold disabled:opacity-50">{syncing ? 'Agregando...' : '+ Agregar'}</button>
+                                        </div>
+                                    )}
                                 </div>
                             )}
                             {filtInv.map(i => <StockItem key={i.id} item={i} />)}
