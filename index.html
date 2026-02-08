@@ -525,6 +525,7 @@
             const [pendingUser, setPendingUser] = useState(null);
             const [editingUser, setEditingUser] = useState(null);
             const [editUserForm, setEditUserForm] = useState({ name: '', surname: '', role: '', pin: '' });
+            const [showConsolidated, setShowConsolidated] = useState(false);
             const [cart, setCart] = useState([]);
             const [meta, setMeta] = useState({ career: '', date: new Date().toISOString().split('T')[0], time: '08:00' });
             const [search, setSearch] = useState('');
@@ -713,7 +714,8 @@
             const setCartQty = (id, qty) => {
                 const item = inv.find(i => i.id === id);
                 if (!item) return;
-                const nq = Math.max(0, Math.min(qty, item.qty));
+                if (qty === '' || qty === null) { setCart(cart.map(c => c.id === id ? { ...c, q: '' } : c)); return; }
+                const nq = Math.max(0, Math.min(parseInt(qty) || 0, item.qty));
                 if (nq === 0) setCart(cart.filter(c => c.id !== id));
                 else setCart(cart.map(c => c.id === id ? { ...c, q: nq } : c));
             };
@@ -1366,7 +1368,7 @@
                                         <span className="text-sm font-bold text-gray-700 flex-1 truncate mr-2">{i.name}</span>
                                         <div className="flex items-center gap-1">
                                             <button onClick={() => setCartQty(i.id, i.q - 1)} className="w-8 h-8 rounded-lg bg-gray-100 text-gray-600 flex items-center justify-center font-bold">-</button>
-                                            <input type="number" value={i.q} onChange={e => setCartQty(i.id, parseInt(e.target.value) || 0)} className="w-12 text-center font-black text-cyan-600 bg-cyan-50 rounded-lg border-2 border-cyan-200 py-1" min="1" />
+                                            <input type="number" value={i.q} onChange={e => setCartQty(i.id, e.target.value === '' ? '' : parseInt(e.target.value))} onBlur={e => { if (e.target.value === '' || parseInt(e.target.value) < 1) setCartQty(i.id, 1); }} className="w-12 text-center font-black text-cyan-600 bg-cyan-50 rounded-lg border-2 border-cyan-200 py-1" min="1" />
                                             <button onClick={() => setCartQty(i.id, i.q + 1)} className="w-8 h-8 rounded-lg bg-cyan-500 text-white flex items-center justify-center font-bold">+</button>
                                             <button onClick={() => remCart(i.id)} className="p-2 bg-red-100 text-red-500 rounded-lg ml-1"><I.Trash size={16} /></button>
                                         </div>
@@ -1529,7 +1531,7 @@ ${o.sig ? `<img src="${o.sig}" class="sig-img" alt="Firma docente"/>` : ''}
                                         {(user?.role === 'Administrativo' || devMode) && o.status === 'Solicitado' ? (
                                             <div className="flex items-center gap-1 bg-white rounded-xl px-2 py-1 border-2 border-gray-200">
                                                 <button onClick={() => setItems(items.map(x => x.id === i.id ? { ...x, q: Math.max(0, x.q - 1) } : x))} className="w-7 h-7 flex items-center justify-center text-red-500"><I.Minus size={14} /></button>
-                                                <input type="number" value={i.q} onChange={e => setItems(items.map(x => x.id === i.id ? { ...x, q: Math.max(0, parseInt(e.target.value) || 0) } : x))} className="w-10 text-center font-black text-cyan-600 bg-cyan-50 rounded border border-cyan-200 py-0.5 text-sm" min="0" />
+                                                <input type="number" value={i.q} onChange={e => setItems(items.map(x => x.id === i.id ? { ...x, q: e.target.value === '' ? '' : Math.max(0, parseInt(e.target.value) || 0) } : x))} onBlur={e => { if (e.target.value === '') setItems(items.map(x => x.id === i.id ? { ...x, q: 0 } : x)); }} className="w-10 text-center font-black text-cyan-600 bg-cyan-50 rounded border border-cyan-200 py-0.5 text-sm" min="0" />
                                                 <button onClick={() => setItems(items.map(x => x.id === i.id ? { ...x, q: x.q + 1 } : x))} className="w-7 h-7 flex items-center justify-center text-green-500"><I.Plus size={14} /></button>
                                             </div>
                                         ) : <span className="text-sm font-black text-cyan-600">×{i.q}</span>}
@@ -1551,10 +1553,57 @@ ${o.sig ? `<img src="${o.sig}" class="sig-img" alt="Firma docente"/>` : ''}
                 const filteredOrders = (user?.role === 'Docente' ? ord.filter(o => o.teacher === user.fullName) : ord)
                     .filter(o => !o.career || (!o.career.startsWith('🛒') && !o.career.includes('COMPRA')));
 
+                // Consolidar items pendientes (Solicitado) para vista admin
+                const pendingOrders = filteredOrders.filter(o => o.status === 'Solicitado');
+                const consolidated = {};
+                pendingOrders.forEach(o => {
+                    (o.items || []).forEach(it => {
+                        const key = it.name?.toLowerCase().trim();
+                        if (key) {
+                            if (!consolidated[key]) consolidated[key] = { name: it.name, qty: 0, teachers: [] };
+                            consolidated[key].qty += (it.q || 0);
+                            if (!consolidated[key].teachers.includes(o.teacher)) consolidated[key].teachers.push(o.teacher);
+                        }
+                    });
+                });
+                const consolidatedList = Object.values(consolidated).sort((a, b) => b.qty - a.qty);
+
                 return (
                     <div className="min-h-screen pb-28">
                         <div className="sticky top-0 z-40 bg-white/95 backdrop-blur-sm border-b-2 border-cyan-100 p-4"><div className="flex items-center gap-3"><BackBtn onClick={() => setView('dashboard')} /><h1 className="text-xl font-extrabold text-gray-800 flex-1">📖 Cuaderno</h1><button onClick={refresh} disabled={syncing} className="p-2 bg-cyan-100 rounded-xl"><I.Refresh size={18} className={`text-cyan-600 ${syncing ? 'animate-spin' : ''}`} /></button></div></div>
-                        <div className="p-4 space-y-4">{filteredOrders.length === 0 ? <div className="text-center py-16"><I.Book size={48} className="mx-auto text-gray-200 mb-3" /><p className="text-gray-400 font-bold">Sin novedades</p></div> : filteredOrders.map(o => <OrdCard key={o.id} o={o} />)}</div>
+                        <div className="p-4 space-y-4">
+                            {(user?.role === 'Administrativo' || devMode) && pendingOrders.length > 0 && consolidatedList.length > 0 && (
+                                <div className="card p-4 border-2 border-purple-300 bg-purple-50">
+                                    <button onClick={() => setShowConsolidated(!showConsolidated)} className="w-full flex items-center justify-between">
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-lg">📊</span>
+                                            <div className="text-left">
+                                                <p className="font-bold text-purple-700 text-sm">Resumen consolidado</p>
+                                                <p className="text-[10px] text-gray-500">{pendingOrders.length} pedidos pendientes • {consolidatedList.length} items</p>
+                                            </div>
+                                        </div>
+                                        <I.ArrowRight size={16} className={`text-purple-400 transition-transform ${showConsolidated ? 'rotate-90' : ''}`} />
+                                    </button>
+                                    {showConsolidated && (
+                                        <div className="mt-3 space-y-2">
+                                            {consolidatedList.map((item, idx) => (
+                                                <div key={idx} className="flex items-center justify-between bg-white rounded-xl p-3 border border-purple-200">
+                                                    <div className="flex-1 min-w-0">
+                                                        <p className="text-sm font-bold text-gray-800 truncate">{item.name}</p>
+                                                        <p className="text-[10px] text-gray-400 truncate">{item.teachers.join(', ')}</p>
+                                                    </div>
+                                                    <span className="text-lg font-black text-purple-600 ml-2">×{item.qty}</span>
+                                                </div>
+                                            ))}
+                                            <div className="bg-purple-100 rounded-xl p-3 text-center">
+                                                <span className="text-sm font-bold text-purple-700">Total: {consolidatedList.reduce((s, i) => s + i.qty, 0)} unidades en {consolidatedList.length} items</span>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+                            {filteredOrders.length === 0 ? <div className="text-center py-16"><I.Book size={48} className="mx-auto text-gray-200 mb-3" /><p className="text-gray-400 font-bold">Sin novedades</p></div> : filteredOrders.map(o => <OrdCard key={o.id} o={o} />)}
+                        </div>
                         <Nav current="handover" go={setView} role={user?.role} />
                     </div>
                 );
@@ -1583,43 +1632,39 @@ ${o.sig ? `<img src="${o.sig}" class="sig-img" alt="Firma docente"/>` : ''}
 
             // INCIDENTS
             if (view === 'incidents') {
-                const markAsIrrecoverable = async (order) => {
-                    if (!confirm('¿Marcar como IRRECUPERABLE y agregar al expediente de compras para reposición?')) return;
+                const markItemIrrecoverable = async (order, item, repoQty) => {
+                    const qty = parseInt(repoQty);
+                    if (!qty || qty < 1) return alert('Ingresá la cantidad a reponer');
+                    if (!confirm(`¿Agregar "${item.name}" x${qty} al expediente de compras para reposición?`)) return;
                     setSyncing(true);
                     try {
-                        // Resolver el incidente con nota de irrecuperable
-                        await supabase.from('orders').update({ resolution: '❌ IRRECUPERABLE - Agregado a expediente de compras' }).eq('id', order.id);
-
-                        // Crear solicitud de compra automática
                         const { data: purchaseOrder, error } = await supabase.from('orders').insert([{
                             teacher_id: user.id,
                             teacher_name: 'Sistema (Reposición)',
                             teacher_email: user.email,
-                            career: order.career || 'General',
+                            career: '🛒 COMPRA - Reposición',
                             date: new Date().toISOString().split('T')[0],
                             time: new Date().toTimeString().split(' ')[0].slice(0, 5),
                             status: 'Pendiente Compra',
-                            observations: `REPOSICIÓN por daño irreparable: ${order.obs} (Docente original: ${order.teacher})`
+                            observations: `📦 SOLICITUD DE COMPRA\nREPOSICIÓN: ${item.name} x${qty}\nMotivo: ${order.obs}\nDocente: ${order.teacher}`
                         }]).select().single();
 
                         if (!error && purchaseOrder) {
-                            // Agregar items del pedido original al expediente
-                            for (const item of (order.items || [])) {
-                                await supabase.from('order_items').insert([{
-                                    order_id: purchaseOrder.id,
-                                    item_name: `${item.name} (REPOSICIÓN)`,
-                                    qty: item.q
-                                }]);
-                            }
+                            await supabase.from('order_items').insert([{
+                                order_id: purchaseOrder.id,
+                                item_name: `${item.name} (REPOSICIÓN)`,
+                                qty: qty
+                            }]);
                         }
                         await loadData();
-                        alert('✅ Marcado como irrecuperable y agregado al expediente de compras');
+                        alert(`✅ "${item.name}" x${qty} agregado al expediente de compras`);
                     } catch (e) { alert('Error: ' + e.message); }
                     setSyncing(false);
                 };
 
                 const IncidentCard = ({ o }) => {
                     const [res, setRes] = useState('');
+                    const [repoQtys, setRepoQtys] = useState({});
                     return (
                         <div className="card p-5 border-3 border-red-200 relative overflow-hidden">
                             <div className="absolute left-0 top-0 bottom-0 w-2 bg-red-500" />
@@ -1627,10 +1672,29 @@ ${o.sig ? `<img src="${o.sig}" class="sig-img" alt="Firma docente"/>` : ''}
                             <p className="font-bold text-gray-800 text-lg">{o.teacher}</p>
                             <p className="text-xs text-gray-500 font-semibold mb-3">🎓 {o.career}</p>
                             <div className="bg-red-50 rounded-2xl p-4 mb-3 border-2 border-red-200"><p className="text-sm text-red-800 italic">"{o.obs}"</p></div>
-                            {o.items && o.items.length > 0 && <div className="bg-gray-50 rounded-xl p-3 mb-3 border border-gray-200"><p className="text-xs text-gray-500 font-bold mb-1">📦 Material:</p>{o.items.map((it, idx) => <span key={idx} className="inline-block bg-gray-200 text-gray-700 text-xs px-2 py-1 rounded mr-1 mb-1">{it.name} x{it.q}</span>)}</div>}
+                            {o.items && o.items.length > 0 && (
+                                <div className="bg-gray-50 rounded-xl p-3 mb-3 border border-gray-200">
+                                    <p className="text-xs text-gray-500 font-bold mb-2">📦 Material del pedido:</p>
+                                    <div className="space-y-2">
+                                        {o.items.map((it, idx) => (
+                                            <div key={idx} className="bg-white rounded-xl p-3 border border-gray-200">
+                                                <p className="text-sm font-semibold text-gray-700 mb-1">{it.name} <span className="text-gray-400">(pedido: {it.q})</span></p>
+                                                {(user?.role === 'Administrativo' || devMode) && (
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="text-[10px] text-gray-400 font-bold flex-shrink-0">Reponer:</span>
+                                                        <input type="number" min="1" placeholder="Cant." value={repoQtys[idx] ?? ''} onChange={e => setRepoQtys({...repoQtys, [idx]: e.target.value})} className="w-16 text-center input-field text-sm font-bold py-1" />
+                                                        <button onClick={() => markItemIrrecoverable(o, it, repoQtys[idx])} disabled={syncing} className="px-3 py-1.5 bg-red-500 text-white rounded-lg text-[10px] font-bold flex items-center gap-1 flex-shrink-0">
+                                                            <I.X size={12} /> Al expediente
+                                                        </button>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
                             <div className="space-y-2">
                                 <div className="flex gap-2"><input type="text" placeholder="Resolución..." value={res} onChange={e => setRes(e.target.value)} className="flex-1 input-field font-semibold" /><button onClick={() => { if (res.trim()) resolve(o.id, res); }} disabled={syncing} className="px-5 btn-gradient text-white rounded-2xl"><I.Check size={20} /></button></div>
-                                {(user?.role === 'Administrativo' || devMode) && <button onClick={() => markAsIrrecoverable(o)} disabled={syncing} className="w-full py-3 bg-red-500 text-white rounded-2xl font-bold flex items-center justify-center gap-2"><I.X size={18} /> Marcar como IRRECUPERABLE</button>}
                             </div>
                         </div>
                     );
