@@ -1019,12 +1019,11 @@
                 if (!confirm('⚠️ CONFIRMACIÓN FINAL: Esta acción NO se puede deshacer. ¿Estás seguro?')) return;
                 setSyncing(true);
                 try {
-                    // Eliminar en orden por dependencias
-                    const { error: e1 } = await supabase.from('order_items').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+                    const { error: e1 } = await supabase.from('order_items').delete().not('id', 'is', null);
                     if (e1) throw e1;
-                    const { error: e2 } = await supabase.from('orders').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+                    const { error: e2 } = await supabase.from('orders').delete().not('id', 'is', null);
                     if (e2) throw e2;
-                    const { error: e3 } = await supabase.from('stock_history').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+                    const { error: e3 } = await supabase.from('stock_history').delete().not('id', 'is', null);
                     if (e3) throw e3;
                     await loadData();
                     alert('✅ App limpiada. Stock intacto, pedidos e historial eliminados.');
