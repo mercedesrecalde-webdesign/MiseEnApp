@@ -531,6 +531,8 @@
             const [showConsolidated, setShowConsolidated] = useState(false);
             const [cart, setCart] = useState([]);
             const [meta, setMeta] = useState({ career: '', date: new Date().toISOString().split('T')[0], time: '08:00', obs: '' });
+            const [invSearch, setInvSearch] = useState('');
+            const [invCat, setInvCat] = useState('Todos');
             const [newOrderAlert, setNewOrderAlert] = useState(null);
             const [search, setSearch] = useState('');
             const [newCrs, setNewCrs] = useState('');
@@ -1003,12 +1005,22 @@
             const updatePurchaseStatus = async (orderId, newStatus) => {
                 setSyncing(true);
                 try {
-                    const { error } = await supabase.from('orders').update({ status: newStatus }).eq('id', orderId);
-                    if (error) throw error;
+                    if (newStatus === 'Compra Rechazada') {
+                        // Si se rechaza, se elimina directamente
+                        if (!confirm('¿Rechazar y eliminar esta solicitud de compra?')) { setSyncing(false); return; }
+                        await supabase.from('order_items').delete().eq('order_id', orderId);
+                        const { error } = await supabase.from('orders').delete().eq('id', orderId);
+                        if (error) throw error;
+                    } else {
+                        const { error } = await supabase.from('orders').update({ status: newStatus }).eq('id', orderId);
+                        if (error) throw error;
+                    }
                     await loadData();
                 } catch (e) { alert('Error: ' + e.message); }
                 setSyncing(false);
             };
+
+
 
             // USERS
             const deleteUser = async (id, email) => {
@@ -1468,14 +1480,53 @@
                         </div>
                         <div>
                             <h3 className="text-sm text-gray-600 font-bold mb-2">📋 Disponible</h3>
-                            <div className="space-y-2 max-h-52 overflow-y-auto">
-                                {inv.filter(i => i.qty > 0).map(i => {
+                            {/* Search bar */}
+                            <div className="relative mb-2">
+                                <input
+                                    type="text"
+                                    placeholder="Buscar material..."
+                                    value={invSearch}
+                                    onChange={e => setInvSearch(e.target.value)}
+                                    className="w-full input-field pl-9 text-sm font-semibold"
+                                />
+                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-base">🔍</span>
+                                {invSearch && <button onClick={() => setInvSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 font-bold text-lg leading-none">×</button>}
+                            </div>
+                            {/* Category filters */}
+                            <div className="flex gap-2 overflow-x-auto pb-2 mb-2" style={{scrollbarWidth:'none'}}>
+                                {['Todos', ...Array.from(new Set(inv.filter(i=>i.qty>0).map(i=>i.cat))).sort()].map(cat => (
+                                    <button
+                                        key={cat}
+                                        onClick={() => setInvCat(cat)}
+                                        className={`flex-shrink-0 px-3 py-1 rounded-full text-xs font-bold border-2 transition-all ${invCat === cat ? 'bg-cyan-500 text-white border-cyan-500' : 'bg-white text-gray-500 border-gray-200'}`}
+                                    >{cat}</button>
+                                ))}
+                            </div>
+                            {/* Item list – no max-height, page scrolls */}
+                            <div className="space-y-2">
+                                {inv.filter(i => {
+                                    if (i.qty <= 0) return false;
+                                    if (invCat !== 'Todos' && i.cat !== invCat) return false;
+                                    if (invSearch && !i.name.toLowerCase().includes(invSearch.toLowerCase())) return false;
+                                    return true;
+                                }).map(i => {
                                     const st = catStyle(i.cat);
+                                    const inCart = cart.find(c => c.id === i.id);
                                     return (
-                                        <div key={i.id} className={`card p-3 flex items-center gap-2 border-2 ${st.border}`}>
+                                        <div key={i.id} className={`card p-3 flex items-center gap-2 border-2 ${inCart ? 'border-cyan-400 bg-cyan-50' : st.border}`}>
                                             <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${st.bg} ${st.tx} flex-shrink-0`}><CatIcon cat={i.cat} size={20} /></div>
-                                            <div className="flex-1 min-w-0"><p className="text-sm font-bold text-gray-700 truncate">{i.name}</p><p className="text-xs text-green-600 font-bold">Stock: {i.qty}</p></div>
-                                            <button onClick={() => addCart(i, 1)} className="px-3 py-2 rounded-xl bg-cyan-500 text-white font-bold text-xs shadow-lg flex-shrink-0">+ Agregar</button>
+                                            <div className="flex-1 min-w-0">
+                                                <p className="text-sm font-bold text-gray-700 truncate">{i.name}</p>
+                                                <p className="text-xs text-green-600 font-bold">Stock: {i.qty}{inCart ? <span className="text-cyan-600"> · en pedido: {inCart.q}</span> : null}</p>
+                                            </div>
+                                            {inCart
+                                                ? <div className="flex items-center gap-1 flex-shrink-0">
+                                                    <button onClick={() => setCartQty(i.id, inCart.q - 1)} className="w-8 h-8 rounded-lg bg-gray-100 text-gray-600 flex items-center justify-center font-bold text-lg">-</button>
+                                                    <span className="w-8 text-center font-black text-cyan-600 text-sm">{inCart.q}</span>
+                                                    <button onClick={() => setCartQty(i.id, inCart.q + 1)} className="w-8 h-8 rounded-lg bg-cyan-500 text-white flex items-center justify-center font-bold text-lg">+</button>
+                                                  </div>
+                                                : <button onClick={() => addCart(i, 1)} className="px-3 py-2 rounded-xl bg-cyan-500 text-white font-bold text-xs shadow-lg flex-shrink-0">+ Agregar</button>
+                                            }
                                         </div>
                                     );
                                 })}
@@ -1563,7 +1614,7 @@ th { background: #f0f0f0; font-weight: bold; }
 .sig-line { border-top: 1px solid #000; padding-top: 5px; font-size: 10pt; display: inline-block; min-width: 200px; }
 .sig-others { display: flex; justify-content: space-between; margin-top: 30px; }
 .sig-block { text-align: center; width: 40%; }
-.sig-block .sig-line { margin-top: 60px; }
+.sig-block .sig-line { margin-top: 8px; }
 .obs-box { background: #f9f9f9; padding: 12px; border-left: 3px solid #e67e22; margin: 15px 0; }
 .res-box { background: #f0fff0; padding: 12px; border-left: 3px solid #27ae60; margin: 15px 0; }
 .btn-print { position: fixed; top: 20px; right: 20px; padding: 12px 24px; background: #7c3aed; color: white; border: none; border-radius: 8px; font-size: 14px; cursor: pointer; font-weight: bold; }
@@ -1890,6 +1941,15 @@ ${o.adminSig ? `<img src="${o.adminSig}" class="sig-img" alt="Firma admin"/>` : 
                                 )}
                             </div>
 
+                            {devMode && (
+                                <div className="card p-5 border-2 border-red-200 bg-red-50">
+                                    <h3 className="text-sm font-bold text-red-600 mb-1">🛠️ Herramientas de desarrolladora</h3>
+                                    <p className="text-xs text-red-400 mb-3">Conserva usuarios y stock. Elimina pedidos e historial.</p>
+                                    <button onClick={cleanAppData} disabled={syncing} className="w-full py-3 bg-red-500 text-white rounded-2xl font-bold flex items-center justify-center gap-2 disabled:opacity-50">
+                                        {syncing ? <><div className="loader w-4 h-4 border-2 animate-spin"></div> Limpiando...</> : <><I.Trash size={18} /> 🧹 Limpiar App</>}
+                                    </button>
+                                </div>
+                            )}
                             <button onClick={logout} className="w-full py-4 bg-red-100 text-red-600 rounded-2xl font-bold flex items-center justify-center gap-2 border-2 border-red-200"><I.LogOut size={20} /> Cerrar sesión</button>
                             <p className="text-center text-xs text-gray-400 pt-4">Mise en App v7.0<br /><span className="font-bold text-gray-500">Santiago Rainero</span><br /><span className="text-green-500">● Conectado</span>{devMode && <><br /><span className="text-purple-500">👩‍💻 Desarrolladora</span></>}</p>
                         </div>
@@ -2312,13 +2372,11 @@ ${o.adminSig ? `<img src="${o.adminSig}" class="sig-img" alt="Firma admin"/>` : 
                 const purchaseOrders = ord.filter(o =>
                     o.status === 'Pendiente Compra' ||
                     o.status === 'Compra Aprobada' ||
-                    o.status === 'Compra Rechazada' ||
                     (o.career && (o.career.includes('COMPRA') || o.career.startsWith('🛒')))
                 );
 
                 const pending = purchaseOrders.filter(o => o.status === 'Pendiente Compra' || ((o.status === 'Solicitado' || !o.status) && (o.career?.includes('COMPRA') || o.career?.startsWith('🛒'))));
                 const approved = purchaseOrders.filter(o => o.status === 'Compra Aprobada');
-                const rejected = purchaseOrders.filter(o => o.status === 'Compra Rechazada');
 
                 const downloadExpediente = () => {
                     const year = new Date().getFullYear();
@@ -2373,7 +2431,7 @@ th { background: #f0f0f0; font-weight: bold; }
 
 <div class="summary">
 <p><strong>Resumen:</strong></p>
-<p>Total de solicitudes: <strong>${purchaseOrders.length}</strong> | Aprobadas: <strong>${approved.length}</strong> | Pendientes: <strong>${pending.length}</strong> | Rechazadas: <strong>${rejected.length}</strong></p>
+<p>Total de solicitudes: <strong>${purchaseOrders.length}</strong> | Aprobadas: <strong>${approved.length}</strong> | Pendientes: <strong>${pending.length}</strong></p>
 </div>
 
 ${consolidatedItems.length > 0 ? `
@@ -2438,7 +2496,7 @@ ${o.obs ? `<p><em>Justificación: ${o.obs.replace('📦 SOLICITUD DE COMPRA\n', 
                         </div>
                         <div className="p-4 space-y-4">
                             {/* Resumen */}
-                            <div className="grid grid-cols-3 gap-3">
+                            <div className="grid grid-cols-2 gap-3">
                                 <div className="card p-3 card-orange text-center">
                                     <p className="text-2xl font-black text-orange-600">{pending.length}</p>
                                     <p className="text-[10px] text-gray-500 font-bold">Pendientes</p>
@@ -2446,10 +2504,6 @@ ${o.obs ? `<p><em>Justificación: ${o.obs.replace('📦 SOLICITUD DE COMPRA\n', 
                                 <div className="card p-3 card-green text-center">
                                     <p className="text-2xl font-black text-green-600">{approved.length}</p>
                                     <p className="text-[10px] text-gray-500 font-bold">Aprobadas</p>
-                                </div>
-                                <div className="card p-3 card-red text-center">
-                                    <p className="text-2xl font-black text-red-500">{rejected.length}</p>
-                                    <p className="text-[10px] text-gray-500 font-bold">Rechazadas</p>
                                 </div>
                             </div>
 
@@ -2503,7 +2557,7 @@ ${o.obs ? `<p><em>Justificación: ${o.obs.replace('📦 SOLICITUD DE COMPRA\n', 
                                     {/* Aprobadas */}
                                     {approved.length > 0 && (
                                         <div>
-                                            <h3 className="font-bold text-green-600 mb-2">✓ Aprobadas para compra</h3>
+                                            <h3 className="font-bold text-green-600 mb-2">✓ Aprobadas para expediente</h3>
                                             <div className="space-y-3">
                                                 {approved.map(o => (
                                                     <div key={o.id} className="card p-4 border-2 border-green-300">
@@ -2516,31 +2570,6 @@ ${o.obs ? `<p><em>Justificación: ${o.obs.replace('📦 SOLICITUD DE COMPRA\n', 
                                                                 <div key={idx} className="flex justify-between text-sm">
                                                                     <span className="text-gray-600">{i.name}</span>
                                                                     <span className="font-bold text-green-600">x{i.q}</span>
-                                                                </div>
-                                                            ))}
-                                                        </div>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        </div>
-                                    )}
-
-                                    {/* Rechazadas */}
-                                    {rejected.length > 0 && (
-                                        <div>
-                                            <h3 className="font-bold text-red-500 mb-2">✗ Rechazadas</h3>
-                                            <div className="space-y-3">
-                                                {rejected.map(o => (
-                                                    <div key={o.id} className="card p-4 border-2 border-red-200 opacity-60">
-                                                        <div className="flex items-center gap-2 mb-2">
-                                                            <span className="badge-red px-2 py-1 rounded text-xs font-bold">RECHAZADA</span>
-                                                            <span className="text-xs text-gray-400">{o.teacher}</span>
-                                                        </div>
-                                                        <div className="space-y-1">
-                                                            {o.items?.map((i, idx) => (
-                                                                <div key={idx} className="flex justify-between text-sm line-through">
-                                                                    <span className="text-gray-400">{i.name}</span>
-                                                                    <span className="text-gray-400">x{i.q}</span>
                                                                 </div>
                                                             ))}
                                                         </div>
