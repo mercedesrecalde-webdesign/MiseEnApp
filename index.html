@@ -1028,6 +1028,8 @@
                 if (!confirm(`¿Eliminar usuario ${email}? Podrá volver a registrarse.`)) return;
                 setSyncing(true);
                 try {
+                    // Desvincular pedidos del usuario antes de borrar (FK constraint)
+                    await supabase.from('orders').update({ teacher_id: null }).eq('teacher_id', id);
                     const { error } = await supabase.from('users').delete().eq('id', id);
                     if (error) throw error;
                     await loadData();
