@@ -964,6 +964,46 @@
             };
 
             const updateItemName = async (id, newName) => { if (!newName.trim()) return; setSyncing(true); await supabase.from('inventory').update({ name: newName.trim() }).eq('id', id); await loadData(); setSyncing(false); };
+
+            const updateItemImage = async (id, file) => {
+                if (!file) return;
+                setSyncing(true);
+                try {
+                    const base64 = await new Promise((resolve, reject) => {
+                        const reader = new FileReader();
+                        reader.onload = (e) => {
+                            const img = new Image();
+                            img.onload = () => {
+                                const canvas = document.createElement("canvas");
+                                const max = 400;
+                                let w = img.width, h = img.height;
+                                if (w > h) { h = Math.round(h * max / w); w = max; }
+                                else { w = Math.round(w * max / h); h = max; }
+                                canvas.width = w; canvas.height = h;
+                                canvas.getContext("2d").drawImage(img, 0, 0, w, h);
+                                resolve(canvas.toDataURL("image/jpeg", 0.8));
+                            };
+                            img.onerror = reject;
+                            img.src = e.target.result;
+                        };
+                        reader.onerror = reject;
+                        reader.readAsDataURL(file);
+                    });
+                    const { error } = await supabase.from("inventory").update({ image_url: base64 }).eq("id", id);
+                    if (error) throw error;
+                    await loadData();
+                    alert("Foto actualizada");
+                } catch (e) { alert("Error al subir foto: " + e.message); }
+                setSyncing(false);
+            };
+
+            const removeItemImage = async (id) => {
+                if (!confirm("Quitar la foto de este material?")) return;
+                setSyncing(true);
+                await supabase.from("inventory").update({ image_url: null }).eq("id", id);
+                await loadData();
+                setSyncing(false);
+            };
             const deleteItem = async (id) => { if (!confirm('¿Eliminar material?')) return; setSyncing(true); await supabase.from('inventory').delete().eq('id', id); await loadData(); setSyncing(false); };
             const addCourse = async (name) => { if (!name.trim()) return; setSyncing(true); await supabase.from('courses').insert([{ name: name.trim() }]); await loadData(); setSyncing(false); };
             const deleteCourse = async (name) => { if (!confirm(`¿Eliminar "${name}"?`)) return; setSyncing(true); await supabase.from('courses').delete().eq('name', name); await loadData(); setSyncing(false); };
@@ -1024,7 +1064,6 @@
 
             // USERS
             const deleteUser = async (id, email) => {
-                if (!devMode) return alert('Solo el desarrollador puede eliminar usuarios.');
                 if (user?.email === email) return alert('No podés eliminarte a vos mismo');
                 if (!confirm(`¿Eliminar usuario ${email}? Podrá volver a registrarse.`)) return;
                 setSyncing(true);
@@ -1380,7 +1419,10 @@
                     return (
                         <div className={`card p-4 border-2 ${st.border}`}>
                             <div className="flex items-center gap-3">
-                                <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${st.bg} ${st.tx}`}><CatIcon cat={item.cat} size={24} /></div>
+                                {item.image_url
+                                    ? <img src={item.image_url} alt={item.name} className="w-12 h-12 rounded-xl object-cover flex-shrink-0 border border-gray-200" />
+                                    : <div className={`w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 ${st.bg} ${st.tx}`}><CatIcon cat={item.cat} size={24} /></div>
+                                }
                                 <div className="flex-1 min-w-0">
                                     <p className="font-bold text-gray-800 truncate">{item.name}</p>
                                     <div className="flex items-center gap-2 mt-1">
@@ -1393,6 +1435,25 @@
                             {open && (user?.role === 'Administrativo' || devMode) && (
                                 <div className="mt-4 pt-4 border-t-2 border-dashed border-gray-200 space-y-3">
                                     <div className="flex gap-2"><input type="text" value={editName} onChange={e => setEditName(e.target.value)} className="flex-1 input-field text-sm font-semibold" /><button onClick={() => updateItemName(item.id, editName)} className="px-4 btn-cyan text-white rounded-xl text-sm font-bold">Renombrar</button></div>
+                                    <div className="flex items-center gap-2">
+                                        {item.image_url ? (
+                                            <div className="flex items-center gap-2 flex-1">
+                                                <img src={item.image_url} alt={item.name} className="w-14 h-14 rounded-xl object-cover border-2 border-gray-200" />
+                                                <div className="flex flex-col gap-1 flex-1">
+                                                    <label className="cursor-pointer px-3 py-2 bg-cyan-100 text-cyan-700 rounded-xl text-xs font-bold text-center">
+                                                        📷 Cambiar foto
+                                                        <input type="file" accept="image/*" className="hidden" onChange={e => e.target.files[0] && updateItemImage(item.id, e.target.files[0])} />
+                                                    </label>
+                                                    <button onClick={() => removeItemImage(item.id)} className="px-3 py-2 bg-red-100 text-red-500 rounded-xl text-xs font-bold">🗑 Quitar foto</button>
+                                                </div>
+                                            </div>
+                                        ) : (
+                                            <label className="flex-1 cursor-pointer py-2.5 bg-orange-50 border-2 border-dashed border-orange-300 text-orange-600 rounded-xl text-xs font-bold text-center hover:bg-orange-100">
+                                                📷 Agregar foto real
+                                                <input type="file" accept="image/*" className="hidden" onChange={e => e.target.files[0] && updateItemImage(item.id, e.target.files[0])} />
+                                            </label>
+                                        )}
+                                    </div>
                                     <div className="flex gap-2">
                                         <button onClick={() => setType('in')} className={`flex-1 py-2.5 rounded-xl font-bold text-sm ${type === 'in' ? 'bg-green-500 text-white' : 'bg-gray-100 text-gray-500'}`}>+ Ingreso</button>
                                         <button onClick={() => setType('out')} className={`flex-1 py-2.5 rounded-xl font-bold text-sm ${type === 'out' ? 'bg-red-500 text-white' : 'bg-gray-100 text-gray-500'}`}>- Egreso</button>
@@ -2044,7 +2105,7 @@ ${o.adminSig ? `<img src="${o.adminSig}" class="sig-img" alt="Firma admin"/>` : 
                                             <button
                                                 onClick={() => deleteUser(u.id, u.email)}
                                                 disabled={syncing || user?.email === u.email}
-                                                className={`p-2 rounded-lg ${user?.email === u.email ? 'bg-gray-100 text-gray-300' : 'bg-red-100 text-red-500'} ${!devMode ? 'hidden' : ''}`}
+                                                className={`p-2 rounded-lg ${user?.email === u.email ? 'bg-gray-100 text-gray-300' : 'bg-red-100 text-red-500'}`}
                                             ><I.Trash size={16} /></button>
                                         </div>
                                     </div>
