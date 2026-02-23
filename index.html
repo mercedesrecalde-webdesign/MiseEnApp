@@ -1024,6 +1024,7 @@
 
             // USERS
             const deleteUser = async (id, email) => {
+                if (!devMode) return alert('Solo el desarrollador puede eliminar usuarios.');
                 if (user?.email === email) return alert('No podés eliminarte a vos mismo');
                 if (!confirm(`¿Eliminar usuario ${email}? Podrá volver a registrarse.`)) return;
                 setSyncing(true);
@@ -2043,7 +2044,7 @@ ${o.adminSig ? `<img src="${o.adminSig}" class="sig-img" alt="Firma admin"/>` : 
                                             <button
                                                 onClick={() => deleteUser(u.id, u.email)}
                                                 disabled={syncing || user?.email === u.email}
-                                                className={`p-2 rounded-lg ${user?.email === u.email ? 'bg-gray-100 text-gray-300' : 'bg-red-100 text-red-500'}`}
+                                                className={`p-2 rounded-lg ${user?.email === u.email ? 'bg-gray-100 text-gray-300' : 'bg-red-100 text-red-500'} ${!devMode ? 'hidden' : ''}`}
                                             ><I.Trash size={16} /></button>
                                         </div>
                                     </div>
