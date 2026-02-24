@@ -630,9 +630,27 @@
             const lastNotifiedRef = useRef(0); // cantidad de pedidos notificados anteriormente
 
             const requestNotifPermission = useCallback(async () => {
-                if ('Notification' in window && Notification.permission === 'default') {
-                    const perm = await Notification.requestPermission();
-                    console.log('Notificaciones:', perm);
+                if (!('Notification' in window)) {
+                    alert('Tu navegador no soporta notificaciones. En iOS, instalá la app en la pantalla de inicio primero (botón Compartir → Agregar a inicio).');
+                    return;
+                }
+                if (location.protocol === 'file:') {
+                    alert('Las notificaciones no funcionan desde archivo local. Una vez que la app esté en línea (deployed) van a funcionar correctamente.');
+                    return;
+                }
+                if (Notification.permission === 'granted') {
+                    alert('✅ Las notificaciones ya están activadas.');
+                    return;
+                }
+                if (Notification.permission === 'denied') {
+                    alert('Las notificaciones están bloqueadas. Entrá a la configuración de tu navegador y habilitá los permisos para este sitio.');
+                    return;
+                }
+                const perm = await Notification.requestPermission();
+                if (perm === 'granted') {
+                    new Notification('✅ Mise en App', { body: '¡Notificaciones activadas! Te avisaremos cuando lleguen pedidos nuevos.' });
+                } else {
+                    alert('No se pudo activar las notificaciones. Revisá los permisos del navegador.');
                 }
             }, []);
 
@@ -1596,8 +1614,16 @@
             }
 
             // ORDER
-            if (view === 'order' && (user?.role === 'Docente' || devMode)) return (
-                <div className="min-h-screen pb-32">
+            if (view === 'order' && (user?.role === 'Docente' || devMode)) {
+                const filteredOrderInv = inv.filter(i => {
+                    if (i.qty <= 0) return false;
+                    if (invCat !== 'Todos' && i.cat !== invCat) return false;
+                    if (invSearch && !i.name.toLowerCase().includes(invSearch.toLowerCase())) return false;
+                    return true;
+                });
+
+                return (
+                <div className="min-h-screen pb-40">
                     <div className="sticky top-0 z-40 bg-white/95 backdrop-blur-sm border-b-2 border-green-100 p-4"><div className="flex items-center gap-3"><BackBtn onClick={() => setView('dashboard')} /><h1 className="text-xl font-extrabold text-gray-800">📝 Nuevo pedido</h1></div></div>
                     <div className="p-4 space-y-4">
                         <div className="card p-4 card-green space-y-3">
@@ -1626,36 +1652,18 @@
                         </div>
                         <div>
                             <h3 className="text-sm text-gray-600 font-bold mb-2">📋 Disponible</h3>
-                            {/* Search bar */}
                             <div className="relative mb-2">
-                                <input
-                                    type="text"
-                                    placeholder="Buscar material..."
-                                    value={invSearch}
-                                    onChange={e => setInvSearch(e.target.value)}
-                                    className="w-full input-field pl-9 text-sm font-semibold"
-                                />
+                                <input type="text" placeholder="Buscar material..." value={invSearch} onChange={e => setInvSearch(e.target.value)} className="w-full input-field pl-9 text-sm font-semibold" />
                                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-base">🔍</span>
                                 {invSearch && <button onClick={() => setInvSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 font-bold text-lg leading-none">×</button>}
                             </div>
-                            {/* Category filters */}
                             <div className="flex gap-2 overflow-x-auto pb-2 mb-2" style={{scrollbarWidth:'none'}}>
                                 {['Todos', ...Array.from(new Set(inv.filter(i=>i.qty>0).map(i=>i.cat))).sort()].map(cat => (
-                                    <button
-                                        key={cat}
-                                        onClick={() => setInvCat(cat)}
-                                        className={`flex-shrink-0 px-3 py-1 rounded-full text-xs font-bold border-2 transition-all ${invCat === cat ? 'bg-cyan-500 text-white border-cyan-500' : 'bg-white text-gray-500 border-gray-200'}`}
-                                    >{cat}</button>
+                                    <button key={cat} onClick={() => setInvCat(cat)} className={`flex-shrink-0 px-3 py-1 rounded-full text-xs font-bold border-2 transition-all ${invCat === cat ? 'bg-cyan-500 text-white border-cyan-500' : 'bg-white text-gray-500 border-gray-200'}`}>{cat}</button>
                                 ))}
                             </div>
-                            {/* Item list – no max-height, page scrolls */}
                             <div className="space-y-2">
-                                {inv.filter(i => {
-                                    if (i.qty <= 0) return false;
-                                    if (invCat !== 'Todos' && i.cat !== invCat) return false;
-                                    if (invSearch && !i.name.toLowerCase().includes(invSearch.toLowerCase())) return false;
-                                    return true;
-                                }).map(i => {
+                                {filteredOrderInv.map(i => {
                                     const st = catStyle(i.cat);
                                     const inCart = cart.find(c => c.id === i.id);
                                     return (
@@ -1685,11 +1693,26 @@
                             <label className="text-sm text-gray-600 font-bold mb-2 block">💬 Observaciones <span className="text-gray-400 font-normal">(opcional)</span></label>
                             <textarea placeholder="Detalles especiales, instrucciones, etc." value={meta.obs} onChange={e => setMeta({ ...meta, obs: e.target.value })} className="w-full input-field font-semibold text-sm" rows={2} />
                         </div>
+                        {/* Botón enviar al final como fallback */}
                         <button onClick={sendOrd} disabled={!cart.length || syncing} className={`w-full py-4 rounded-2xl font-bold text-white flex items-center justify-center gap-2 ${cart.length && !syncing ? 'btn-gradient' : 'bg-gray-300'}`}>{syncing ? <><div className="loader w-5 h-5 border-2 animate-spin"></div> Enviando...</> : <><I.Send size={20} /> Enviar pedido</>}</button>
                     </div>
+
+                    {/* BOTÓN FLOTANTE — aparece solo cuando hay items en el carrito */}
+                    {cart.length > 0 && (
+                        <div className="fixed bottom-20 left-0 right-0 z-50 px-4">
+                            <button onClick={sendOrd} disabled={syncing} className="w-full py-4 rounded-2xl font-bold text-white flex items-center justify-center gap-3 btn-gradient shadow-2xl" style={{boxShadow: '0 8px 32px rgba(99,102,241,0.45)'}}>
+                                {syncing
+                                    ? <><div className="loader w-5 h-5 border-2 animate-spin"></div> Enviando...</>
+                                    : <><I.Send size={20} /> Enviar pedido · <span className="bg-white/25 px-2 py-0.5 rounded-full text-sm">{cart.reduce((s,i)=>s+i.q,0)} items</span></>
+                                }
+                            </button>
+                        </div>
+                    )}
+
                     <Nav current="order" go={setView} role={user?.role} />
                 </div>
-            );
+                );
+            }
 
             // COURSES
             if (view === 'courses') return (
