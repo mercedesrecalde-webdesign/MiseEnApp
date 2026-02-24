@@ -557,7 +557,10 @@
                         supabase.from('order_items').select('*') // Traemos TODOS los items de una
                     ]);
 
-                    if (invData) setInv(invData);
+                    if (invData) setInv(invData.map(i => ({
+                        ...i,
+                        units: i.units ? (() => { try { return JSON.parse(i.units); } catch(e) { return null; } })() : null
+                    })));
                     if (crsData) setCrs(crsData.map(c => c.name));
                     if (hisData) setHis(hisData.map(h => ({ ...h, name: h.item_name, amt: h.amount, before: h.before_qty, after: h.after_qty, by: h.user_name, at: h.created_at })));
                     if (usersData) setUsers(usersData);
@@ -573,7 +576,12 @@
                                 date: o.date || o.order_date || '',
                                 time: o.time || o.order_time || '',
                                 career: o.career || '',
-                                items: items.map(i => ({ id: i.item_id || i.inventory_id, name: i.item_name, q: i.qty || i.quantity })),
+                                items: items.map(i => ({ 
+                                    id: i.item_id || i.inventory_id, 
+                                    name: i.item_name, 
+                                    q: i.qty || i.quantity,
+                                    assignedUnits: i.assigned_units ? (() => { try { return JSON.parse(i.assigned_units); } catch(e) { return null; } })() : null
+                                })),
                                 teacher: o.teacher_name || 'Sin nombre',
                                 teacher_email: o.teacher_email,
                                 obs: o.observations || '',
@@ -825,7 +833,15 @@
                 setSyncing(false);
             };
 
-            const confirmDel = async (orderId, items) => {
+            const updateItemUnits = async (id, unitsArray) => {
+                setSyncing(true);
+                const jsonVal = unitsArray && unitsArray.length > 0 ? JSON.stringify(unitsArray) : null;
+                await supabase.from('inventory').update({ units: jsonVal }).eq('id', id);
+                await loadData();
+                setSyncing(false);
+            };
+
+            const confirmDel = async (orderId, items, unitSelections = {}) => {
                 setSyncing(true);
                 try {
                     const order = ord.find(o => o.id === orderId);
@@ -837,7 +853,12 @@
                             const invItem = inv.find(i => i.id === old.id);
                             if (invItem) await supabase.from('inventory').update({ qty: invItem.qty + (old.q - newItem.q) }).eq('id', old.id);
                         }
-                        if (newItem) await supabase.from('order_items').update({ qty: newItem.q }).eq('order_id', orderId).eq('item_id', old.id);
+                        if (newItem) {
+                            const updatePayload = { qty: newItem.q };
+                            const selUnits = unitSelections[old.id];
+                            if (selUnits && selUnits.length > 0) updatePayload.assigned_units = JSON.stringify(selUnits);
+                            await supabase.from('order_items').update(updatePayload).eq('order_id', orderId).eq('item_id', old.id);
+                        }
                     }
 
                     await supabase.from('orders').update({ status: 'En Curso' }).eq('id', orderId);
@@ -846,12 +867,25 @@
                 setSyncing(false);
             };
 
-            const returnMat = async (orderId, obs) => {
+            const returnMat = async (orderId, damagedItems) => {
                 setSyncing(true);
                 const order = ord.find(o => o.id === orderId);
                 const prevObs = order?.obs || '';
-                const fullObs = prevObs ? `${prevObs}\n📦 Devolución: ${obs}` : (obs || null);
-                await supabase.from('orders').update({ status: 'Devolución Pendiente', observations: fullObs }).eq('id', orderId);
+
+                let obsStr = null;
+                if (damagedItems && damagedItems.length > 0) {
+                    const readablePart = damagedItems.map(d => `${d.name}: ${d.note || 'sin descripción'}`).join('; ');
+                    const dataPart = damagedItems.map(d =>
+                        [d.id, d.name, d.q, (d.note || '').replace(/[|;]/g, ' ')].join('|')
+                    ).join(';;');
+                    obsStr = `⚠️ DAÑOS REPORTADOS: ${readablePart}\n⚠️DAMAGED:${dataPart}`;
+                }
+
+                const fullObs = prevObs
+                    ? (obsStr ? `${prevObs}\n📦 Devolución: ${obsStr}` : prevObs)
+                    : (obsStr || null);
+
+                await supabase.from('orders').update({ status: 'Devolución Pendiente', observations: fullObs || null }).eq('id', orderId);
                 await loadData();
                 setSyncing(false);
             };
@@ -1007,6 +1041,7 @@
             const deleteItem = async (id) => { if (!confirm('¿Eliminar material?')) return; setSyncing(true); await supabase.from('inventory').delete().eq('id', id); await loadData(); setSyncing(false); };
             const addCourse = async (name) => { if (!name.trim()) return; setSyncing(true); await supabase.from('courses').insert([{ name: name.trim() }]); await loadData(); setSyncing(false); };
             const deleteCourse = async (name) => { if (!confirm(`¿Eliminar "${name}"?`)) return; setSyncing(true); await supabase.from('courses').delete().eq('name', name); await loadData(); setSyncing(false); };
+            const renameCourse = async (oldName, newName) => { if (!newName.trim() || newName.trim() === oldName) return; setSyncing(true); await supabase.from('courses').update({ name: newName.trim() }).eq('name', oldName); await loadData(); setSyncing(false); };
 
             // PURCHASE REQUESTS
             const sendPurchaseRequest = async (items, justification) => {
@@ -1391,11 +1426,10 @@
                                     {ord.filter(o => o.status === 'Pendiente Compra' || (o.career && o.career.startsWith('🛒'))).length > 0 && <span className="bg-orange-500 text-white text-sm font-bold px-3 py-1 rounded-full">{ord.filter(o => o.status === 'Pendiente Compra' || (o.career && o.career.startsWith('🛒'))).length}</span>}
                                 </div>
                             </button>
-                            <div className="grid grid-cols-4 gap-3">
+                            <div className="grid grid-cols-3 gap-3">
                                 <button onClick={() => setView('history')} className="card p-4 flex flex-col items-center gap-2 card-cyan"><div className="w-11 h-11 bg-cyan-500 rounded-xl flex items-center justify-center shadow-lg"><I.History size={22} className="text-white" /></div><h3 className="font-bold text-gray-800 text-[11px]">Historial</h3></button>
                                 <button onClick={() => setView('incidents')} className="card p-4 flex flex-col items-center gap-2 card-orange relative"><div className="w-11 h-11 bg-orange-500 rounded-xl flex items-center justify-center shadow-lg"><I.AlertTriangle size={22} className="text-white" /></div><h3 className="font-bold text-gray-800 text-[11px]">Bitácora</h3>{ord.filter(o => o.obs && !o.res && (!o.career || !o.career.startsWith('🛒'))).length > 0 && <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold w-6 h-6 rounded-full flex items-center justify-center">{ord.filter(o => o.obs && !o.res && (!o.career || !o.career.startsWith('🛒'))).length}</span>}</button>
                                 <button onClick={() => setView('courses')} className="card p-4 flex flex-col items-center gap-2 card-purple"><div className="w-11 h-11 bg-purple-500 rounded-xl flex items-center justify-center shadow-lg"><I.Book size={22} className="text-white" /></div><h3 className="font-bold text-gray-800 text-[11px]">Cursos</h3></button>
-                                <button onClick={() => setView('users')} className="card p-4 flex flex-col items-center gap-2 card-green"><div className="w-11 h-11 bg-green-500 rounded-xl flex items-center justify-center shadow-lg"><I.Users size={22} className="text-white" /></div><h3 className="font-bold text-gray-800 text-[11px]">Usuarios</h3></button>
                             </div>
                         </>}
                     </div>
@@ -1412,7 +1446,16 @@
                     const [reason, setReason] = useState('');
                     const [note, setNote] = useState('');
                     const [editName, setEditName] = useState(item.name);
+                    const [showUnits, setShowUnits] = useState(false);
+                    const [unitLabels, setUnitLabels] = useState(item.units || []);
                     const st = catStyle(item.cat);
+
+                    // Generate automatic unit labels e.g. "Balanza 1", "Balanza 2"...
+                    const autoGenUnits = () => {
+                        const baseName = item.name.split(' ').slice(0, 3).join(' ');
+                        const newLabels = Array.from({ length: item.qty }, (_, i) => `${baseName} ${i + 1}`);
+                        setUnitLabels(newLabels);
+                    };
 
                     const submit = async () => { if (!reason) return alert('Selecciona motivo'); const ok = await stockMove(item.id, type, amt, reason, note); if (ok) { setAmt(''); setReason(''); setNote(''); setOpen(false); } };
 
@@ -1428,6 +1471,7 @@
                                     <div className="flex items-center gap-2 mt-1">
                                         <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${st.bg} ${st.tx}`}>{item.cat}</span>
                                         <span className={`text-sm font-black ${item.qty > 5 ? 'text-green-600' : item.qty > 0 ? 'text-orange-500' : 'text-red-500'}`}>Stock: {item.qty}</span>
+                                        {item.units && item.units.length > 0 && <span className="text-[10px] font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full">🔢 Numerado</span>}
                                     </div>
                                 </div>
                                 {(user?.role === 'Administrativo' || devMode) && <button onClick={() => setOpen(!open)} className={`p-2 rounded-xl ${open ? 'bg-purple-500 text-white' : 'bg-purple-100 text-purple-500'}`}><I.Edit size={18} /></button>}
@@ -1454,6 +1498,43 @@
                                             </label>
                                         )}
                                     </div>
+
+                                    {/* UNIDADES INDIVIDUALES */}
+                                    {/* Solo sugerido para equipos/maquinaria de valor */}
+                                    <div className="border-2 border-blue-200 rounded-xl overflow-hidden">
+                                        <button onClick={() => setShowUnits(!showUnits)} className="w-full flex items-center justify-between px-3 py-2.5 bg-blue-50 text-blue-700 font-bold text-sm">
+                                            <span>🔢 Seguimiento individual</span>
+                                            <span className="text-xs font-normal text-blue-500">{item.units && item.units.length > 0 ? `${item.units.length} unidades` : 'Sin numerar'} {showUnits ? '▲' : '▼'}</span>
+                                        </button>
+                                        {showUnits && (
+                                            <div className="p-3 space-y-2 bg-blue-50/50">
+                                                <div className="bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+                                                    <p className="text-[11px] text-amber-700 font-semibold">💡 Recomendado solo para equipos de valor: batidoras, balanzas, procesadoras, sopletes, etc. No hace falta numerar utensilios o cubertería.</p>
+                                                </div>
+                                                <button onClick={autoGenUnits} className="w-full py-2 bg-blue-100 text-blue-700 rounded-lg text-xs font-bold">⚡ Generar automático ({item.qty} unidades)</button>
+                                                {unitLabels.map((label, idx) => (
+                                                    <div key={idx} className="flex items-center gap-2">
+                                                        <span className="text-xs font-bold text-gray-400 w-5 text-right flex-shrink-0">{idx + 1}.</span>
+                                                        <input
+                                                            type="text"
+                                                            value={label}
+                                                            onChange={e => { const copy = [...unitLabels]; copy[idx] = e.target.value; setUnitLabels(copy); }}
+                                                            className="flex-1 px-3 py-1.5 bg-white border-2 border-blue-200 rounded-lg text-sm font-semibold focus:outline-none focus:border-blue-400"
+                                                        />
+                                                        <button onClick={() => setUnitLabels(unitLabels.filter((_, i) => i !== idx))} className="p-1.5 bg-red-100 text-red-400 rounded-lg flex-shrink-0"><I.Trash size={14} /></button>
+                                                    </div>
+                                                ))}
+                                                <div className="flex gap-2 pt-1">
+                                                    <button onClick={() => setUnitLabels([...unitLabels, `${item.name} ${unitLabels.length + 1}`])} className="flex-1 py-2 bg-white border-2 border-dashed border-blue-300 text-blue-500 rounded-lg text-xs font-bold">+ Agregar unidad</button>
+                                                    <button onClick={() => updateItemUnits(item.id, unitLabels)} disabled={syncing} className="flex-1 py-2 bg-blue-600 text-white rounded-lg text-xs font-bold disabled:opacity-50">💾 Guardar</button>
+                                                </div>
+                                                {item.units && item.units.length > 0 && (
+                                                    <button onClick={() => { setUnitLabels([]); updateItemUnits(item.id, []); }} className="w-full py-1.5 text-red-400 text-xs font-bold">✕ Quitar numeración</button>
+                                                )}
+                                            </div>
+                                        )}
+                                    </div>
+
                                     <div className="flex gap-2">
                                         <button onClick={() => setType('in')} className={`flex-1 py-2.5 rounded-xl font-bold text-sm ${type === 'in' ? 'bg-green-500 text-white' : 'bg-gray-100 text-gray-500'}`}>+ Ingreso</button>
                                         <button onClick={() => setType('out')} className={`flex-1 py-2.5 rounded-xl font-bold text-sm ${type === 'out' ? 'bg-red-500 text-white' : 'bg-gray-100 text-gray-500'}`}>- Egreso</button>
@@ -1532,6 +1613,7 @@
                             {cart.length === 0 ? <div className="card p-8 text-center border-3 border-dashed border-gray-200 bg-gray-50"><I.ShoppingBag size={40} className="mx-auto text-gray-300 mb-2" /><p className="text-gray-400 font-semibold">Carrito vacío</p></div>
                                 : <div className="space-y-2">{cart.map(i => (
                                     <div key={i.id} className="card p-3 flex items-center justify-between border-2 border-cyan-200">
+                                        {i.image_url && <img src={i.image_url} alt={i.name} className="w-9 h-9 rounded-lg object-cover flex-shrink-0 border border-gray-200 mr-2" />}
                                         <span className="text-sm font-bold text-gray-700 flex-1 truncate mr-2">{i.name}</span>
                                         <div className="flex items-center gap-1">
                                             <button onClick={() => setCartQty(i.id, i.q - 1)} className="w-8 h-8 rounded-lg bg-gray-100 text-gray-600 flex items-center justify-center font-bold">-</button>
@@ -1578,7 +1660,10 @@
                                     const inCart = cart.find(c => c.id === i.id);
                                     return (
                                         <div key={i.id} className={`card p-3 flex items-center gap-2 border-2 ${inCart ? 'border-cyan-400 bg-cyan-50' : st.border}`}>
-                                            <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${st.bg} ${st.tx} flex-shrink-0`}><CatIcon cat={i.cat} size={20} /></div>
+                                            {i.image_url
+                                                ? <img src={i.image_url} alt={i.name} className="w-10 h-10 rounded-xl object-cover flex-shrink-0 border-2 border-gray-200" />
+                                                : <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${st.bg} ${st.tx} flex-shrink-0`}><CatIcon cat={i.cat} size={20} /></div>
+                                            }
                                             <div className="flex-1 min-w-0">
                                                 <p className="text-sm font-bold text-gray-700 truncate">{i.name}</p>
                                                 <p className="text-xs text-green-600 font-bold">Stock: {i.qty}{inCart ? <span className="text-cyan-600"> · en pedido: {inCart.q}</span> : null}</p>
@@ -1632,17 +1717,35 @@
                                     <I.Book size={48} className="mx-auto text-gray-200 mb-3" />
                                     <p className="text-gray-400 font-bold">No hay cursos</p>
                                 </div>
-                            ) : crs.map(c => (
-                                <div key={c} className="card p-4 flex items-center justify-between border-2 border-purple-200">
-                                    <div className="flex items-center gap-3">
-                                        <div className="w-10 h-10 bg-purple-100 rounded-xl flex items-center justify-center">
-                                            <I.Book size={20} className="text-purple-600" />
+                            ) : (() => {
+                                const CourseItem = ({ c }) => {
+                                    const [editing, setEditing] = useState(false);
+                                    const [editVal, setEditVal] = useState(c);
+                                    return (
+                                        <div className="card p-4 border-2 border-purple-200">
+                                            {editing ? (
+                                                <div className="flex gap-2">
+                                                    <input type="text" value={editVal} onChange={e => setEditVal(e.target.value)} className="flex-1 input-field font-semibold" autoFocus onKeyDown={e => { if (e.key === 'Enter') { renameCourse(c, editVal); setEditing(false); } if (e.key === 'Escape') { setEditing(false); setEditVal(c); } }} />
+                                                    <button onClick={() => { renameCourse(c, editVal); setEditing(false); }} disabled={syncing} className="px-4 bg-purple-500 text-white rounded-xl font-bold disabled:opacity-50"><I.Check size={18} /></button>
+                                                    <button onClick={() => { setEditing(false); setEditVal(c); }} className="px-3 bg-gray-100 text-gray-500 rounded-xl"><I.X size={18} /></button>
+                                                </div>
+                                            ) : (
+                                                <div className="flex items-center justify-between">
+                                                    <div className="flex items-center gap-3 flex-1 min-w-0">
+                                                        <div className="w-10 h-10 bg-purple-100 rounded-xl flex items-center justify-center flex-shrink-0"><I.Book size={20} className="text-purple-600" /></div>
+                                                        <span className="font-bold text-gray-700 truncate">{c}</span>
+                                                    </div>
+                                                    <div className="flex gap-2 ml-2">
+                                                        <button onClick={() => { setEditing(true); setEditVal(c); }} className="p-2 bg-purple-100 text-purple-500 rounded-lg"><I.Edit size={16} /></button>
+                                                        <button onClick={() => deleteCourse(c)} disabled={syncing} className="p-2 bg-red-100 text-red-500 rounded-lg disabled:opacity-50"><I.Trash size={16} /></button>
+                                                    </div>
+                                                </div>
+                                            )}
                                         </div>
-                                        <span className="font-bold text-gray-700">{c}</span>
-                                    </div>
-                                    <button onClick={() => deleteCourse(c)} disabled={syncing} className="p-2 bg-red-100 text-red-500 rounded-lg disabled:opacity-50"><I.Trash size={18} /></button>
-                                </div>
-                            ))}
+                                    );
+                                };
+                                return crs.map(c => <CourseItem key={c} c={c} />);
+                            })()}
                         </div>
                     </div>
                     <Nav current="dashboard" go={setView} role={user?.role} />
@@ -1672,13 +1775,12 @@ th { background: #f0f0f0; font-weight: bold; }
 .info-box label { font-size: 10pt; color: #666; display: block; }
 .info-box span { font-weight: bold; font-size: 12pt; }
 .status { display: inline-block; padding: 4px 12px; border: 2px solid #333; font-weight: bold; font-size: 11pt; margin: 10px 0; }
-.signatures { margin-top: 40px; }
-.sig-main { text-align: center; margin-bottom: 40px; }
-.sig-img { height: 60px; margin: 0 auto 8px; display: block; object-fit: contain; }
-.sig-line { border-top: 1px solid #000; padding-top: 5px; font-size: 10pt; display: inline-block; min-width: 200px; }
-.sig-others { display: flex; justify-content: space-between; margin-top: 30px; }
-.sig-block { text-align: center; width: 40%; }
-.sig-block .sig-line { margin-top: 8px; }
+.signatures { margin-top: 60px; }
+.sig-others { display: flex; justify-content: space-between; align-items: flex-end; }
+.sig-block { display: flex; flex-direction: column; align-items: center; width: 42%; }
+.sig-img { height: 70px; width: 220px; object-fit: contain; object-position: center bottom; display: block; }
+.sig-placeholder { height: 70px; width: 220px; display: block; }
+.sig-line { border-top: 2px solid #000; padding-top: 6px; font-size: 10pt; text-align: center; width: 220px; line-height: 1.5; }
 .obs-box { background: #f9f9f9; padding: 12px; border-left: 3px solid #e67e22; margin: 15px 0; }
 .res-box { background: #f0fff0; padding: 12px; border-left: 3px solid #27ae60; margin: 15px 0; }
 .btn-print { position: fixed; top: 20px; right: 20px; padding: 12px 24px; background: #7c3aed; color: white; border: none; border-radius: 8px; font-size: 14px; cursor: pointer; font-weight: bold; }
@@ -1704,16 +1806,16 @@ th { background: #f0f0f0; font-weight: bold; }
 <tbody>${items.map((i, idx) => `<tr><td class="center">${idx + 1}</td><td>${i.name}</td><td class="center">${i.q}</td></tr>`).join('')}
 <tr style="font-weight:bold;background:#f0f0f0"><td colspan="2" style="text-align:right">TOTAL ITEMS</td><td class="center">${items.reduce((s, i) => s + i.q, 0)}</td></tr>
 </tbody></table>
-${o.obs ? `<div class="obs-box"><strong>Observaciones:</strong><br/>${o.obs}</div>` : ''}
+${o.obs ? `<div class="obs-box"><strong>Observaciones:</strong><br/>${o.obs.replace(/\n?⚠️DAMAGED:[^\n]*/g, '').trim()}</div>` : ''}
 ${o.res ? `<div class="res-box"><strong>Resolución:</strong><br/>${o.res}</div>` : ''}
 <div class="signatures">
 <div class="sig-others" style="margin-top:0">
 <div class="sig-block">
-${o.sig ? `<img src="${o.sig}" class="sig-img" alt="Firma docente"/>` : '<div style="height:60px"></div>'}
+${o.sig ? `<img src="${o.sig}" class="sig-img" alt="Firma docente"/>` : '<div class="sig-placeholder"></div>'}
 <div class="sig-line">${o.teacher}<br/>Docente</div>
 </div>
 <div class="sig-block">
-${o.adminSig ? `<img src="${o.adminSig}" class="sig-img" alt="Firma admin"/>` : '<div style="height:60px"></div>'}
+${o.adminSig ? `<img src="${o.adminSig}" class="sig-img" alt="Firma admin"/>` : '<div class="sig-placeholder"></div>'}
 <div class="sig-line">Responsable de Pañol<br/>Santiago Rainero</div>
 </div>
 </div>
@@ -1726,9 +1828,32 @@ ${o.adminSig ? `<img src="${o.adminSig}" class="sig-img" alt="Firma admin"/>` : 
 
                 const OrdCard = ({ o }) => {
                     const [items, setItems] = useState(o.items || []);
-                    const [obs, setObs] = useState('');
+                    const [damagedItems, setDamagedItems] = useState({});
+                    const [unitSelections, setUnitSelections] = useState({}); // {itemId: [label,...]}
                     const stCol = { 'Solicitado': 'bg-yellow-400', 'En Curso': 'bg-cyan-500', 'Devolución Pendiente': 'bg-orange-500', 'Finalizado': 'bg-green-500' };
                     const stBorder = { 'Solicitado': 'border-yellow-300', 'En Curso': 'border-cyan-300', 'Devolución Pendiente': 'border-orange-300', 'Finalizado': 'border-green-300' };
+
+                    // Compute which units of an item are currently out in other active orders
+                    const getUnitsForItem = (itemId) => {
+                        const invItem = inv.find(x => x.id === itemId);
+                        if (!invItem?.units || invItem.units.length === 0) return null;
+                        const inUse = new Set();
+                        ord.filter(x => ['En Curso','Devolución Pendiente'].includes(x.status) && x.id !== o.id)
+                           .forEach(x => (x.items||[]).forEach(it => {
+                               if (it.id === itemId && it.assignedUnits) it.assignedUnits.forEach(u => inUse.add(u));
+                           }));
+                        return invItem.units.map(u => ({ label: u, available: !inUse.has(u) }));
+                    };
+
+                    const toggleUnit = (itemId, label, needed) => {
+                        const current = unitSelections[itemId] || [];
+                        if (current.includes(label)) {
+                            setUnitSelections({ ...unitSelections, [itemId]: current.filter(x => x !== label) });
+                        } else {
+                            if (current.length >= needed) return; // can't select more than qty requested
+                            setUnitSelections({ ...unitSelections, [itemId]: [...current, label] });
+                        }
+                    };
 
                     return (
                         <div className={`card p-5 relative overflow-hidden border-2 ${stBorder[o.status]}`}>
@@ -1737,26 +1862,104 @@ ${o.adminSig ? `<img src="${o.adminSig}" class="sig-img" alt="Firma admin"/>` : 
                             <div className="space-y-1 text-xs text-gray-500 font-semibold mb-3"><div className="truncate">🎓 {o.career}</div><div className="flex flex-wrap gap-x-4 gap-y-0"><span>📅 {o.date ? new Date(o.date).toLocaleDateString('es-AR') : ''}</span><span>🕐 {o.time?.slice(0, 5)}</span></div></div>
                             <div className="bg-gray-50 rounded-2xl p-4 mb-3 border-2 border-gray-200">
                                 <p className="text-xs text-gray-400 font-bold mb-2">📦 MATERIAL ({items.length})</p>
-                                {items.length === 0 ? <p className="text-sm text-gray-400 italic">Sin items</p> : items.map(i => (
-                                    <div key={i.id} className="flex justify-between items-center py-2 border-b border-gray-100 last:border-0">
-                                        <span className="text-sm text-gray-700 font-semibold truncate flex-1 mr-2">{i.name}</span>
+                                {items.length === 0 ? <p className="text-sm text-gray-400 italic">Sin items</p> : items.map(i => {
+                                    const invItem = inv.find(x => x.id === i.id);
+                                    const unitOptions = (user?.role === 'Administrativo' || devMode) && o.status === 'Solicitado' ? getUnitsForItem(i.id) : null;
+                                    const selUnits = unitSelections[i.id] || [];
+                                    return (
+                                    <div key={i.id} className="flex flex-col py-2 border-b border-gray-100 last:border-0 gap-1.5">
+                                        <div className="flex justify-between items-center">
+                                            <div className="flex items-center gap-2 flex-1 min-w-0 mr-2">
+                                                {invItem?.image_url && <img src={invItem.image_url} alt={i.name} className="w-8 h-8 rounded-lg object-cover flex-shrink-0 border border-gray-200" />}
+                                                <span className="text-sm text-gray-700 font-semibold truncate">{i.name}</span>
+                                            </div>
                                         {(user?.role === 'Administrativo' || devMode) && o.status === 'Solicitado' ? (
                                             <div className="flex items-center gap-1 bg-white rounded-xl px-2 py-1 border-2 border-gray-200">
                                                 <button onClick={() => setItems(items.map(x => x.id === i.id ? { ...x, q: Math.max(0, x.q - 1) } : x))} className="w-7 h-7 flex items-center justify-center text-red-500"><I.Minus size={14} /></button>
                                                 <input type="number" value={i.q} onChange={e => setItems(items.map(x => x.id === i.id ? { ...x, q: e.target.value === '' ? '' : Math.max(0, parseInt(e.target.value) || 0) } : x))} onBlur={e => { if (e.target.value === '') setItems(items.map(x => x.id === i.id ? { ...x, q: 0 } : x)); }} className="w-10 text-center font-black text-cyan-600 bg-cyan-50 rounded border border-cyan-200 py-0.5 text-sm" min="0" />
                                                 <button onClick={() => setItems(items.map(x => x.id === i.id ? { ...x, q: x.q + 1 } : x))} className="w-7 h-7 flex items-center justify-center text-green-500"><I.Plus size={14} /></button>
                                             </div>
-                                        ) : <span className="text-sm font-black text-cyan-600">×{i.q}</span>}
+                                        ) : <span className="text-sm font-black text-cyan-600 flex-shrink-0">×{i.q}</span>}
+                                        </div>
+                                        {/* Unit selector: admin selecting which specific units to deliver */}
+                                        {unitOptions && unitOptions.length > 0 && (
+                                            <div className="pl-2">
+                                                <p className="text-[10px] text-blue-600 font-bold mb-1">
+                                                    🔢 Seleccioná cuál/es entregar <span className="text-gray-400">({selUnits.length}/{i.q} seleccionadas)</span>
+                                                </p>
+                                                <div className="flex flex-wrap gap-1.5">
+                                                    {unitOptions.map(u => {
+                                                        const isSelected = selUnits.includes(u.label);
+                                                        return (
+                                                            <button
+                                                                key={u.label}
+                                                                onClick={() => u.available && toggleUnit(i.id, u.label, i.q)}
+                                                                className={`px-2.5 py-1 rounded-full text-[11px] font-bold border-2 transition-all ${
+                                                                    !u.available ? 'bg-gray-100 text-gray-400 border-gray-200 line-through cursor-not-allowed' :
+                                                                    isSelected ? 'bg-blue-600 text-white border-blue-600' :
+                                                                    'bg-white text-blue-600 border-blue-300 hover:border-blue-500'
+                                                                }`}
+                                                            >
+                                                                {u.label}{!u.available ? ' 🔴' : ''}
+                                                            </button>
+                                                        );
+                                                    })}
+                                                </div>
+                                            </div>
+                                        )}
+                                        {/* Show assigned units when already delivered */}
+                                        {i.assignedUnits && i.assignedUnits.length > 0 && (
+                                            <div className="pl-2 flex flex-wrap gap-1">
+                                                {i.assignedUnits.map(u => (
+                                                    <span key={u} className="px-2 py-0.5 bg-blue-100 text-blue-700 rounded-full text-[11px] font-bold">🔢 {u}</span>
+                                                ))}
+                                            </div>
+                                        )}
                                     </div>
-                                ))}
+                                    );
+                                })}
                             </div>
-                            {o.status === 'En Curso' && user?.role === 'Docente' && <textarea placeholder="⚠️ Observaciones..." value={obs} onChange={e => setObs(e.target.value)} className="w-full px-4 py-3 bg-orange-50 rounded-2xl text-sm border-2 border-orange-200 mb-3 font-semibold" rows={2} />}
-                            {o.obs && <div className="bg-orange-50 rounded-2xl p-4 mb-3 border-2 border-orange-200"><p className="text-xs font-bold text-orange-600"><I.AlertTriangle size={14} className="inline mr-1" /> OBSERVACIONES</p><p className="text-sm text-gray-700 italic mt-1">"{o.obs}"</p></div>}
+                            {o.status === 'En Curso' && user?.role === 'Docente' && (
+                                <div className="bg-orange-50 rounded-2xl p-4 mb-3 border-2 border-orange-200">
+                                    <p className="text-xs font-bold text-orange-700 mb-3">⚠️ ¿Algún material tiene daño o novedad?</p>
+                                    <div className="space-y-2">
+                                        {items.map((it) => (
+                                            <div key={it.id || it.name}>
+                                                <button
+                                                    onClick={() => {
+                                                        if (damagedItems[it.id || it.name]) {
+                                                            const copy = { ...damagedItems };
+                                                            delete copy[it.id || it.name];
+                                                            setDamagedItems(copy);
+                                                        } else {
+                                                            setDamagedItems({ ...damagedItems, [it.id || it.name]: { id: it.id, name: it.name, q: it.q, note: '' } });
+                                                        }
+                                                    }}
+                                                    className={`w-full text-left px-3 py-2.5 rounded-xl text-sm font-semibold flex items-center justify-between transition-all ${damagedItems[it.id || it.name] ? 'bg-red-100 border-2 border-red-400 text-red-700' : 'bg-white border-2 border-gray-200 text-gray-600 hover:border-gray-300'}`}
+                                                >
+                                                    <span className="truncate mr-2">{it.name} <span className="font-normal text-gray-400">×{it.q}</span></span>
+                                                    <span className="flex-shrink-0 text-xs font-bold">{damagedItems[it.id || it.name] ? '⚠️ Con daño' : '✓ Sin novedad'}</span>
+                                                </button>
+                                                {damagedItems[it.id || it.name] && (
+                                                    <input
+                                                        type="text"
+                                                        placeholder="Describí el problema..."
+                                                        value={damagedItems[it.id || it.name].note}
+                                                        onChange={e => setDamagedItems({ ...damagedItems, [it.id || it.name]: { ...damagedItems[it.id || it.name], note: e.target.value } })}
+                                                        className="w-full mt-1 px-3 py-2 bg-white border-2 border-red-300 rounded-xl text-sm font-semibold focus:outline-none focus:border-red-500"
+                                                    />
+                                                )}
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+                            {o.obs && <div className="bg-orange-50 rounded-2xl p-4 mb-3 border-2 border-orange-200"><p className="text-xs font-bold text-orange-600"><I.AlertTriangle size={14} className="inline mr-1" /> OBSERVACIONES</p><p className="text-sm text-gray-700 italic mt-1">"{o.obs.replace(/\n?⚠️DAMAGED:[^\n]*/g, '').trim()}"</p></div>}
                             {o.res && <div className="bg-green-50 rounded-2xl p-4 mb-3 border-2 border-green-200"><p className="text-xs font-bold text-green-600"><I.CheckCircle size={14} className="inline mr-1" /> RESOLUCIÓN</p><p className="text-sm text-gray-700 mt-1">{o.res}</p></div>}
                             <div className="flex justify-between items-center pt-3 border-t-2 border-dashed border-gray-200"><span className="text-[10px] text-gray-400 font-bold">ID: #{String(o.id || '').slice(0, 8)}</span><div className="flex items-center gap-2">{o.sig && <img src={o.sig} className="h-6 opacity-50" alt="Docente" title="Firma docente" />}{o.adminSig && <img src={o.adminSig} className="h-6 opacity-50" alt="Admin" title="Firma admin" />}</div></div>
                             {o.status === 'Finalizado' && o.adminSig && user?.role === 'Docente' && <div className="mt-3 bg-green-50 rounded-2xl p-3 border-2 border-green-200 text-center"><p className="text-xs font-bold text-green-600">✅ Pedido finalizado y firmado por Pañol</p></div>}
-                            {(user?.role === 'Administrativo' || devMode) && o.status === 'Solicitado' && <button onClick={() => confirmDel(o.id, items)} disabled={syncing} className="w-full mt-4 py-3 btn-cyan text-white rounded-2xl font-bold disabled:opacity-50">{syncing ? 'Procesando...' : '✓ Confirmar entrega'}</button>}
-                            {user?.role === 'Docente' && o.status === 'En Curso' && <button onClick={() => returnMat(o.id, obs)} disabled={syncing} className="w-full mt-4 py-3 btn-orange text-white rounded-2xl font-bold disabled:opacity-50">{syncing ? 'Procesando...' : '↩ Devolver material'}</button>}
+                            {(user?.role === 'Administrativo' || devMode) && o.status === 'Solicitado' && <button onClick={() => confirmDel(o.id, items, unitSelections)} disabled={syncing} className="w-full mt-4 py-3 btn-cyan text-white rounded-2xl font-bold disabled:opacity-50">{syncing ? 'Procesando...' : '✓ Confirmar entrega'}</button>}
+                            {user?.role === 'Docente' && o.status === 'En Curso' && <button onClick={() => returnMat(o.id, Object.values(damagedItems))} disabled={syncing} className="w-full mt-4 py-3 btn-orange text-white rounded-2xl font-bold disabled:opacity-50">{syncing ? 'Procesando...' : '↩ Devolver material'}</button>}
                             {(user?.role === 'Administrativo' || devMode) && o.status === 'Devolución Pendiente' && <button onClick={() => finRet(o.id)} disabled={syncing} className="w-full mt-4 py-3 btn-green text-white rounded-2xl font-bold disabled:opacity-50">{syncing ? 'Procesando...' : '✓ Confirmar reingreso'}</button>}
                         </div>
                     );
@@ -1878,20 +2081,38 @@ ${o.adminSig ? `<img src="${o.adminSig}" class="sig-img" alt="Firma admin"/>` : 
                 const IncidentCard = ({ o }) => {
                     const [res, setRes] = useState('');
                     const [repoQtys, setRepoQtys] = useState({});
+
+                    // Parse only the damaged items from the observation
+                    const parseDamagedItems = (obs) => {
+                        if (!obs) return null;
+                        const match = obs.match(/⚠️DAMAGED:([^\n]+)/);
+                        if (!match) return null;
+                        return match[1].split(';;').map(part => {
+                            const [id, name, q, ...noteParts] = part.split('|');
+                            return { id, name: name || '', q: parseInt(q) || 1, note: noteParts.join('|') };
+                        }).filter(d => d.name);
+                    };
+
+                    const damagedOnly = parseDamagedItems(o.obs);
+                    // Use only damaged items if we have structured data; else fall back to all items (backward compat)
+                    const displayItems = damagedOnly || o.items || [];
+                    const cleanObs = o.obs ? o.obs.replace(/\n?⚠️DAMAGED:[^\n]*/g, '').trim() : '';
+
                     return (
                         <div className="card p-5 border-3 border-red-200 relative overflow-hidden">
                             <div className="absolute left-0 top-0 bottom-0 w-2 bg-red-500" />
                             <div className="flex justify-between mb-2"><span className="text-xs text-gray-400 font-bold">{o.date ? new Date(o.date).toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: '2-digit' }) : ''}</span><span className="badge-red px-3 py-1 rounded-full font-bold">⚠️ INCIDENTE</span></div>
                             <p className="font-bold text-gray-800 text-lg">{o.teacher}</p>
                             <p className="text-xs text-gray-500 font-semibold mb-3">🎓 {o.career}</p>
-                            <div className="bg-red-50 rounded-2xl p-4 mb-3 border-2 border-red-200"><p className="text-sm text-red-800 italic">"{o.obs}"</p></div>
-                            {o.items && o.items.length > 0 && (
+                            <div className="bg-red-50 rounded-2xl p-4 mb-3 border-2 border-red-200"><p className="text-sm text-red-800 italic">"{cleanObs}"</p></div>
+                            {displayItems.length > 0 && (
                                 <div className="bg-gray-50 rounded-xl p-3 mb-3 border border-gray-200">
-                                    <p className="text-xs text-gray-500 font-bold mb-2">📦 Material del pedido:</p>
+                                    <p className="text-xs text-gray-500 font-bold mb-2">⚠️ Material con daño reportado:</p>
                                     <div className="space-y-2">
-                                        {o.items.map((it, idx) => (
-                                            <div key={idx} className="bg-white rounded-xl p-3 border border-gray-200">
-                                                <p className="text-sm font-semibold text-gray-700 mb-1">{it.name} <span className="text-gray-400">(pedido: {it.q})</span></p>
+                                        {displayItems.map((it, idx) => (
+                                            <div key={idx} className="bg-white rounded-xl p-3 border-2 border-red-100">
+                                                <p className="text-sm font-semibold text-gray-700 mb-0.5">{it.name} <span className="text-gray-400">(cantidad: {it.q})</span></p>
+                                                {it.note && <p className="text-xs text-red-600 italic mb-2">"{it.note}"</p>}
                                                 {(user?.role === 'Administrativo' || devMode) && (
                                                     <div className="flex items-center gap-2">
                                                         <span className="text-[10px] text-gray-400 font-bold flex-shrink-0">Reponer:</span>
@@ -1913,7 +2134,8 @@ ${o.adminSig ? `<img src="${o.adminSig}" class="sig-img" alt="Firma admin"/>` : 
                     );
                 };
 
-                // Filtramos SOLO incidentes (tienen obs, no tienen res y NO son compras con prefijo 🛒)
+                // Filtramos SOLO incidentes reales: tienen obs con daños O tienen obs sin resolver
+                // Excluimos compras (prefijo 🛒) y órdenes ya resueltas
                 const incs = ord.filter(o => o.obs && !o.res && (!o.career || !o.career.startsWith('🛒')));
                 return (
                     <div className="min-h-screen pb-28">
@@ -2131,6 +2353,27 @@ ${o.adminSig ? `<img src="${o.adminSig}" class="sig-img" alt="Firma admin"/>` : 
                 const ingresos2026 = ingresos.filter(h => new Date(h.at).getFullYear() === 2026);
                 const roturas2026 = roturas.filter(h => new Date(h.at).getFullYear() === 2026);
 
+                // Daños reportados desde pedidos (DAMAGED tag en observaciones)
+                const danosDeOrdenes = [];
+                ord.forEach(o => {
+                    if (!o.obs) return;
+                    const match = o.obs.match(/⚠️DAMAGED:([^\n]+)/);
+                    if (!match) return;
+                    match[1].split(';;').forEach(part => {
+                        const [id, name, q, note] = part.split('|');
+                        if (name) danosDeOrdenes.push({
+                            id: o.id + name,
+                            name: name.trim(),
+                            amt: parseInt(q) || 1,
+                            reason: 'Daño reportado',
+                            note: note || '',
+                            teacher: o.teacher,
+                            at: o.date
+                        });
+                    });
+                });
+                const todasRoturas = [...roturas, ...danosDeOrdenes];
+
                 // Items más pedidos
                 const itemCounts = {};
                 ord.forEach(o => {
@@ -2285,15 +2528,16 @@ ${o.adminSig ? `<img src="${o.adminSig}" class="sig-img" alt="Firma admin"/>` : 
                             {/* Roturas recientes */}
                             <div className="card p-4 border-2 border-orange-200">
                                 <h3 className="font-bold text-gray-800 mb-3">🔧 Roturas/Pérdidas recientes</h3>
-                                {roturas.length === 0 ? (
+                                {todasRoturas.length === 0 ? (
                                     <p className="text-sm text-green-600 font-semibold">✅ Sin incidentes</p>
                                 ) : (
                                     <div className="space-y-2">
-                                        {roturas.slice(0, 5).map(h => (
+                                        {todasRoturas.slice(0, 8).map(h => (
                                             <div key={h.id} className="flex items-center gap-2 text-sm">
-                                                <span className="badge-red px-2 py-0.5 rounded text-xs">{h.reason}</span>
+                                                <span className="badge-red px-2 py-0.5 rounded text-xs flex-shrink-0">{h.reason}</span>
                                                 <span className="truncate flex-1">{h.name}</span>
-                                                <span className="text-red-600 font-bold">-{h.amt}</span>
+                                                {h.teacher && <span className="text-xs text-gray-400 truncate">{h.teacher}</span>}
+                                                <span className="text-red-600 font-bold flex-shrink-0">-{h.amt}</span>
                                             </div>
                                         ))}
                                     </div>
@@ -2446,7 +2690,6 @@ ${o.adminSig ? `<img src="${o.adminSig}" class="sig-img" alt="Firma admin"/>` : 
                     const year = new Date().getFullYear();
                     const today = new Date().toLocaleDateString('es-AR', { day: '2-digit', month: 'long', year: 'numeric' });
 
-                    // Consolidar todos los items aprobados
                     const allApprovedItems = {};
                     approved.forEach(o => {
                         (o.items || []).forEach(i => {
@@ -2458,6 +2701,13 @@ ${o.adminSig ? `<img src="${o.adminSig}" class="sig-img" alt="Firma admin"/>` : 
                         });
                     });
                     const consolidatedItems = Object.values(allApprovedItems).sort((a, b) => a.name.localeCompare(b.name, 'es'));
+
+                    // Buscar firma de Florencia Santamaria
+                    const florencia = users.find(u =>
+                        u.full_name?.toLowerCase().includes('florencia') ||
+                        u.surname?.toLowerCase().replace('á','a') === 'santamaria'
+                    );
+                    const florSig = florencia?.signature || null;
 
                     const html = `<!DOCTYPE html>
 <html lang="es">
@@ -2472,15 +2722,11 @@ h2 { font-size: 13pt; margin-top: 25px; border-bottom: 1px solid #666; padding-b
 table { width: 100%; border-collapse: collapse; margin: 15px 0; }
 th, td { border: 1px solid #333; padding: 8px 12px; text-align: left; font-size: 11pt; }
 th { background: #f0f0f0; font-weight: bold; }
-.right { text-align: right; }
 .center { text-align: center; }
-.summary { background: #f9f9f9; padding: 15px; border: 1px solid #ddd; margin: 20px 0; }
-.signatures { margin-top: 60px; display: flex; justify-content: space-between; }
-.sig-block { text-align: center; width: 40%; }
-.sig-line { border-top: 1px solid #000; margin-top: 60px; padding-top: 5px; font-size: 10pt; }
+.signatures { margin-top: 80px; display: flex; justify-content: space-between; }
+.sig-block { display: flex; flex-direction: column; align-items: center; width: 42%; }
+.sig-line { border-top: 2px solid #000; padding-top: 6px; font-size: 10pt; text-align: center; width: 220px; line-height: 1.5; }
 .btn-print { position: fixed; top: 20px; right: 20px; padding: 12px 24px; background: #7c3aed; color: white; border: none; border-radius: 8px; font-size: 14px; cursor: pointer; font-weight: bold; }
-.btn-print:hover { background: #6d28d9; }
-.detail-section { margin: 10px 0; padding: 10px; border-left: 3px solid #ddd; }
 </style></head>
 <body>
 <button class="btn-print no-print" onclick="window.print()">🖨️ Imprimir / Guardar PDF</button>
@@ -2489,37 +2735,79 @@ th { background: #f0f0f0; font-weight: bold; }
 <p>Secretaría de Educación y Empleo</p>
 <p><strong>Centro Municipal de Capacitación Laboral Santiago Rainero</strong></p>
 </div>
-<h1>EXPEDIENTE DE SOLICITUD DE COMPRAS</h1>
+<h1>SOLICITUD DE COMPRAS</h1>
 <p class="center"><strong>Ciclo Lectivo ${year}</strong></p>
 <p>Fecha de emisión: ${today}</p>
 
-<div class="summary">
-<p><strong>Resumen:</strong></p>
-<p>Total de solicitudes: <strong>${purchaseOrders.length}</strong> | Aprobadas: <strong>${approved.length}</strong> | Pendientes: <strong>${pending.length}</strong></p>
-</div>
-
 ${consolidatedItems.length > 0 ? `
-<h2>LISTADO CONSOLIDADO DE MATERIALES APROBADOS</h2>
+<h2>LISTADO DE MATERIALES SOLICITADOS</h2>
 <table>
-<thead><tr><th>N°</th><th>Material</th><th class="center">Cantidad</th></tr></thead>
+<thead><tr><th class="center">N°</th><th>Material</th><th class="center">Cantidad</th></tr></thead>
 <tbody>
 ${consolidatedItems.map((item, idx) => `<tr><td class="center">${idx + 1}</td><td>${item.name}</td><td class="center">${item.qty}</td></tr>`).join('')}
 </tbody>
 </table>` : '<p><em>No hay materiales aprobados para compra.</em></p>'}
 
-<h2>DETALLE DE SOLICITUDES APROBADAS</h2>
-${approved.length > 0 ? approved.map((o, idx) => `
+<div class="signatures">
+<div style="width:45%"></div>
+<div class="sig-block">
+${florSig ? `<img src="${florSig}" style="height:70px;width:220px;object-fit:contain;object-position:center bottom;display:block;" alt="Firma coordinadora"/>` : '<div style="height:70px;width:220px;display:block;"></div>'}
+<div class="sig-line">Lic. Florencia Santamaria<br/>Coordinadora CMCL Santiago Rainero</div>
+</div>
+</div>
+<p style="text-align:center;font-size:9pt;color:#999;margin-top:40px">Documento generado por Mise en App — ${new Date().toLocaleString('es-AR')}</p>
+</body></html>`;
+
+                    const blob = new Blob([html], { type: 'text/html' });
+                    window.open(URL.createObjectURL(blob), '_blank');
+                };
+
+                const downloadDetalle = () => {
+                    const year = new Date().getFullYear();
+                    const today = new Date().toLocaleDateString('es-AR', { day: '2-digit', month: 'long', year: 'numeric' });
+
+                    const html = `<!DOCTYPE html>
+<html lang="es">
+<head><meta charset="UTF-8"><title>Detalle de Solicitudes ${year} - Santiago Rainero</title>
+<style>
+@media print { body { margin: 1.5cm 2cm; } .no-print { display: none !important; } }
+body { font-family: 'Times New Roman', serif; font-size: 12pt; line-height: 1.6; color: #000; max-width: 21cm; margin: 2cm auto; padding: 0 2cm; }
+h1 { text-align: center; font-size: 16pt; border-bottom: 2px solid #000; padding-bottom: 10px; }
+h2 { font-size: 13pt; margin-top: 25px; border-bottom: 1px solid #666; padding-bottom: 5px; }
+.header { text-align: center; margin-bottom: 30px; }
+.header p { margin: 2px 0; font-size: 11pt; }
+table { width: 100%; border-collapse: collapse; margin: 10px 0; }
+th, td { border: 1px solid #333; padding: 8px 12px; text-align: left; font-size: 11pt; }
+th { background: #f0f0f0; font-weight: bold; }
+.center { text-align: center; }
+.detail-section { margin: 15px 0; padding: 12px; border-left: 3px solid #999; }
+.obs { font-style: italic; font-size: 10pt; color: #444; margin-top: 6px; }
+.btn-print { position: fixed; top: 20px; right: 20px; padding: 12px 24px; background: #7c3aed; color: white; border: none; border-radius: 8px; font-size: 14px; cursor: pointer; font-weight: bold; }
+</style></head>
+<body>
+<button class="btn-print no-print" onclick="window.print()">🖨️ Imprimir / Guardar PDF</button>
+<div class="header">
+<p><strong>MUNICIPALIDAD DE VICENTE LÓPEZ</strong></p>
+<p>Secretaría de Educación y Empleo</p>
+<p><strong>Centro Municipal de Capacitación Laboral Santiago Rainero</strong></p>
+</div>
+<h1>DETALLE DE SOLICITUDES DE COMPRA</h1>
+<p class="center"><strong>Ciclo Lectivo ${year}</strong> — ${today}</p>
+
+${approved.length > 0 ? `
+<h2>Solicitudes aprobadas (${approved.length})</h2>
+${approved.map((o, idx) => `
 <div class="detail-section">
 <p><strong>${idx + 1}. ${o.teacher}</strong> — ${o.date ? new Date(o.date).toLocaleDateString('es-AR') : 'S/F'}</p>
 <table>
 <thead><tr><th>Material</th><th class="center">Cantidad</th></tr></thead>
 <tbody>${(o.items || []).map(i => `<tr><td>${i.name}</td><td class="center">${i.q}</td></tr>`).join('')}</tbody>
 </table>
-${o.obs ? `<p><em>Justificación: ${o.obs.replace('📦 SOLICITUD DE COMPRA\n', '')}</em></p>` : ''}
-</div>`).join('') : '<p><em>Sin solicitudes aprobadas.</em></p>'}
+${o.obs ? `<p class="obs">Justificación: ${o.obs.replace('📦 SOLICITUD DE COMPRA\n', '').replace(/\n?⚠️DAMAGED:[^\n]*/g, '').trim()}</p>` : ''}
+</div>`).join('')}` : ''}
 
 ${pending.length > 0 ? `
-<h2>SOLICITUDES PENDIENTES DE APROBACIÓN</h2>
+<h2>Solicitudes pendientes (${pending.length})</h2>
 ${pending.map((o, idx) => `
 <div class="detail-section">
 <p><strong>${idx + 1}. ${o.teacher}</strong> — ${o.date ? new Date(o.date).toLocaleDateString('es-AR') : 'S/F'}</p>
@@ -2527,18 +2815,14 @@ ${pending.map((o, idx) => `
 <thead><tr><th>Material</th><th class="center">Cantidad</th></tr></thead>
 <tbody>${(o.items || []).map(i => `<tr><td>${i.name}</td><td class="center">${i.q}</td></tr>`).join('')}</tbody>
 </table>
-${o.obs ? `<p><em>Justificación: ${o.obs.replace('📦 SOLICITUD DE COMPRA\n', '')}</em></p>` : ''}
+${o.obs ? `<p class="obs">Justificación: ${o.obs.replace('📦 SOLICITUD DE COMPRA\n', '').replace(/\n?⚠️DAMAGED:[^\n]*/g, '').trim()}</p>` : ''}
 </div>`).join('')}` : ''}
 
-<div class="signatures">
-<div class="sig-block"><div class="sig-line">Responsable de Pañol<br/>Santiago Rainero</div></div>
-<div class="sig-block"><div class="sig-line">Dirección<br/>CMCL Santiago Rainero</div></div>
-</div>
+<p style="text-align:center;font-size:9pt;color:#999;margin-top:40px">Documento generado por Mise en App — ${new Date().toLocaleString('es-AR')}</p>
 </body></html>`;
 
                     const blob = new Blob([html], { type: 'text/html' });
-                    const url = URL.createObjectURL(blob);
-                    window.open(url, '_blank');
+                    window.open(URL.createObjectURL(blob), '_blank');
                 };
 
                 return (
@@ -2553,8 +2837,11 @@ ${o.obs ? `<p><em>Justificación: ${o.obs.replace('📦 SOLICITUD DE COMPRA\n', 
                                 <button onClick={refresh} disabled={syncing} className="p-2 bg-orange-100 rounded-xl">
                                     <I.Refresh size={18} className={`text-orange-600 ${syncing ? 'animate-spin' : ''}`} />
                                 </button>
-                                <button onClick={downloadExpediente} className="p-2 bg-purple-100 rounded-xl">
+                                <button onClick={downloadExpediente} title="Consolidado para Municipio" className="p-2 bg-purple-100 rounded-xl">
                                     <I.Download size={18} className="text-purple-600" />
+                                </button>
+                                <button onClick={downloadDetalle} title="Detalle interno" className="p-2 bg-gray-100 rounded-xl">
+                                    <I.FileText size={18} className="text-gray-500" />
                                 </button>
                             </div>
                         </div>
