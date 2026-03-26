@@ -848,11 +848,6 @@
                     const { error: itemsError } = await supabase.from('order_items').insert(itemsToInsert);
                     if (itemsError) throw itemsError;
 
-                    for (const item of cart) {
-                        const invItem = inv.find(i => i.id === item.id);
-                        if (invItem) await supabase.from('inventory').update({ qty: Math.max(0, invItem.qty - item.q) }).eq('id', item.id);
-                    }
-
                     setCart([]); setMeta({ ...meta, obs: '' }); await loadData();
                     alert('✅ ¡Pedido enviado!');
                     setView('handover');
@@ -876,10 +871,6 @@
 
                     for (const old of order.items) {
                         const newItem = items.find(i => i.id === old.id);
-                        if (newItem && newItem.q < old.q) {
-                            const invItem = inv.find(i => i.id === old.id);
-                            if (invItem) await supabase.from('inventory').update({ qty: invItem.qty + (old.q - newItem.q) }).eq('id', old.id);
-                        }
                         if (newItem) {
                             const updatePayload = { qty: newItem.q };
                             const selUnits = unitSelections[old.id];
@@ -919,13 +910,6 @@
 
             const finRet = async (orderId) => {
                 setSyncing(true);
-                const order = ord.find(o => o.id === orderId);
-                if (order) {
-                    for (const item of order.items) {
-                        const invItem = inv.find(i => i.id === item.id);
-                        if (invItem) await supabase.from('inventory').update({ qty: invItem.qty + item.q }).eq('id', item.id);
-                    }
-                }
                 await supabase.from('orders').update({ status: 'Finalizado', resolution: `✅ Finalizado por ${user?.fullName || 'Admin'}`, admin_signature: user?.sig || null }).eq('id', orderId);
                 await loadData();
                 setSyncing(false);
