@@ -548,13 +548,12 @@
             const loadData = useCallback(async () => {
                 try {
                     // Carga inicial SIN imágenes (mucho más rápido) + datos operativos en paralelo
-                    const [{ data: invData }, { data: crsData }, { data: ordData }, { data: hisData }, { data: usersData }, { data: allItems }] = await Promise.all([
+                    const [{ data: invData }, { data: crsData }, { data: ordData }, { data: hisData }, { data: usersData }] = await Promise.all([
                         supabase.from('inventory').select('id,name,qty,cat,units').order('name'), // sin image_url
                         supabase.from('courses').select('*').order('name'),
                         supabase.from('orders').select('*').order('created_at', { ascending: false }).limit(500),
                         supabase.from('stock_history').select('*').order('created_at', { ascending: false }).limit(200),
-                        supabase.from('users').select('id,full_name,email,role,signature,pin').order('created_at', { ascending: false }),
-                        supabase.from('order_items').select('*')
+                        supabase.from('users').select('id,full_name,email,role,signature,pin').order('created_at', { ascending: false })
                     ]);
 
                     if (invData) setInv(invData.map(i => ({
@@ -567,8 +566,18 @@
                     if (usersData) setUsers(usersData);
 
                     if (ordData) {
+                        // Cargar items SOLO de los pedidos cargados, en lotes para evitar el límite de 1000 filas de Supabase
+                        const orderIds = ordData.map(o => o.id);
+                        let allItems = [];
+                        const BATCH_SIZE = 200;
+                        for (let i = 0; i < orderIds.length; i += BATCH_SIZE) {
+                            const batch = orderIds.slice(i, i + BATCH_SIZE);
+                            const { data: batchItems } = await supabase.from('order_items').select('*').in('order_id', batch);
+                            if (batchItems) allItems = allItems.concat(batchItems);
+                        }
+
                         const ordersWithItems = ordData.map(o => {
-                            const items = allItems ? allItems.filter(i => i.order_id === o.id) : [];
+                            const items = allItems.filter(i => i.order_id === o.id);
                             return {
                                 id: o.id,
                                 status: o.status || 'Solicitado',
