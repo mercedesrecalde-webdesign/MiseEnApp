@@ -1853,6 +1853,7 @@ ${o.adminSig ? `<img src="${o.adminSig}" class="sig-img" alt="Firma admin"/>` : 
 
                 const OrdCard = ({ o }) => {
                     const [items, setItems] = useState(o.items || []);
+                    useEffect(() => { setItems(o.items || []); }, [o.items]);
                     const [damagedItems, setDamagedItems] = useState({});
                     const [unitSelections, setUnitSelections] = useState({}); // {itemId: [label,...]}
                     const stCol = { 'Solicitado': 'bg-yellow-400', 'En Curso': 'bg-cyan-500', 'Devolución Pendiente': 'bg-orange-500', 'Finalizado': 'bg-green-500' };
