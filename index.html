@@ -570,10 +570,21 @@
                         const orderIds = ordData.map(o => o.id);
                         let allItems = [];
                         const BATCH_SIZE = 200;
+                        const PAGE_SIZE = 1000;
                         for (let i = 0; i < orderIds.length; i += BATCH_SIZE) {
                             const batch = orderIds.slice(i, i + BATCH_SIZE);
-                            const { data: batchItems } = await supabase.from('order_items').select('*').in('order_id', batch);
-                            if (batchItems) allItems = allItems.concat(batchItems);
+                            let from = 0;
+                            while (true) {
+                                const { data: page, error: pErr } = await supabase
+                                    .from('order_items')
+                                    .select('*')
+                                    .in('order_id', batch)
+                                    .range(from, from + PAGE_SIZE - 1);
+                                if (pErr || !page || page.length === 0) break;
+                                allItems = allItems.concat(page);
+                                if (page.length < PAGE_SIZE) break;
+                                from += PAGE_SIZE;
+                            }
                         }
 
                         const ordersWithItems = ordData.map(o => {
